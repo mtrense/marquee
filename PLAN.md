@@ -1,0 +1,273 @@
+# mrq Implementation Plan
+
+This plan implements the tool described in [README.md](README.md). It has three parts: the architecture and the decisions behind it, then milestones made of checkbox tasks, then risks. Each task is sized for one focused session, and its acceptance criteria (**AC**) say when it counts as done. Tasks within a milestone run in order unless marked *(parallel)*. A milestone may depend only on earlier milestones.
+
+## Decisions
+
+| Topic | Decision |
+| --- | --- |
+| Language / edition | Rust 2024 edition, stable toolchain, MSRV pinned in `rust-toolchain.toml` and tracked in CI |
+| License | MIT OR Apache-2.0 |
+| Crates | Cargo workspace. `mrq-core` (library) and `mrq-cli` (binary `mrq`; the name `mrq` is taken on crates.io) are published to crates.io. `mrq-render`, `mrq-tui` and `mrq-lsp` are internal at first (`publish = false`) and published once their APIs settle. |
+| Distribution | GitHub Releases via cargo-dist, plus Homebrew tap, Nix flake and AUR (`mrq` and `mrq-bin`) |
+| Parser | comrak (arena AST, sourcepos, full GFM and extensions), wrapped behind a `Parser` trait in `mrq-core`. The rest of the code never sees comrak types: they are converted into mrq's own owned AST. A lossless rowan CST can replace or supplement comrak later without breaking the public API. |
+| AST | An owned tree defined by mrq (`mrq_core::ast`) with byte-offset spans on every node, mrq-specific node kinds (admonition, wikilink, embed, tag, include directive, …), stable node ids, and an mdast-like JSON projection that is a versioned public contract |
+| Source edits | `lint --fix`, `interpolate --in-place`, `toc --insert` and LSP edits all go through `TextEdit { range: ByteRange, replacement }` applied to the original source. Nothing in these paths round-trips through the AST, so untouched bytes stay exactly as they were. |
+| fmt | mrq's own Markdown printer over the mrq AST (comrak's `format_commonmark` serves as a reference only). It has width-aware wrapping, table alignment and list renumbering. Raw source slices are reused where the printer has no opinion (HTML blocks, unknown extensions). |
+| Flavors | A `Flavor` is data plus hooks: comrak option set, slugger, extra block/inline AST passes, and printer rules. A registry holds `commonmark`, `gfm` (default), `obsidian` and `mkdocs`. Syntax that comrak doesn't parse natively (mkdocs `!!!` admonitions, `{#id}` attributes, `%%comments%%`, `#tags`) is recognized by post-parse passes that re-scan the source spans of the affected blocks. |
+| Query | One engine over the mrq AST that evaluates an internal `QueryPlan`. Three front-ends compile to it: an mdq-inspired selector DSL (default), CSS-like selectors (`--css`), and jq (`--jq`, embedded jaq-core/jaq-std over the JSON projection). |
+| Config | `.mrq.yaml`, layered (user config, then ancestor directories, then CLI flags) with figment for value provenance. Config structs derive `schemars` so a JSON Schema is published. `.markdownlint.*` is read as a fallback for lint. |
+| Lint rules | markdownlint-compatible `MD001`–`MD059` (same IDs, defaults and option names), plus `MRQ###` for mrq-specific rules |
+| Diagnostics | One `Diagnostic` type (code, severity, span, message, labels, fix). Output formats are human (miette-style), json, ndjson, sarif and github. |
+| Wrapping default | `fmt.wrap: preserve` |
+| Interpolate | Both modes. The default writes the combined result to stdout. `--in-place` refreshes the content between markers. `--check` is for CI. |
+| Split | A directory plus an `index.md` made of `mrq:include` directives, so `interpolate` is its exact inverse |
+| TUI editing | Structural edits only (promote/demote, move, delete section), with undo/redo, explicit save, `$EDITOR` handoff and live reload |
+| Diagrams | A `DiagramRenderer` trait and a registry that tries renderers in order: built-in (merman for Mermaid, layout-rs for DOT), then external commands, then Kroki if opted in. Results are cached by content hash. |
+| Async | `mrq-core` is synchronous. tokio appears only behind the `external-links` and `remote-include` features and in `mrq-lsp`. |
+
+### Dependency stack
+
+| Concern | Crate(s) |
+| --- | --- |
+| Markdown parsing | `comrak` |
+| CLI | `clap` (derive), `clap_complete`, `clap_mangen` |
+| Config | `figment`, `serde`, `schemars` |
+| File walking | `ignore`, `globset` |
+| YAML / TOML frontmatter | `serde-saphyr` (values), `saphyr` (spans), `toml_edit` |
+| JSON Schema | `jsonschema` |
+| Diagnostics | `miette` (human rendering), `serde-sarif` |
+| Text | `unicode-width`, `unicode-segmentation`, `textwrap` (core algorithms), `unicode-linebreak` |
+| Highlighting | `syntect` + `two-face` |
+| Tree-sitter (feature) | `tree-sitter`, `tree-sitter-{rust,python,javascript,typescript,go,…}` |
+| Query | `winnow` (DSL and CSS parsers), `jaq-core`, `jaq-std`, `jaq-json`, `regex` |
+| Diff | `similar` |
+| External links (feature) | `lychee-lib` |
+| HTTP for remote include and Kroki (feature) | `reqwest` (rustls) |
+| PDF (feature) | `typst`, `typst-pdf` (or `typst-as-lib`) |
+| man | `roff` |
+| Math (HTML) | `pulldown-latex` (LaTeX to MathML) |
+| Diagrams | `merman` (feature `mermaid`), `layout-rs`, `resvg` |
+| TUI | `ratatui`, `crossterm`, `ratatui-image`, `notify` |
+| LSP | `tower-lsp-server`, `tokio` |
+| Testing | `insta`, `assert_cmd`, `predicates`, `proptest`, `tempfile`, CommonMark/GFM spec fixtures |
+
+### Architecture
+
+```mermaid
+flowchart TD
+    cli[mrq-cli<br/>binary: mrq] --> core
+    cli --> render
+    cli --> tui
+    cli --> lsp
+    tui[mrq-tui] --> render
+    tui --> core
+    lsp[mrq-lsp] --> core
+    render[mrq-render<br/>html · ansi · pdf · man · md · json<br/>highlight · diagrams · themes] --> core
+    core[mrq-core<br/>parse · ast · flavor · frontmatter · query<br/>validate · lint · fmt · transform · diff · stats]
+    core --> comrak[(comrak)]
+```
+
+```mermaid
+flowchart LR
+    src[source bytes] --> fm[frontmatter split]
+    fm --> parse[comrak parse<br/>flavor options]
+    parse --> conv[convert to mrq AST<br/>+ byte spans + ids]
+    conv --> passes[flavor passes<br/>admonitions, attrs, tags, directives]
+    passes --> doc[Document]
+    doc --> q[query]
+    doc --> v[validate]
+    doc --> l[lint → TextEdits]
+    doc --> f[fmt printer]
+    doc --> t[transform<br/>merge · split · interpolate]
+    doc --> r[render backends]
+```
+
+`mrq-core` module layout:
+
+| Module | Responsibility |
+| --- | --- |
+| `source` | `SourceFile` (path, text, line index), byte↔line/col (UTF-8 and UTF-16 for LSP), `TextEdit`, edit application with overlap detection |
+| `ast` | Node kinds, `NodeId`, spans, traversal/visitor, text extraction |
+| `parse` | `Parser` trait, the comrak implementation, comrak→mrq conversion |
+| `flavor` | `Flavor` trait, registry, built-in flavors, slugger implementations |
+| `frontmatter` | detect/split YAML and TOML, typed access, span lookup by key path |
+| `document` | `Document` (source + frontmatter + AST + flavor), `Workspace` (multi-file, path resolution, anchor index) |
+| `input` | resolving file/dir/glob/stdin inputs, ignore rules |
+| `config` | config structs, layered loading, markdownlint fallback |
+| `diag` | `Diagnostic`, severity, codes, emitters (human, json, ndjson, sarif, github) |
+| `query` | `QueryPlan`, the engine, front-ends `selector`, `css`, `jq` |
+| `toc`, `stats` | outline extraction, counting |
+| `validate` | link/anchor/asset/footnote/refdef/frontmatter checks, external link trait |
+| `lint` | `Rule` trait, rule registry, suppression comments, fixes |
+| `fmt` | the Markdown printer, wrapping, tables, lists |
+| `transform` | heading shift, link/asset rewriting, merge, split, include directives, interpolate |
+| `diff` | section alignment, block comparison, diff model |
+
+## Milestones
+
+```mermaid
+flowchart LR
+    M0[M0 Skeleton] --> M1[M1 Document model]
+    M1 --> M2[M2 toc and stats]
+    M1 --> M3[M3 Query]
+    M1 --> M4[M4 Validate]
+    M1 --> M5[M5 Lint]
+    M1 --> M6[M6 fmt]
+    M3 --> M7[M7 Transforms]
+    M6 --> M7
+    M1 --> M8[M8 Render]
+    M6 --> M8
+    M6 --> M9[M9 Diff]
+    M8 --> M10[M10 TUI]
+    M3 --> M10
+    M4 --> M11[M11 LSP]
+    M5 --> M11
+    M6 --> M11
+    M10 --> M12[M12 Release]
+    M11 --> M12
+    M7 --> M12
+    M9 --> M12
+```
+
+### M0: Workspace skeleton and infrastructure
+
+- [ ] **M0.1 Workspace.** Create the Cargo workspace with `crates/mrq-core`, `crates/mrq-render`, `crates/mrq-tui`, `crates/mrq-lsp` and `crates/mrq-cli` (binary `mrq`). Add `rust-toolchain.toml`, workspace lints (`clippy::pedantic` subset, `unsafe_code = "forbid"`), `rustfmt.toml`, `LICENSE-MIT`, `LICENSE-APACHE` and `.gitignore`. **AC:** `cargo build --workspace` and `cargo clippy --workspace -- -D warnings` pass. `mrq --version` works.
+- [ ] **M0.2 CI.** GitHub Actions workflow for fmt, clippy, tests (Linux, macOS, Windows), an MSRV check, `cargo deny` (licenses and advisories) and a feature-powerset check (`cargo hack --each-feature`) for `mrq-core` and `mrq-cli`. **AC:** the workflow is green on an empty project.
+- [ ] **M0.3 CLI shell.** A clap derive tree with every subcommand from the README stubbed out (returning "not implemented", exit 2). Global flags: `--config`, `--flavor`, `--color auto|always|never`, `--format`, `-q/-v`. Shell completions (`mrq completions <shell>`) and man page generation (`xtask`). **AC:** `mrq --help` lists every command. Snapshot test of the help output.
+- [ ] **M0.4 Source and edits.** `mrq_core::source`: `SourceFile`, line index, byte↔(line, col) in UTF-8 and UTF-16, `TextEdit`, `apply_edits` with conflict detection. **AC:** unit and proptest coverage, including multi-byte characters and CRLF.
+- [ ] **M0.5 Diagnostics.** `Diagnostic`, `Severity`, `Label`, `Fix`. Emitters for human (miette), json, ndjson, sarif and github, plus automatic github selection when `GITHUB_ACTIONS=true`. **AC:** snapshot tests for every emitter, and SARIF output validates against the 2.1.0 schema.
+- [ ] **M0.6 Input resolution.** `mrq_core::input`: files, directories (via `ignore`, respecting `.gitignore` and the config `ignore`), globs, `-`. Deterministic ordering. **AC:** tests with temp directory trees. Stdin is detected and marked as non-writable.
+- [ ] **M0.7 Config.** `.mrq.yaml` structs (all sections from the README, `#[serde(deny_unknown_fields)]`), layered loading with figment (user config, then ancestors with the closest winning, then CLI), provenance in errors, `mrq config show [--origin]`, and `mrq config schema` that prints the JSON Schema via schemars. **AC:** layering tests. An unknown key produces an error naming the file and line.
+
+### M1: Document model
+
+- [ ] **M1.1 AST.** Define `mrq_core::ast`: node kinds covering CommonMark + GFM + every flavor extension (Admonition, Callout/Alert, WikiLink, Embed, Tag, Math, DefinitionList, HeadingAttrs, Comment, IncludeDirective, TocDirective, …), `NodeId`, `Span`, parent/child navigation, and visitor/walker. **AC:** documented public API, and a builder for tests.
+- [ ] **M1.2 Parser trait and comrak backend.** `Parser` trait, comrak options derived from the flavor, and conversion from the comrak arena to the mrq AST. Convert sourcepos to byte spans, falling back to computing them from parent text where comrak leaves inline sourcepos missing. **AC:** the CommonMark spec and GFM spec examples parse. Every node has a span, and `&src[span]` matches the expected source for a fixture suite.
+- [ ] **M1.3 Frontmatter.** Detect YAML (`---`) and TOML (`+++`) frontmatter. Parse to `serde_json::Value` via serde-saphyr / toml, and keep span-aware lookup (key path → byte range) via saphyr / toml_edit. Malformed frontmatter yields a diagnostic, not a crash. **AC:** tests for empty, malformed, BOM and CRLF cases, and nested key span lookup.
+- [ ] **M1.4 Flavor framework.** `Flavor` trait (comrak options, slugger, AST passes, printer hooks), registry, and resolution order (`--flavor`, then frontmatter `mrq.flavor`, then config, then `gfm`). Implement `commonmark` and `gfm`, including the GitHub slugger with duplicate suffixes (`-1`, `-2`). **AC:** slug compatibility tests against a corpus of GitHub-rendered anchors.
+- [ ] **M1.5 Obsidian flavor.** Wikilinks `[[a#b|c]]`, embeds `![[x]]`, callouts (shared with GFM alerts), `#tags`, `%%comments%%`, math. **AC:** fixture snapshots of the AST.
+- [ ] **M1.6 mkdocs flavor.** `!!!`/`???` admonitions with indented bodies (a post-parse pass that re-parses the body as a nested document), `{#id .class}` heading attributes, definition lists, abbreviations, math. **AC:** fixture snapshots, and nested admonitions work.
+- [ ] **M1.7 Document and Workspace.** `Document::parse`, `Document::load`, `Workspace` (a set of documents, path resolution relative to each file, a lazily built anchor index per file). **AC:** the API example from the README compiles as a doctest (with query stubbed out until M3).
+- [ ] **M1.8 JSON projection.** Stable, versioned (`"mrq_ast": 1`) mdast-like JSON (`type`, `children`, `position` with line/col/offset, kind-specific fields). Serialize, and deserialize for tests. **AC:** JSON Schema of the projection checked in, and snapshot tests.
+- [ ] **M1.9 Directive parsing.** Recognize `<!-- mrq:include … -->`, `<!-- mrq:toc … -->` and `<!-- mrq:end -->` in HTML comment nodes, parse attributes (quoted and unquoted values), and pair start and end markers into directive regions. **AC:** errors for unmatched or nested-incorrectly markers carry spans.
+
+### M2: `toc` and `stats`
+
+- [ ] **M2.1 toc.** Outline extraction (level, text, slug, span), plus `mrq toc` with `--json`, `--depth` and `--links` (a nested Markdown list). Multiple files are printed with file headers. **AC:** CLI snapshot tests for a file, a directory and stdin.
+- [ ] **M2.2 toc insert.** `mrq toc --insert` refreshes an `<!-- mrq:toc -->` region using TextEdits, with `--check`. **AC:** idempotent, and bytes outside the region are unchanged.
+- [ ] **M2.3 stats.** Counters from the README (words via unicode-segmentation, reading time at a configurable `--wpm`, per-language code block counts, tasks open/done, …). Per-file and total, human table and `--json`. **AC:** snapshot tests. Word counts exclude code blocks and frontmatter by default (`--include-code` to count them).
+
+### M3: Query
+
+- [ ] **M3.1 Query engine.** `QueryPlan` IR (`Select(kind, predicates)`, `Descendant`, `Child`, `Pipe`, `Section(matcher)`, `Union`), text matchers (substring, exact, regex, anchored, any), evaluation over a `Document` returning node refs, and the section concept (a heading plus the content up to the next heading of the same or higher level). **AC:** the engine is tested against plans built by hand.
+- [ ] **M3.2 Selector DSL.** A winnow parser for the README cheat sheet (`#`, `-`, `1.`, `- [ ]`, `[]()`, `![]()`, `>`, ```` ```lang ````, `:-:`, `</>`, `+++`, `P:`, `|`). Parse errors come with a caret position. **AC:** every README example parses and returns the expected nodes.
+- [ ] **M3.3 CSS front-end** *(parallel with M3.2)*. Type selectors (`section`, `heading`, `h1`–`h6`, `code`, `link`, `image`, `list`, `item`, `task`, `table`, `blockquote`, …), attribute selectors (`=`, `^=`, `$=`, `*=`, `~=`), descendant and child combinators, `:has()`, `:not()`, `:nth-child()`. **AC:** README examples pass, and `section[heading="X"]` matches sections.
+- [ ] **M3.4 jq front-end** *(parallel with M3.2)*. Embed jaq-core + jaq-std over the JSON projection, plus mrq helper definitions (`sections`, `links`, `code($lang)`, `text`). **AC:** README example works, and jq errors map to diagnostics.
+- [ ] **M3.5 `mrq query` command.** Front-end selection (`--css`, `--jq`, default DSL) and output modes `md` (source slices of the matched nodes, sections in full), `json` and `text`. Multi-file output with file prefixes. Exit 1 when nothing matches if `--exit-status` is set. **AC:** CLI snapshot tests.
+
+### M4: Validate
+
+- [ ] **M4.1 Link resolution.** Classify every link and image destination (internal file, anchor, file plus anchor, external, mailto, wikilink, reference). Resolve relative paths, URL-decode, and treat a leading `/` as the workspace root. **AC:** unit tests for each class.
+- [ ] **M4.2 Internal checks.** Missing files and assets, missing anchors (same file and cross-file, through the flavor slugger), duplicate anchors, undefined and unused footnotes, undefined and unused reference definitions, wikilink targets (obsidian, resolved by vault-wide filename lookup). **AC:** diagnostic codes documented, and a fixture repository with expected diagnostics snapshot.
+- [ ] **M4.3 Frontmatter schema.** Glob-to-schema mapping from config. Validate with jsonschema (drafts 7 and 2020-12), and map instance paths to spans in the frontmatter. Enums, types and required keys are reported with the expected values. **AC:** error spans point at the offending key or value.
+- [ ] **M4.4 Directive checks.** Missing include targets, cycles (with the chain in labels), stale `mrq:include`/`mrq:toc` regions (reusing M7 and M2.2). **AC:** fixtures. Added after M7 if needed, otherwise stubbed behind a TODO diagnostic.
+- [ ] **M4.5 External links.** Feature `external-links`: collect URLs, check them via a lychee-lib client with retries, rate limits, `external_exclude`, an on-disk cache with TTL, and `--external`. **AC:** integration test against a local mock HTTP server, and nothing hits the network by default.
+- [ ] **M4.6 `mrq validate` command.** Runs all checks over a workspace, supports every output format, exit codes. **AC:** CLI snapshots, and the SARIF output is accepted by `github/codeql-action/upload-sarif` (manual check documented).
+
+### M5: Lint
+
+- [ ] **M5.1 Rule framework.** `Rule` trait (id, aliases, default enabled, options type, `check(&Document, &Options) -> Vec<Diagnostic>` with optional `Fix` as TextEdits), registry, config mapping (`MD013: { … }`, `off`, `extends`), and `.markdownlint.{json,jsonc,yaml}` fallback. **AC:** the config schema includes every rule's options.
+- [ ] **M5.2 Suppression comments.** `mrq-disable`/`enable`/`disable-line`/`disable-next-line`/`disable-file`, with `markdownlint-*` equivalents. **AC:** tests mirror markdownlint semantics.
+- [ ] **M5.3 Rules MD001–MD020** *(heading, list and whitespace rules)*, with fixes where markdownlint has them. **AC:** each rule has pass/fail/fix fixtures. Where possible, results are compared with markdownlint-cli2 output on the same fixtures (fixture generation script in `xtask`).
+- [ ] **M5.4 Rules MD021–MD040.** Same AC.
+- [ ] **M5.5 Rules MD041–MD059.** Same AC.
+- [ ] **M5.6 MRQ rules.** Initial set: `MRQ001` (link to a missing anchor, as a lint mirror of validate), `MRQ002` (heading text ends with punctuation; configurable), `MRQ003` (frontmatter key order), `MRQ004` (stale include region), `MRQ005` (bare URL in an obsidian/wikilink context). **AC:** documented in `docs/rules/`.
+- [ ] **M5.7 `mrq lint` command and `--fix`.** Apply non-overlapping fixes, iterating until a fixpoint (at most 10 passes), and write atomically. `--rule`, `--fix-only`, `--diff` (show fixes without writing). **AC:** fixed output re-lints clean for every fixable rule's fixture.
+
+### M6: fmt
+
+- [ ] **M6.1 Printer core.** A Markdown printer over the mrq AST for every CommonMark + GFM node, with escaping that preserves meaning, honoring the config (`emphasis`, `strong`, `list_marker`, `code_fence`, ATX headings), and correct blank-line handling. **AC:** for the CommonMark and GFM spec suites, `render_html(parse(fmt(x))) == render_html(parse(x))`.
+- [ ] **M6.2 Tables.** Column alignment by Unicode display width, alignment markers kept, escaped pipes, and inline content in cells. **AC:** CJK and emoji fixtures.
+- [ ] **M6.3 Lists.** Ordered numbering modes (`one`, `ordered`, `preserve`), consistent indentation of nested content, loose/tight lists preserved, task markers. **AC:** fixtures.
+- [ ] **M6.4 Wrapping.** Inline fragment model (never break inside code spans, link destinations, autolinks, HTML or math). Modes `preserve`, `never`, `width` (textwrap optimal fit over fragments) and `sentence` (sentence segmentation with abbreviation exceptions). Blockquote and list prefixes count toward the width. **AC:** fixtures for each mode, and a re-wrapped paragraph never changes the rendered HTML.
+- [ ] **M6.5 Flavor printers.** Printer hooks for obsidian (wikilinks, embeds, callouts, tags, comments) and mkdocs (admonitions with re-indented bodies, attributes, definition lists, abbreviations). Raw source passthrough for unknown or extension nodes. **AC:** flavor fixtures stay stable under fmt.
+- [ ] **M6.6 Frontmatter and code formatting.** Frontmatter bytes are preserved verbatim (opt-in `fmt.frontmatter: normalize`). Fenced code is optionally formatted by the configured `code_formatters`: piped through stdin/stdout with a timeout, and left unchanged on failure with a warning. **AC:** tests with a fake formatter script.
+- [ ] **M6.7 `mrq fmt` command.** In-place atomic writes, `--check` (exit 1 plus a unified diff), stdin to stdout. **AC:** idempotence proptest (`fmt(fmt(x)) == fmt(x)`) over generated documents and a corpus of real-world READMEs checked into `tests/corpus/`.
+
+### M7: Transforms (merge, interpolate, split)
+
+- [ ] **M7.1 Heading shift.** Shift headings by ±N within a span. Levels are clamped to 1–6, with a diagnostic when clamping changes the structure (and an option to convert level 7 and deeper into bold paragraphs). Setext headings are converted to ATX when shifted. **AC:** edits-based implementation, fixtures.
+- [ ] **M7.2 Link and asset rewriting.** Rebase relative URLs from a source dir to a target dir (links, images, reference definitions, HTML `src`/`href` in raw HTML via a light tag scan, wikilinks). Cross-file anchor rewriting with a slug remapping table for collisions. **AC:** fixtures covering `../`, `./`, query strings, fragments and percent-encoding.
+- [ ] **M7.3 `mrq merge`.** Section-per-file wrapping (title from frontmatter `title`, then the first H1, then the file stem), `--shift`, `--title`, `--no-wrap`, frontmatter strategies, anchor deduplication, cross-file link conversion to in-document anchors, `-o`. **AC:** merging the README example files gives a document that passes `mrq validate`.
+- [ ] **M7.4 Include resolution.** Resolver for `mrq:include` with attributes `path`, `shift`, `section`, `select` (uses M3), `frontmatter`, `dedent`. Recursive expansion with cycle detection (canonicalized paths, chain in the error), and link rewriting via M7.2. **AC:** fixtures for nested, cyclic and section/select includes.
+- [ ] **M7.5 Code includes.** `lang`, `lines` ranges, dedent, and fence length chosen to exceed any backtick run in the content. **AC:** fixtures.
+- [ ] **M7.6 Structural code includes.** Feature `tree-sitter`: a `SymbolLocator` trait and tree-sitter implementations for Rust, Python, JavaScript/TypeScript and Go, with `function`, `struct`, `class` and `symbol` (qualified names such as `Type::method`). Doc comments and attributes are optional (`with_docs=true`). Grammars are added through a small per-language query file (`queries/<lang>/symbols.scm`), so more languages are easy to add. **AC:** fixtures per language, and a clear diagnostic when the symbol is missing or ambiguous.
+- [ ] **M7.7 Remote includes.** Feature `remote-include`: http(s) fetch gated by `include.allow_remote`, on-disk cache, `sha256` pinning, timeouts, and relative links in remote content resolved against the URL. **AC:** tests against a local mock server.
+- [ ] **M7.8 `mrq interpolate`.** Stdout mode (full expansion; directives are stripped by default, `--keep-directives` keeps them), `--in-place` (regenerate the region between markers with TextEdits; a bare start marker gets an end marker inserted), `--check`. **AC:** running `--in-place` twice gives no changes the second time, and `--check` passes after `--in-place`.
+- [ ] **M7.9 `mrq split`.** `-d/--depth`, output directory (`--out`, default `<stem>/`), slugified numbered filenames, heading promotion, cross-section link rewriting to file links, asset path rebasing, an `index.md` with preamble and include directives, `--dry-run`. **AC:** round-trip property: `interpolate(split(x)) == x` (modulo the trailing newline) for the fixture corpus.
+
+### M8: Render
+
+- [ ] **M8.1 Theme model.** Theme struct (colors, fonts, headings, code theme, `extends`), built-in themes `light`, `dark`, `github` and `paper`, loading from YAML, per-backend `overrides` paths. **AC:** schema published, and inheritance tests.
+- [ ] **M8.2 Highlighting.** syntect + two-face wrapper: language lookup by fence info (aliases), output as spans of styled text that every backend consumes, and theme mapping. **AC:** snapshot tests for a few languages.
+- [ ] **M8.3 HTML backend.** mrq's own HTML renderer over the mrq AST (complete control over flavor nodes). Heading ids from the slugger, highlighted code (CSS classes with the stylesheet generated from the theme), alerts/admonitions/callouts, footnotes, tables, task lists, math via pulldown-latex to MathML, standalone vs `--fragment`, CSS override. **AC:** GFM spec HTML equivalence for core nodes (normalized), and snapshots for extensions.
+- [ ] **M8.4 Diagram framework.** `DiagramRenderer` trait (`languages()`, `render(src, format) -> Svg|Png|Text`), registry and fallback order from the README, external-command renderer (stdin to stdout, timeout), Kroki renderer (feature-gated HTTP, opt-in), content-hash cache in the user cache directory, and fallback to the code block plus a warning. **AC:** tests with fake commands, and cache hit/miss tests.
+- [ ] **M8.5 Built-in diagram renderers.** merman (feature `mermaid`) for SVG and ASCII, layout-rs for DOT, resvg for SVG-to-PNG rasterization. **AC:** sample diagrams render, with snapshots of normalized SVG.
+- [ ] **M8.6 ANSI backend.** A renderer to styled lines (shared with the TUI): headings, emphasis, links (OSC 8 hyperlinks), lists, blockquotes, alerts, tables with box drawing at terminal width, highlighted code, footnotes, images and diagrams via kitty/iTerm2/sixel where supported, otherwise alt text or ASCII diagram. **AC:** snapshot tests at widths 60 and 100, and `NO_COLOR` is respected.
+- [ ] **M8.7 md and json backends.** `-o md` reuses the M6 printer with an optional target flavor (down-conversion: wikilinks become links, admonitions become blockquotes with a bold title, and so on). `-o json` is the M1.8 projection. **AC:** converting obsidian to commonmark fixtures gives output that validates.
+- [ ] **M8.8 man backend.** roff via `roff`: NAME/SYNOPSIS conventions from H1/H2, code blocks as `.nf`, lists, emphasis. **AC:** `man -l` renders the fixture (manual check), plus a snapshot.
+- [ ] **M8.9 PDF backend.** Feature `pdf`: mrq AST to Typst markup (escaping, tables, code with highlight colors, images, SVG diagrams, math via Typst math where convertible, MathML fallback as an image), theme mapped to Typst set/show rules, an `overrides.pdf` template, embedded fonts. **AC:** the fixture document renders to a valid PDF, text extraction matches, and the build works offline.
+- [ ] **M8.10 `mrq render` command.** `-o`, `-s`, `--fragment`, `--flavor`, multiple inputs (concatenated, or `--out-dir` for one output per input), stdout vs file. **AC:** CLI snapshots for each format (PDF checked for size and validity only).
+
+### M9: Diff
+
+- [ ] **M9.1 Normalized block model.** Section tree with each block in a canonical form (fmt printer output with `wrap: never`, normalized markers, table cells trimmed), so formatting-only changes compare equal. **AC:** a reflowed paragraph, different list markers or re-aligned tables compare equal.
+- [ ] **M9.2 Alignment.** Match sections by heading path (exact, then fuzzy by similarity, which detects moves and renames), then diff block sequences within matched sections with `similar` (patience), and word-level inline diff with `--word`. **AC:** fixtures for move, rename, insert, delete and edit.
+- [ ] **M9.3 `mrq diff` command.** Human output (section breadcrumbs, colored), `--json`, exit codes, and use as a `git difftool`. **AC:** CLI snapshots.
+
+### M10: TUI (`mrq show`)
+
+- [ ] **M10.1 App skeleton.** ratatui + crossterm event loop, panels (file list when there are several inputs, outline, document), focus switching with `Tab`, `o` toggle, help overlay `?`, resize handling, and a clean terminal restore on panic. **AC:** TestBackend snapshot tests of layouts.
+- [ ] **M10.2 Document view.** Uses M8.6 styled lines, virtual scrolling, a selection model over block elements (arrow keys move between headings/blocks), and outline sync with the scroll position. **AC:** snapshot tests and smooth scrolling on a 10k-line document (benchmark).
+- [ ] **M10.3 Navigation.** `Enter` follows a link (anchor, other file, external via the OS opener), `Backspace` goes back through a history stack, outline jump. **AC:** tests on navigation state.
+- [ ] **M10.4 Search and query.** `/` search (incremental highlighting, `n`/`N`), `>` query prompt (DSL with `css:` and `jq:` prefixes), result list navigation. **AC:** state tests.
+- [ ] **M10.5 Structural editing.** Promote/demote section (`Shift-←/→`, reusing M7.1), move section (`Alt-↑/↓`), delete section, all as TextEdits on an undo/redo stack. Dirty indicator, `w` save (atomic), and a confirmation on quit. **AC:** a round trip of edit, undo and redo gives identical bytes.
+- [ ] **M10.6 External editor and live reload.** `e` suspends the TUI and opens `$EDITOR +line file`, then reloads afterwards. `notify` watches files and reloads on external change, warning if there are unsaved edits. **AC:** manual test checklist in `docs/testing.md`, plus a unit test for the reload state machine.
+- [ ] **M10.7 Images and diagrams.** ratatui-image for inline images and diagrams, with protocol detection and a halfblock fallback. **AC:** works in kitty and WezTerm (manual), and falls back cleanly otherwise.
+
+### M11: LSP (`mrq lsp`)
+
+- [ ] **M11.1 Server skeleton.** tower-lsp-server on stdio, document store with incremental sync, a workspace index (all Markdown files under the root folders, anchors, links) updated on change and on file watch, and config reload. **AC:** an integration test harness that speaks LSP over in-memory pipes.
+- [ ] **M11.2 Diagnostics.** validate (internal checks only) and lint, published per file (debounced). Cross-file anchor diagnostics are re-evaluated when the target changes. **AC:** harness tests.
+- [ ] **M11.3 Navigation.** definition (links, anchors, footnotes, refdefs, wikilinks), references (to headings and files), document symbols, workspace symbols, hover (link target preview, footnote text). **AC:** harness tests.
+- [ ] **M11.4 Completion.** File paths after `](`, anchors after `#` (including `file.md#`), footnote labels, refdef labels, wikilink targets. **AC:** harness tests.
+- [ ] **M11.5 Rename.** prepareRename and rename on headings that update every link to the anchor across the workspace (a WorkspaceEdit). File rename (`workspace/willRenameFiles`) rewrites links. **AC:** harness tests with multiple files.
+- [ ] **M11.6 Formatting and code actions.** `textDocument/formatting` via M6, plus code actions from lint fixes, "fix all" and "refresh include region". **AC:** harness tests, and editor setup docs verified in Neovim and Helix (manual).
+
+### M12: Release
+
+- [ ] **M12.1 Docs.** `docs/` with rule reference (generated from the registry), config reference (generated from the schema), query language reference, flavor reference, theme reference and the AST JSON schema. README examples checked by a `trycmd` test. **AC:** every README command example runs in CI against fixtures.
+- [ ] **M12.2 Packaging.** cargo-dist for GitHub Releases (Linux gnu/musl x86_64/aarch64, macOS universal, Windows), Homebrew tap formula, Nix flake (`packages.default`, `devShells.default`), AUR `mrq` and `mrq-bin` PKGBUILDs. **AC:** a dry-run release on a tag works in CI.
+- [ ] **M12.3 Publish.** Pre-1.0 API review of `mrq-core` (`cargo public-api` snapshot, `#[non_exhaustive]` on enums), crate metadata, `cargo publish` of `mrq-core` and `mrq-cli`, and a CHANGELOG. **AC:** `cargo install mrq-cli` from crates.io gives a working `mrq`.
+
+## Testing strategy
+
+- **Unit tests** in each module, plus **insta** snapshots for ASTs, diagnostics and rendered output.
+- **Spec conformance:** the CommonMark and GFM spec examples run through parse → HTML and parse → fmt → parse.
+- **Property tests (proptest):** fmt idempotence and meaning preservation, `apply_edits` invariants, split/interpolate round-trip, slug uniqueness.
+- **CLI tests:** `assert_cmd` + `trycmd` over fixture trees in `tests/fixtures/`.
+- **Real-world corpus:** `tests/corpus/` holds READMEs and docs from popular projects (license-compatible), used for fmt stability and lint performance.
+- **Benchmarks (criterion):** parse, lint and fmt on a 1 MB document. The target is under 50 ms for parse + lint on a typical README in release builds.
+
+## Risks and mitigations
+
+| Risk | Mitigation |
+| --- | --- |
+| comrak inline sourcepos gaps make spans inaccurate | Span repair in conversion (M1.2) plus fixture assertions on `&src[span]`. The `Parser` trait leaves room for a rowan CST if gaps persist. |
+| mkdocs/obsidian syntax not parsed by comrak (e.g. `!!!` bodies parsed as lazy paragraph text) | Flavor passes re-scan raw source spans of the affected blocks and re-parse bodies as sub-documents (M1.6). This is the main motivation for a later CST. |
+| fmt changes meaning | The HTML-equivalence invariant is checked on the spec suite and corpus in CI (M6.1, M6.7). |
+| Lint parity with markdownlint drifts | Differential fixtures generated with markdownlint-cli2 (M5.3). |
+| Heavy dependencies (typst, lychee, tree-sitter, merman) bloat builds | Cargo features. Release binaries enable everything, and the core library stays lean. CI checks `--no-default-features`. |
+| `tower-lsp-server` maintenance | Isolated in `mrq-lsp`. Swapping to `lsp-server` only touches the transport layer. |
+| Remote and external network access in CI and offline use | Off by default, explicit opt-in, cached, with mock-server tests. |
