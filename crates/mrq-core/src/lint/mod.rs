@@ -69,11 +69,41 @@
 //!
 //! Every lint diagnostic is a [`Warning`](crate::diag::Severity::Warning) whose code is
 //! the rule id.
+//!
+//! # Inline configuration
+//!
+//! HTML comments switch rules inside a document, with markdownlint's semantics.
+//! Each takes the prefix `markdownlint-` or `mrq-` (same meaning) and optional
+//! whitespace-separated rule ids, aliases or tags (ignoring ASCII case; unknown names
+//! are ignored); without names it applies to every rule:
+//!
+//! | Comment | Effect |
+//! | --- | --- |
+//! | `<!-- mrq-disable MD012 -->` | off from the comment's line on |
+//! | `<!-- mrq-enable MD012 -->` | on from the comment's line on, even if config left it off |
+//! | `<!-- mrq-disable-line -->` | off on the comment's line |
+//! | `<!-- mrq-disable-next-line -->` | off on the line after the comment |
+//! | `<!-- mrq-disable-file -->` / `mrq-enable-file` | off/on for the whole file, wherever the comment is |
+//! | `<!-- mrq-capture -->` | remembers the current state (one slot, not a stack) |
+//! | `<!-- mrq-restore -->` | returns to the remembered state, or to the configured one before any capture |
+//! | `<!-- mrq-configure-file { "MD012": { "maximum": 2 } } -->` | merges markdownlint-style JSON settings into the config for this file |
+//!
+//! Like markdownlint, file-wide comments apply first, then `enable`/`disable`/`capture`/
+//! `restore` in order (several on one line apply in order, and the line gets the
+//! resulting state), then `disable-line`/`disable-next-line`. A finding counts on the
+//! line where its range starts. Comments are found only in HTML (block, inline and
+//! comment nodes), never in code blocks, code spans or frontmatter.
+//!
+//! Divergences: a comment may span lines and counts on the line of its `<!--`
+//! (markdownlint needs `-->` on that line, except for `configure-file`), and
+//! `configure-file` silently drops invalid JSON and entries that are not valid
+//! `lint.rules` settings; `default: true/false` sets `extends`.
 
 mod linter;
 mod registry;
 mod rule;
 pub mod rules;
+mod suppress;
 
 pub use linter::Linter;
 pub use registry::Registry;

@@ -237,7 +237,7 @@ flowchart LR
 ### M5: Lint
 
 - [x] **M5.1 Rule framework.** `Rule` trait (id, aliases, default enabled, options type, `check(&Document, &Options) -> Vec<Diagnostic>` with optional `Fix` as TextEdits), registry, config mapping (`MD013: { … }`, `off`, `extends`), and `.markdownlint.{json,jsonc,yaml}` fallback. **AC:** the config schema includes every rule's options.
-- [ ] **M5.2 Suppression comments.** `mrq-disable`/`enable`/`disable-line`/`disable-next-line`/`disable-file`, with `markdownlint-*` equivalents. **AC:** tests mirror markdownlint semantics.
+- [x] **M5.2 Suppression comments.** `mrq-disable`/`enable`/`disable-line`/`disable-next-line`/`disable-file`, with `markdownlint-*` equivalents. **AC:** tests mirror markdownlint semantics.
 - [ ] **M5.3 Rules MD001–MD020** *(heading, list and whitespace rules)*, with fixes where markdownlint has them. **AC:** each rule has pass/fail/fix fixtures. Where possible, results are compared with markdownlint-cli2 output on the same fixtures (fixture generation script in `xtask`).
 - [ ] **M5.4 Rules MD021–MD040.** Same AC.
 - [ ] **M5.5 Rules MD041–MD059.** Same AC.
