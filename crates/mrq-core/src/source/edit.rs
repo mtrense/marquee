@@ -5,7 +5,11 @@ use std::ops::Range;
 use serde::{Deserialize, Serialize};
 
 /// A half-open range `start..end` of byte offsets into a UTF-8 source text.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+///
+/// The default is the empty range at offset 0.
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
+)]
 pub struct ByteRange {
     /// Offset of the first byte in the range.
     pub start: usize,
