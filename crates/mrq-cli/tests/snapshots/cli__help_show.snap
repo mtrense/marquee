@@ -1,0 +1,50 @@
+---
+source: crates/mrq-cli/tests/cli.rs
+expression: "stdout_of(&[name, \"--help\"])"
+---
+Browse files in an interactive viewer
+
+Usage: mrq show [OPTIONS] [PATH]...
+
+Arguments:
+  [PATH]...
+          Files, directories, globs, or `-` for stdin
+
+Options:
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --config <PATH>
+          Use this config file instead of discovering `.mrq.yaml`
+
+      --flavor <FLAVOR>
+          Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+
+          Possible values:
+          - commonmark: Strict CommonMark
+          - gfm:        GitHub Flavored Markdown
+          - obsidian:   Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments
+          - mkdocs:     MkDocs: gfm + admonitions, heading attributes, definition lists, math
+
+      --color <WHEN>
+          When to use colors
+          
+          [default: auto]
+          [possible values: auto, always, never]
+
+      --format <FORMAT>
+          Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+
+          Possible values:
+          - human:  Human-readable, with source snippets
+          - json
+          - ndjson: One JSON object per line
+          - sarif:  SARIF 2.1.0
+          - github: GitHub Actions workflow annotations
+
+  -q, --quiet...
+          Print less output; repeat for even less
+
+  -v, --verbose...
+          Print more output; repeat for even more

@@ -1,0 +1,67 @@
+---
+source: crates/mrq-cli/tests/cli.rs
+expression: "stdout_of(&[\"--help\"])"
+---
+A Markdown toolkit for the terminal: verify, lint, format, query, transform, render and display Markdown
+
+Usage: mrq [OPTIONS] <COMMAND>
+
+Commands:
+  toc          Print the heading outline of each file
+  render       Render files or stdin to HTML, ANSI, PDF, Markdown, JSON or man
+  validate     Check links, anchors, assets, footnotes, includes and frontmatter
+  lint         Apply markdownlint-compatible style rules
+  fmt          Format Markdown canonically
+  query        Select parts of documents
+  merge        Combine several files into one document
+  interpolate  Expand `mrq:include` directives
+  split        Split a file into one file per section
+  stats        Count words, headings, links, code blocks, tasks and more
+  diff         Structural, semantic diff of two documents
+  show         Browse files in an interactive viewer
+  lsp          Run the language server on stdio
+  config       Inspect the configuration
+  completions  Print a shell completion script to stdout
+  help         Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
+
+Global options:
+      --config <PATH>
+          Use this config file instead of discovering `.mrq.yaml`
+
+      --flavor <FLAVOR>
+          Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+
+          Possible values:
+          - commonmark: Strict CommonMark
+          - gfm:        GitHub Flavored Markdown
+          - obsidian:   Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments
+          - mkdocs:     MkDocs: gfm + admonitions, heading attributes, definition lists, math
+
+      --color <WHEN>
+          When to use colors
+          
+          [default: auto]
+          [possible values: auto, always, never]
+
+      --format <FORMAT>
+          Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+
+          Possible values:
+          - human:  Human-readable, with source snippets
+          - json
+          - ndjson: One JSON object per line
+          - sarif:  SARIF 2.1.0
+          - github: GitHub Actions workflow annotations
+
+  -q, --quiet...
+          Print less output; repeat for even less
+
+  -v, --verbose...
+          Print more output; repeat for even more

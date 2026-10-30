@@ -45,6 +45,10 @@ build-release:
 install:
     cargo install --path crates/mrq-cli --locked
 
+# Generate man pages for mrq and every subcommand into `out` (default target/man).
+man out="target/man":
+    cargo xtask man --out {{out}}
+
 # Coverage via tarpaulin: HTML report + lcov.info in target/tarpaulin/, fails below 80% line coverage.
 coverage:
     cargo tarpaulin --workspace --out Html --out Lcov --output-dir target/tarpaulin --fail-under 80
