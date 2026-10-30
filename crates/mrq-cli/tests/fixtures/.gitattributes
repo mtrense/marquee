@@ -1,0 +1,2 @@
+# Byte offsets in snapshots assume LF line endings, also on Windows checkouts.
+* text eol=lf

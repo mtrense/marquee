@@ -8,13 +8,18 @@ use std::fs;
 use std::io::{self, IsTerminal, Write};
 use std::process::ExitCode;
 
-use mrq_core::config::{ConfigError, ConfigLoader, FlavorName, LoadedConfig, user_config_path};
+use mrq_core::config::{
+    ConfigError, ConfigLoader, FlavorName, LoadedConfig, Origin, user_config_path,
+};
 use mrq_core::diag::{self, EmitOptions, HumanStyle, OutputFormat};
+use mrq_core::document::DocumentOptions;
+use mrq_core::input::{Input, InputResolver};
 use mrq_core::source::SourceFile;
 
 pub mod cli;
+mod toc;
 
-use cli::{Cli, ColorChoice, Command, ConfigCommand, DiagnosticFormat, Flavor, GlobalArgs};
+use cli::{Cli, ColorChoice, Command, ConfigCommand, DiagnosticFormat, Flavor, GlobalArgs, Inputs};
 
 /// Exit code for usage, configuration and I/O errors, and for commands not implemented yet.
 const EXIT_USAGE: u8 = 2;
@@ -41,6 +46,12 @@ pub fn run(cli: Cli) -> ExitCode {
                 ExitCode::from(EXIT_USAGE)
             }
         },
+        Command::Toc(args) if !args.insert => {
+            let Some((options, inputs)) = prepare(&cli.global, &args.inputs) else {
+                return ExitCode::from(EXIT_USAGE);
+            };
+            toc::run(&args, &inputs, &options)
+        }
         other => {
             let _ = writeln!(
                 io::stderr().lock(),
@@ -49,6 +60,49 @@ pub fn run(cli: Cli) -> ExitCode {
             );
             ExitCode::from(EXIT_USAGE)
         }
+    }
+}
+
+/// Loads the configuration and resolves the input arguments of a document command,
+/// reporting failures on stderr (`None`, exit 2). At least one path is required; `-`
+/// reads stdin.
+fn prepare(global: &GlobalArgs, inputs: &Inputs) -> Option<(DocumentOptions, Vec<Input>)> {
+    let loaded = match load_config(global) {
+        Ok(loaded) => loaded,
+        Err(err) => {
+            report_config_error(&err, global);
+            return None;
+        }
+    };
+    if inputs.paths.is_empty() {
+        let _ = writeln!(
+            io::stderr().lock(),
+            "mrq: no input given; pass files, directories, globs or `-` for stdin"
+        );
+        return None;
+    }
+    let resolved = InputResolver::new()
+        .ignore_patterns(loaded.config().ignore.iter().cloned())
+        .resolve(&inputs.paths);
+    match resolved {
+        Ok(resolved) => Some((document_options(global, &loaded), resolved)),
+        Err(err) => {
+            let _ = writeln!(io::stderr().lock(), "mrq: {err}");
+            None
+        }
+    }
+}
+
+/// Document options for `--flavor` and the configured flavor. A configured flavor that
+/// is only the built-in default is left unset, so documents report it as the default.
+fn document_options(global: &GlobalArgs, loaded: &LoadedConfig) -> DocumentOptions {
+    let options = DocumentOptions::new();
+    if let Some(flavor) = global.flavor {
+        options.flavor(flavor_name(flavor).as_str())
+    } else if let Some(Origin::File { .. }) = loaded.origin(&["flavor"]) {
+        options.config_flavor(loaded.config().flavor.as_str())
+    } else {
+        options
     }
 }
 

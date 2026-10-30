@@ -80,7 +80,7 @@ mrq toc --depth 3 --links README.md        # nested Markdown list with anchor li
 mrq toc --insert README.md                 # refresh a <!-- mrq:toc --> … <!-- mrq:end --> block in place
 ```
 
-Anchor slugs follow the active flavor's rules (GitHub-style for `gfm`). `--json` emits level, text, slug and source position for each heading.
+Anchor slugs follow the active flavor's rules (GitHub-style for `gfm`). `--json` emits level, text, slug and source position for each heading, as an array with one `{file, flavor, headings}` object per input. With several inputs, the text and `--links` output puts a `==> file <==` header before each file.
 
 ### `mrq render`
 

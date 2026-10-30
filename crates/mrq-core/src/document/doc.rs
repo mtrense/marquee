@@ -5,7 +5,7 @@ use std::sync::{Arc, OnceLock};
 
 use super::AnchorIndex;
 use crate::ast::json::{self, JsonAst};
-use crate::ast::{Ast, Node, NodeId, NodeKind, Span};
+use crate::ast::{Ast, Node, NodeKind};
 use crate::diag::Diagnostic;
 use crate::directive::DirectiveRegion;
 use crate::flavor::{self, Flavor, FlavorError, FlavorOrigin, Registry, Resolved};
@@ -13,6 +13,7 @@ use crate::frontmatter::Frontmatter;
 use crate::input::{Input, InputError};
 use crate::query::{Query, QueryError};
 use crate::source::SourceFile;
+use crate::toc::TocEntry;
 
 /// The name diagnostics use for a document without a path.
 const STDIN_NAME: &str = "<stdin>";
@@ -173,22 +174,6 @@ impl DocumentOptions {
     }
 }
 
-/// One heading of a document's [table of contents](Document::toc).
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub struct TocEntry {
-    /// The heading node.
-    pub node: NodeId,
-    /// 1–6.
-    pub level: u8,
-    /// Plain text ([`Ast::text`]).
-    pub text: String,
-    /// The anchor, from the [`AnchorIndex`].
-    pub slug: String,
-    /// The heading's source span.
-    pub span: Span,
-}
-
 /// One parsed Markdown document: its source, flavor, frontmatter, syntax tree and the
 /// diagnostics found while parsing.
 ///
@@ -294,7 +279,8 @@ impl Document {
         })
     }
 
-    /// Every heading in document order, with its level, text and anchor.
+    /// Every heading in document order, with its level, text and anchor. See
+    /// [`toc`](crate::toc) for rendering it.
     pub fn toc(&self) -> Vec<TocEntry> {
         self.anchors()
             .iter()

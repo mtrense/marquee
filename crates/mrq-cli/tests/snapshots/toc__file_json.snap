@@ -1,0 +1,148 @@
+---
+source: crates/mrq-cli/tests/toc.rs
+expression: out
+---
+[
+  {
+    "file": "README.md",
+    "flavor": "gfm",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Example",
+        "slug": "example",
+        "position": {
+          "start": {
+            "line": 5,
+            "column": 1,
+            "offset": 24
+          },
+          "end": {
+            "line": 5,
+            "column": 10,
+            "offset": 33
+          }
+        }
+      },
+      {
+        "level": 2,
+        "text": "Install",
+        "slug": "install",
+        "position": {
+          "start": {
+            "line": 9,
+            "column": 1,
+            "offset": 56
+          },
+          "end": {
+            "line": 9,
+            "column": 11,
+            "offset": 66
+          }
+        }
+      },
+      {
+        "level": 3,
+        "text": "From source",
+        "slug": "from-source",
+        "position": {
+          "start": {
+            "line": 11,
+            "column": 1,
+            "offset": 68
+          },
+          "end": {
+            "line": 11,
+            "column": 16,
+            "offset": 83
+          }
+        }
+      },
+      {
+        "level": 3,
+        "text": "With cargo",
+        "slug": "with-cargo",
+        "position": {
+          "start": {
+            "line": 13,
+            "column": 1,
+            "offset": 85
+          },
+          "end": {
+            "line": 13,
+            "column": 17,
+            "offset": 101
+          }
+        }
+      },
+      {
+        "level": 2,
+        "text": "Usage",
+        "slug": "usage",
+        "position": {
+          "start": {
+            "line": 15,
+            "column": 1,
+            "offset": 103
+          },
+          "end": {
+            "line": 15,
+            "column": 9,
+            "offset": 111
+          }
+        }
+      },
+      {
+        "level": 3,
+        "text": "Examples",
+        "slug": "examples",
+        "position": {
+          "start": {
+            "line": 17,
+            "column": 1,
+            "offset": 113
+          },
+          "end": {
+            "line": 17,
+            "column": 13,
+            "offset": 125
+          }
+        }
+      },
+      {
+        "level": 4,
+        "text": "Advanced",
+        "slug": "advanced",
+        "position": {
+          "start": {
+            "line": 19,
+            "column": 1,
+            "offset": 127
+          },
+          "end": {
+            "line": 19,
+            "column": 14,
+            "offset": 140
+          }
+        }
+      },
+      {
+        "level": 2,
+        "text": "Usage",
+        "slug": "usage-1",
+        "position": {
+          "start": {
+            "line": 21,
+            "column": 1,
+            "offset": 142
+          },
+          "end": {
+            "line": 21,
+            "column": 9,
+            "offset": 150
+          }
+        }
+      }
+    ]
+  }
+]

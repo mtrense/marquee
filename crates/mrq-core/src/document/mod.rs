@@ -27,6 +27,7 @@ mod anchors;
 mod doc;
 mod workspace;
 
+pub use crate::toc::TocEntry;
 pub use anchors::AnchorIndex;
-pub use doc::{Document, DocumentError, DocumentOptions, TocEntry};
+pub use doc::{Document, DocumentError, DocumentOptions};
 pub use workspace::Workspace;

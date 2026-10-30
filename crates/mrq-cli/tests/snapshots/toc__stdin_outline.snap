@@ -1,0 +1,7 @@
+---
+source: crates/mrq-cli/tests/toc.rs
+expression: "mrq.stdout(&[\"toc\", \"-\"], Some(NOTES))"
+---
+My Notes
+  Open Questions
+  Open Questions

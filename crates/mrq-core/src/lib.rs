@@ -14,6 +14,7 @@ pub mod input;
 pub mod parse;
 pub mod query;
 pub mod source;
+pub mod toc;
 
 pub use document::{Document, Workspace};
 

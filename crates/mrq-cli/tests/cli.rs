@@ -76,7 +76,7 @@ fn no_subcommand_is_a_usage_error() {
 #[test]
 fn stubbed_subcommands_report_not_implemented_and_exit_2() {
     let invocations: &[&[&str]] = &[
-        &["toc", "README.md"],
+        &["toc", "--insert", "README.md"],
         &["render", "-o", "html", "README.md"],
         &["validate"],
         &["lint", "--fix", "docs/"],
@@ -114,6 +114,7 @@ fn global_flags_are_accepted_anywhere() {
             "json",
             "-vv",
             "toc",
+            "--insert",
             "README.md",
         ])
         .assert()

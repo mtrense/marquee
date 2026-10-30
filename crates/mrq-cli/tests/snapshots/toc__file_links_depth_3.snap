@@ -1,0 +1,11 @@
+---
+source: crates/mrq-cli/tests/toc.rs
+expression: out
+---
+- [Example](#example)
+  - [Install](#install)
+    - [From source](#from-source)
+    - [With cargo](#with-cargo)
+  - [Usage](#usage)
+    - [Examples](#examples)
+  - [Usage](#usage-1)

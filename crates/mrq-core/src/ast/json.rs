@@ -738,6 +738,32 @@ pub fn project_node(doc: &Document, id: NodeId) -> JsonNode {
     .node(id)
 }
 
+/// The [`Position`] of `span` in `source`, as in the projection. Offsets are clamped into
+/// the text and back to a char boundary (spans of parsed trees always are; hand-built
+/// trees may not be).
+pub fn position(source: &SourceFile, span: Span) -> Position {
+    Position {
+        start: point(source, span.start),
+        end: point(source, span.end),
+    }
+}
+
+fn point(source: &SourceFile, offset: usize) -> Point {
+    let text = source.text();
+    let mut offset = offset.min(text.len());
+    while !text.is_char_boundary(offset) {
+        offset -= 1;
+    }
+    let position = source
+        .offset_to_position(offset, PositionEncoding::Utf16)
+        .expect("a char boundary within the text");
+    Point {
+        line: position.line + 1,
+        column: position.col + 1,
+        offset,
+    }
+}
+
 /// Projects nodes of `ast`, whose spans index `source`.
 struct Projector<'a> {
     ast: &'a Ast,
@@ -759,29 +785,7 @@ impl Projector<'_> {
     }
 
     fn position(&self, span: Span) -> Position {
-        Position {
-            start: self.point(span.start),
-            end: self.point(span.end),
-        }
-    }
-
-    /// The point at `offset`, clamped into the text and back to a char boundary (spans of
-    /// parsed trees always are; hand-built trees may not be).
-    fn point(&self, offset: usize) -> Point {
-        let text = self.source.text();
-        let mut offset = offset.min(text.len());
-        while !text.is_char_boundary(offset) {
-            offset -= 1;
-        }
-        let position = self
-            .source
-            .offset_to_position(offset, PositionEncoding::Utf16)
-            .expect("a char boundary within the text");
-        Point {
-            line: position.line + 1,
-            column: position.col + 1,
-            offset,
-        }
+        position(self.source, span)
     }
 
     #[allow(clippy::too_many_lines)] // one arm per node kind

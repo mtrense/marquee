@@ -1,0 +1,14 @@
+---
+source: crates/mrq-cli/tests/toc.rs
+expression: out
+---
+==> docs/empty.md <==
+
+==> docs/guide/notes.md <==
+My Notes
+  Open Questions
+
+==> docs/intro.md <==
+Introduction
+  Why mrq?
+  Goals
