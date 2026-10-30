@@ -214,7 +214,7 @@ flowchart LR
 
 ### M4: Validate
 
-- [ ] **M4.1 Link resolution.** Classify every link and image destination (internal file, anchor, file plus anchor, external, mailto, wikilink, reference). Resolve relative paths, URL-decode, and treat a leading `/` as the workspace root. **AC:** unit tests for each class.
+- [x] **M4.1 Link resolution.** Classify every link and image destination (internal file, anchor, file plus anchor, external, mailto, wikilink, reference). Resolve relative paths, URL-decode, and treat a leading `/` as the workspace root. **AC:** unit tests for each class.
 - [ ] **M4.2 Internal checks.** Missing files and assets, missing anchors (same file and cross-file, through the flavor slugger), duplicate anchors, undefined and unused footnotes, undefined and unused reference definitions, wikilink targets (obsidian, resolved by vault-wide filename lookup). **AC:** diagnostic codes documented, and a fixture repository with expected diagnostics snapshot.
 - [ ] **M4.3 Frontmatter schema.** Glob-to-schema mapping from config. Validate with jsonschema (drafts 7 and 2020-12), and map instance paths to spans in the frontmatter. Enums, types and required keys are reported with the expected values. **AC:** error spans point at the offending key or value.
 - [ ] **M4.4 Directive checks.** Missing include targets, cycles (with the chain in labels), stale `mrq:include`/`mrq:toc` regions (reusing M7 and M2.2). **AC:** fixtures. Added after M7 if needed, otherwise stubbed behind a TODO diagnostic.

@@ -262,18 +262,9 @@ fn wikilink_text(link: &WikiLink) -> String {
     }
 }
 
-/// Whether a destination has a URL scheme (RFC 3986: a letter, then letters, digits,
-/// `+`, `-` or `.`, then `:`) or is protocol-relative (`//host/…`).
+/// Whether a destination has a URL scheme or is protocol-relative (`//host/…`).
 fn is_external(url: &str) -> bool {
-    if url.starts_with("//") {
-        return true;
-    }
-    let Some((scheme, _)) = url.split_once(':') else {
-        return false;
-    };
-    let mut chars = scheme.chars();
-    chars.next().is_some_and(|c| c.is_ascii_alphabetic())
-        && chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
+    url.starts_with("//") || crate::validate::scheme(url).is_some()
 }
 
 /// Whether an embed target names an image file, by extension.

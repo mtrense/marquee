@@ -16,6 +16,7 @@ pub mod query;
 pub mod source;
 pub mod stats;
 pub mod toc;
+pub mod validate;
 
 pub use document::{Document, Workspace};
 
