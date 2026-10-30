@@ -33,6 +33,8 @@ exceptions = [
   { allow = ["BSD-2-Clause"], crate = "comrak" },
   # "(MIT OR Apache-2.0) AND Unicode-DFS-2016" (Unicode data tables); pulled in by comrak.
   { allow = ["Unicode-DFS-2016"], crate = "finl_unicode" },
+  # hashbrown's default hasher; pulled in by indexmap via toml_edit (TOML frontmatter).
+  { allow = ["Zlib"], crate = "foldhash" },
 ]
 
 [licenses.private]

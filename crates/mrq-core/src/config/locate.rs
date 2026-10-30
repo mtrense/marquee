@@ -1,13 +1,12 @@
 //! Source positions of keys in a YAML document, by key path.
 //!
 //! figment keeps values and their provider but not line numbers, so each config file
-//! is also scanned with the span-aware event parser behind serde-saphyr
-//! (`granit-parser`) to map key paths to positions.
+//! is also indexed with the span-aware YAML index shared with frontmatter
+//! ([`crate::frontmatter::yaml::index`]) to map key paths to positions.
 
 use std::collections::HashMap;
 
-use serde_saphyr::granit_parser::{Event, Parser, Span};
-
+use crate::frontmatter::yaml;
 use crate::source::ByteRange;
 
 /// A position in a YAML text: 1-based line and column (in characters), and the byte range
@@ -20,13 +19,13 @@ pub(crate) struct Pos {
 }
 
 impl Pos {
-    pub(crate) fn from_span(span: &Span) -> Self {
-        let start = span.start.byte_offset().unwrap_or(0);
-        let end = span.end.byte_offset().unwrap_or(start).max(start);
+    fn at(text: &str, range: ByteRange) -> Self {
+        let before = &text[..range.start];
+        let line_start = before.rfind('\n').map_or(0, |newline| newline + 1);
         Self {
-            line: span.start.line(),
-            column: span.start.col() + 1,
-            range: ByteRange::new(start, end),
+            line: before.matches('\n').count() + 1,
+            column: before[line_start..].chars().count() + 1,
+            range,
         }
     }
 }
@@ -38,99 +37,15 @@ pub(crate) struct KeyIndex {
     entries: HashMap<Vec<String>, Pos>,
 }
 
-enum Frame {
-    Map { key: Option<String> },
-    Seq { next: usize },
-}
-
 impl KeyIndex {
     /// Indexes `text`. Positions are collected up to the first syntax error.
     pub(crate) fn build(text: &str) -> Self {
-        let mut index = Self::default();
-        let mut stack: Vec<Frame> = Vec::new();
-        let mut path: Vec<String> = Vec::new();
-        // Depth inside a complex (non-scalar) mapping key, which is not indexed.
-        let mut skip = 0usize;
-
-        for event in Parser::new_from_str(text) {
-            let Ok((event, span)) = event else { break };
-            let opens = matches!(event, Event::MappingStart(..) | Event::SequenceStart(..));
-            let closes = matches!(event, Event::MappingEnd | Event::SequenceEnd);
-            let is_node = opens || matches!(event, Event::Scalar(..) | Event::Alias(_));
-
-            if skip > 0 {
-                if opens {
-                    skip += 1;
-                } else if closes {
-                    skip -= 1;
-                }
-                if skip == 0 {
-                    // The complex key ended; its value follows.
-                    if let Some(Frame::Map { key }) = stack.last_mut() {
-                        *key = Some(String::new());
-                        path.push(String::new());
-                    }
-                }
-                continue;
-            }
-
-            if closes {
-                stack.pop();
-                Self::value_done(&mut stack, &mut path);
-                continue;
-            }
-            if !is_node {
-                continue;
-            }
-
-            match stack.last_mut() {
-                Some(Frame::Map { key }) if key.is_none() => {
-                    if let Event::Scalar(value, ..) = &event {
-                        *key = Some(value.to_string());
-                        path.push(value.to_string());
-                        index.entries.insert(path.clone(), Pos::from_span(&span));
-                    } else if opens {
-                        skip = 1;
-                    } else {
-                        *key = Some(String::new());
-                        path.push(String::new());
-                    }
-                    continue;
-                }
-                Some(Frame::Seq { next }) => {
-                    path.push(next.to_string());
-                    *next += 1;
-                    index.entries.insert(path.clone(), Pos::from_span(&span));
-                }
-                _ => {}
-            }
-
-            if opens {
-                stack.push(if matches!(event, Event::MappingStart(..)) {
-                    Frame::Map { key: None }
-                } else {
-                    Frame::Seq { next: 0 }
-                });
-            } else {
-                Self::value_done(&mut stack, &mut path);
-            }
-        }
-        index
-    }
-
-    /// A value finished in the innermost container: drop its path segment.
-    fn value_done(stack: &mut [Frame], path: &mut Vec<String>) {
-        match stack.last_mut() {
-            Some(Frame::Map { key }) => {
-                if key.take().is_some() {
-                    path.pop();
-                }
-            }
-            Some(Frame::Seq { .. }) => {
-                path.pop();
-            }
-            None => {}
-        }
+        let entries = yaml::index(text)
+            .into_iter()
+            .filter(|(path, _)| !path.is_empty())
+            .map(|(path, entry)| (path, Pos::at(text, entry.key.unwrap_or(entry.value))))
+            .collect();
+        Self { entries }
     }
 
     /// Position of the key or item at `path`.

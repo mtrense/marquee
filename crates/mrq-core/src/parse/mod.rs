@@ -59,8 +59,8 @@
 //!   the label. Their source lies in the gaps between blocks or before a paragraph's first
 //!   inline; a pass that needs them (validate, M4.2) can scan those gaps.
 //! - [`FrontMatter`](crate::ast::NodeKind::FrontMatter): frontmatter is split off before
-//!   parsing. Parse the body on its own and move its nodes into the document's tree with
-//!   [`Ast::import`], offsetting their spans.
+//!   parsing; [`frontmatter::parse_document`](crate::frontmatter::parse_document) parses
+//!   the body on its own and assembles the tree with a frontmatter node.
 //! - Flavor syntax (wikilinks, admonitions, tags, directives, heading attributes, …) is
 //!   recognized by flavor passes over the converted tree.
 
