@@ -19,11 +19,14 @@ thiserror.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 miette = { workspace = true, optional = true }
+ignore.workspace = true
+globset.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true
 insta.workspace = true
 jsonschema.workspace = true
+tempfile.workspace = true
 
 [lints]
 workspace = true
