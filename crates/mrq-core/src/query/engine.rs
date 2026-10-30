@@ -1,5 +1,7 @@
 //! Evaluation of a [`QueryPlan`] over a document: the [`Match`]es.
 
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 use super::plan::{Attribute, Predicate, QueryPlan, Selector};
@@ -95,7 +97,7 @@ impl QueryPlan {
 }
 
 /// An intermediate result: a node id or an index into the section index.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Item {
     Node(NodeId),
     Section(usize),
@@ -106,6 +108,8 @@ struct Engine<'a> {
     sections: SectionIndex<'a>,
     /// Per node index: its position in document (pre-)order.
     order: Vec<usize>,
+    /// The whole-document results of the plans of [`Predicate::Is`], by address.
+    members: RefCell<HashMap<*const QueryPlan, HashSet<Item>>>,
 }
 
 impl<'a> Engine<'a> {
@@ -118,6 +122,7 @@ impl<'a> Engine<'a> {
             ast,
             sections: SectionIndex::new(ast),
             order,
+            members: RefCell::default(),
         }
     }
 
@@ -158,6 +163,7 @@ impl<'a> Engine<'a> {
                 .iter()
                 .flat_map(|plan| self.eval(plan, context, strict))
                 .collect(),
+            QueryPlan::Scope => vec![context],
         };
         items.sort_by_key(|&item| self.order_key(item));
         items.dedup();
@@ -270,7 +276,14 @@ impl<'a> Engine<'a> {
                 matches!(list, Some(NodeKind::List(list))
                     if matches!(list.kind, ListKind::Ordered { .. }) == *ordered)
             }
+            Predicate::Heading(matcher) => match item {
+                Item::Section(_) => matcher.matches(&self.ast.text(node)),
+                Item::Node(id) => {
+                    matches!(kind, NodeKind::Heading(_)) && matcher.matches(&self.ast.text(id))
+                }
+            },
             Predicate::Has(plan) => !self.eval(plan, item, true).is_empty(),
+            Predicate::Is(plan) => self.is_member(plan, item),
             Predicate::Not(selector) => !self.selects(selector, item),
             Predicate::NthChild { a, b } => self
                 .ast
@@ -278,6 +291,25 @@ impl<'a> Engine<'a> {
                 .and_then(|index| i64::try_from(index + 1).ok())
                 .is_some_and(|n| nth(*a, *b, n)),
         }
+    }
+}
+
+impl Engine<'_> {
+    /// Whether `item` is a result of `plan` over the whole document; the results are
+    /// computed once per plan.
+    fn is_member(&self, plan: &QueryPlan, item: Item) -> bool {
+        let key: *const QueryPlan = plan;
+        if let Some(members) = self.members.borrow().get(&key) {
+            return members.contains(&item);
+        }
+        // Not holding the borrow: the plan may contain `Is` predicates of its own.
+        let members: HashSet<Item> = self
+            .eval(plan, Item::Node(self.ast.root()), false)
+            .into_iter()
+            .collect();
+        let found = members.contains(&item);
+        self.members.borrow_mut().insert(key, members);
+        found
     }
 }
 

@@ -308,7 +308,7 @@ impl Document {
     /// # Errors
     ///
     /// [`QueryError::NotImplemented`] for a query without a [plan](Query::plan), i.e.
-    /// one written in a syntax whose front-end does not exist yet (CSS, jq).
+    /// one written in a syntax whose front-end does not exist yet (jq).
     pub fn select(&self, query: &Query) -> Result<Vec<Match<'_>>, QueryError> {
         query
             .plan()

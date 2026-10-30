@@ -28,9 +28,8 @@
 //! ```
 //!
 //! [`Query`] holds a query in one of the front-end syntaxes, compiled to its plan when it
-//! is created; [`Document::select`](crate::Document::select) evaluates it. Until the CSS
-//! and jq front-ends exist (M3.3–M3.4) those queries fail with
-//! [`QueryError::NotImplemented`].
+//! is created; [`Document::select`](crate::Document::select) evaluates it. Until the jq
+//! front-end exists (M3.4) jq queries fail with [`QueryError::NotImplemented`].
 //!
 //! # Selector DSL
 //!
@@ -66,7 +65,44 @@
 //! assert_eq!(err.offset(), 22);
 //! assert_eq!(err.render(), "# Install | [text](url\n                      ^ expected `)`");
 //! ```
+//!
+//! # CSS selectors
+//!
+//! [`Query::css`] parses CSS-style selectors. A section counts as an element whose
+//! children are its heading, its content blocks and its direct subsections; `*` and
+//! attribute-only compounds match nodes, never sections.
+//!
+//! | Selector | Matches |
+//! | --- | --- |
+//! | `section` | [sections](Section) |
+//! | `heading`, `h1`–`h6` | headings (of a level) |
+//! | `p`, `code`, `inline-code`, `link`, `image`, `table`, `blockquote`, `frontmatter`, `hr` | paragraphs, code blocks, inline code, … |
+//! | `list`, `ul`, `ol`, `item`/`li`, `task` | lists (bullet, ordered), list items, task items |
+//! | any [`NodeType`](crate::ast::NodeType) name | that type, e.g. `code_block`, `wiki_link` (`-` or `_`) |
+//! | `*` | any node |
+//! | `[attr]`, `[attr=v]`, `^=`, `$=`, `*=`, `~=` | an [`Attribute`] that exists, equals, starts with, ends with, contains, has the word `v`; ` i` after the value ignores case |
+//! | `[heading=v]` / `[text=v]` | the heading text of a section or heading / the plain text |
+//! | `a b`, `a > b` | `b` inside / a direct child of `a` |
+//! | `a, b` | either |
+//! | `:has(b)`, `:has(> b)` | something matching `b` inside / as a direct child |
+//! | `:not(a, …)`, `:is(a, …)` | not / any of the selectors (combinators allowed) |
+//! | `:nth-child(an+b)`, `odd`, `even`, `:first-child` | by position among the parent's children |
+//!
+//! Values are case-sensitive, bare (`lang=rust`) or quoted (`"…"`, `'…'`):
+//!
+//! ```
+//! use mrq_core::Document;
+//! use mrq_core::query::Query;
+//!
+//! let doc = Document::parse("# Install\n\n```rust\nmain()\n```\n\n# Use\n\n```rust\nrun()\n```\n");
+//! let query = Query::css(r#"section[heading="Install"] code[lang=rust]"#)?;
+//! let found = doc.select(&query)?;
+//! assert_eq!(found.len(), 1);
+//! assert_eq!(found[0].text(), "main()");
+//! # Ok::<(), mrq_core::query::QueryError>(())
+//! ```
 
+mod css;
 mod engine;
 mod error;
 mod plan;
@@ -116,9 +152,19 @@ impl Query {
         })
     }
 
-    /// A CSS-style selector query.
+    /// A CSS-style selector query, compiled to a plan; see the [module
+    /// docs](self#css-selectors) for the syntax.
+    ///
+    /// # Errors
+    ///
+    /// [`QueryError::Syntax`] if `source` does not parse (an unknown type, attribute or
+    /// pseudo-class included).
     pub fn css(source: &str) -> Result<Self, QueryError> {
-        Ok(Self::new(Syntax::Css, source))
+        let plan = css::parse(source)?;
+        Ok(Self {
+            plan: Some(plan),
+            ..Self::new(Syntax::Css, source)
+        })
     }
 
     /// A jq query.

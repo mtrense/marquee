@@ -337,12 +337,19 @@ fn selector_queries_select_nodes() {
 }
 
 #[test]
-fn css_and_jq_queries_are_not_implemented_yet() {
+fn css_queries_select_nodes() {
+    let doc = Document::parse("# Install\n\n```sh\nmake\n```\n");
+    let query = Query::css("section[heading=Install] code[lang=sh]").unwrap();
+    let found = doc.select(&query).unwrap();
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].text(), "make");
+}
+
+#[test]
+fn jq_queries_are_not_implemented_yet() {
     let doc = Document::parse("# Install\n");
-    for query in [Query::css("section").unwrap(), Query::jq(".").unwrap()] {
-        let err = doc.select(&query).unwrap_err();
-        assert!(matches!(err, QueryError::NotImplemented), "{err:?}");
-    }
+    let err = doc.select(&Query::jq(".").unwrap()).unwrap_err();
+    assert!(matches!(err, QueryError::NotImplemented), "{err:?}");
 }
 
 // --- Workspace -------------------------------------------------------------------------

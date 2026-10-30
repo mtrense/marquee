@@ -275,11 +275,11 @@ fn regex(i: &mut &str) -> ModalResult<TextMatcher> {
 
 // --- Helpers -------------------------------------------------------------------------
 
-fn ws<'i>(i: &mut &'i str) -> ModalResult<&'i str> {
+pub(super) fn ws<'i>(i: &mut &'i str) -> ModalResult<&'i str> {
     take_while(0.., char::is_whitespace).parse_next(i)
 }
 
-const fn expected(what: &'static str) -> StrContext {
+pub(super) const fn expected(what: &'static str) -> StrContext {
     StrContext::Expected(StrContextValue::Description(what))
 }
 
@@ -306,7 +306,7 @@ fn attr(attribute: Attribute, m: TextMatcher) -> Option<Predicate> {
 
 /// A one-line message for a winnow error: the regex error that caused it, or what was
 /// expected.
-fn message(err: &ContextError) -> String {
+pub(super) fn message(err: &ContextError) -> String {
     if let Some(cause) = err.cause() {
         return match cause.downcast_ref::<QueryError>() {
             // The regex crate's message is a multi-line report; its last line says

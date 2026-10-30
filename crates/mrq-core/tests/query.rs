@@ -470,6 +470,78 @@ fn filter_applies_predicates_to_sections() {
     assert_eq!(run(&doc, &level_one).len(), 2);
 }
 
+#[test]
+fn scope_is_the_context_so_has_can_look_at_children() {
+    let doc = Document::parse(GUIDE);
+    // At the top, the scope is the document node.
+    assert_eq!(QueryPlan::Scope.evaluate(&doc).len(), 1);
+    assert_eq!(QueryPlan::Scope.evaluate(&doc)[0].span().start, 0);
+    let section_titles = |plan: &QueryPlan| -> Vec<String> {
+        plan.evaluate(&doc)
+            .iter()
+            .map(|m| m.section().unwrap().heading().text())
+            .collect()
+    };
+    let sh = || {
+        QueryPlan::select(
+            Selector::new(NodeType::CodeBlock)
+                .with(Predicate::Attr(Attribute::Lang, TextMatcher::exact("sh"))),
+        )
+    };
+    let has_sh = any_section().filter(Predicate::Has(Box::new(sh())));
+    assert_eq!(
+        section_titles(&has_sh),
+        ["Install", "From source", "Linux", "Usage"]
+    );
+    let has_sh_child = any_section().filter(Predicate::Has(Box::new(QueryPlan::Scope.child(sh()))));
+    assert_eq!(section_titles(&has_sh_child), ["Install", "Linux", "Usage"]);
+}
+
+#[test]
+fn heading_predicate_matches_section_and_heading_text() {
+    let doc = Document::parse(GUIDE);
+    let source = Predicate::Heading(TextMatcher::exact("From source"));
+    let sections = any_section().filter(source.clone());
+    let found = sections.evaluate(&doc);
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].section().unwrap().heading().text(), "From source");
+    let headings = QueryPlan::select(Selector::any().with(source));
+    assert_eq!(run(&doc, &headings), ["## From source"]);
+    let paragraphs = QueryPlan::select(
+        Selector::new(NodeType::Paragraph).with(Predicate::Heading(TextMatcher::Any)),
+    );
+    assert_eq!(
+        run(&doc, &paragraphs),
+        NONE,
+        "only headings have heading text"
+    );
+}
+
+#[test]
+fn is_predicate_tests_membership_in_a_whole_document_plan() {
+    let doc = Document::parse(GUIDE);
+    let in_from_source = QueryPlan::section(TextMatcher::exact("From source"))
+        .descendant(nodes(NodeType::CodeBlock));
+    let outside = QueryPlan::select(Selector::new(NodeType::CodeBlock).with(Predicate::Not(
+        Box::new(Selector::any().with(Predicate::Is(Box::new(in_from_source.clone())))),
+    )));
+    let texts: Vec<String> = outside.evaluate(&doc).iter().map(Match::text).collect();
+    assert_eq!(texts, ["make install", "mrq --help"]);
+    // Membership ignores the context: within `Usage`, the plan still means the whole
+    // document's `From source` code blocks.
+    let inside = QueryPlan::section(TextMatcher::exact("Install")).descendant(QueryPlan::select(
+        Selector::any().with(Predicate::Is(Box::new(in_from_source))),
+    ));
+    let texts: Vec<String> = inside.evaluate(&doc).iter().map(Match::text).collect();
+    assert_eq!(texts, ["fn main() {}", "apt install x"]);
+    // Sections can be members too.
+    let usage = QueryPlan::section(TextMatcher::exact("Usage"));
+    let not_usage = any_section().filter(Predicate::Not(Box::new(
+        Selector::any().with(Predicate::Is(Box::new(usage))),
+    )));
+    assert_eq!(run(&doc, &not_usage).len(), 3);
+}
+
 // --- Matches and Document::select -----------------------------------------------------
 
 #[test]
@@ -501,9 +573,9 @@ fn document_select_evaluates_plan_queries() {
 }
 
 #[test]
-fn text_queries_are_not_compiled_yet() {
+fn jq_queries_are_not_compiled_yet() {
     let doc = Document::parse(GUIDE);
-    let query = Query::css("section").unwrap();
+    let query = Query::jq(".").unwrap();
     assert!(query.plan().is_none());
     assert!(matches!(
         doc.select(&query).unwrap_err(),

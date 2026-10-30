@@ -9,7 +9,7 @@ use crate::source::ByteRange;
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum QueryError {
-    /// The query's front-end does not exist yet (M3.3–M3.4).
+    /// The query's front-end does not exist yet (jq, M3.4).
     #[error("queries are not implemented yet")]
     NotImplemented,
     /// A `/regex/` matcher does not compile.

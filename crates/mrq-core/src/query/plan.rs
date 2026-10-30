@@ -42,6 +42,10 @@ pub enum QueryPlan {
     Pipe(Box<QueryPlan>, Box<QueryPlan>),
     /// The results of every plan (CSS `a, b`).
     Union(Vec<QueryPlan>),
+    /// The context itself (CSS `:scope`), so that [`Has`](Predicate::Has) can look at
+    /// direct children: `Has(Scope.child(x))` is CSS `:has(> x)`. At the top of a plan
+    /// the context is the document node.
+    Scope,
 }
 
 impl QueryPlan {
@@ -142,8 +146,14 @@ pub enum Predicate {
     Task(Option<TaskState>),
     /// An ordered (`true`) or bullet (`false`) list, or an item of one.
     Ordered(bool),
+    /// The heading text of a section, or the text of a heading node, matches (CSS
+    /// `section[heading=…]`); other nodes never match.
+    Heading(TextMatcher),
     /// The plan finds something strictly inside (CSS `:has()`).
     Has(Box<QueryPlan>),
+    /// The node or section is a result of the plan evaluated over the whole document,
+    /// whatever the context (CSS `:is()`, and `:not()` with combinators or sections).
+    Is(Box<QueryPlan>),
     /// The selector does not match (CSS `:not()`). A section never matches a selector
     /// with a type.
     Not(Box<Selector>),
