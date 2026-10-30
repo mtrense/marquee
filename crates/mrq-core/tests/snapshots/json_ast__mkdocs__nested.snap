@@ -1,0 +1,444 @@
+---
+source: crates/mrq-core/tests/json_ast.rs
+expression: text
+---
+{
+  "mrq_ast": 1,
+  "flavor": "mkdocs",
+  "frontmatter": null,
+  "type": "root",
+  "id": 0,
+  "position": {
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 21,
+      "column": 1,
+      "offset": 256
+    }
+  },
+  "children": [
+    {
+      "type": "admonition",
+      "kind": "note",
+      "classes": [],
+      "title": "Outer",
+      "fold": null,
+      "id": 8,
+      "position": {
+        "start": {
+          "line": 1,
+          "column": 1,
+          "offset": 0
+        },
+        "end": {
+          "line": 18,
+          "column": 19,
+          "offset": 245
+        }
+      },
+      "children": [
+        {
+          "type": "paragraph",
+          "id": 9,
+          "position": {
+            "start": {
+              "line": 2,
+              "column": 5,
+              "offset": 21
+            },
+            "end": {
+              "line": 2,
+              "column": 16,
+              "offset": 32
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "Outer text.",
+              "id": 10,
+              "position": {
+                "start": {
+                  "line": 2,
+                  "column": 5,
+                  "offset": 21
+                },
+                "end": {
+                  "line": 2,
+                  "column": 16,
+                  "offset": 32
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "admonition",
+          "kind": "warning",
+          "classes": [],
+          "title": "Inner",
+          "fold": null,
+          "id": 11,
+          "position": {
+            "start": {
+              "line": 4,
+              "column": 5,
+              "offset": 38
+            },
+            "end": {
+              "line": 12,
+              "column": 12,
+              "offset": 169
+            }
+          },
+          "children": [
+            {
+              "type": "paragraph",
+              "id": 12,
+              "position": {
+                "start": {
+                  "line": 5,
+                  "column": 9,
+                  "offset": 66
+                },
+                "end": {
+                  "line": 5,
+                  "column": 32,
+                  "offset": 89
+                }
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Inner text with a list:",
+                  "id": 21,
+                  "position": {
+                    "start": {
+                      "line": 5,
+                      "column": 9,
+                      "offset": 66
+                    },
+                    "end": {
+                      "line": 5,
+                      "column": 32,
+                      "offset": 89
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "list",
+              "ordered": false,
+              "start": null,
+              "spread": false,
+              "marker": "-",
+              "delimiter": null,
+              "id": 13,
+              "position": {
+                "start": {
+                  "line": 7,
+                  "column": 9,
+                  "offset": 99
+                },
+                "end": {
+                  "line": 8,
+                  "column": 14,
+                  "offset": 118
+                }
+              },
+              "children": [
+                {
+                  "type": "listItem",
+                  "checked": null,
+                  "taskMarker": null,
+                  "id": 15,
+                  "position": {
+                    "start": {
+                      "line": 7,
+                      "column": 9,
+                      "offset": 99
+                    },
+                    "end": {
+                      "line": 7,
+                      "column": 14,
+                      "offset": 104
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "id": 19,
+                      "position": {
+                        "start": {
+                          "line": 7,
+                          "column": 11,
+                          "offset": 101
+                        },
+                        "end": {
+                          "line": 7,
+                          "column": 14,
+                          "offset": 104
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "one",
+                          "id": 20,
+                          "position": {
+                            "start": {
+                              "line": 7,
+                              "column": 11,
+                              "offset": 101
+                            },
+                            "end": {
+                              "line": 7,
+                              "column": 14,
+                              "offset": 104
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "listItem",
+                  "checked": null,
+                  "taskMarker": null,
+                  "id": 16,
+                  "position": {
+                    "start": {
+                      "line": 8,
+                      "column": 9,
+                      "offset": 113
+                    },
+                    "end": {
+                      "line": 8,
+                      "column": 14,
+                      "offset": 118
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "paragraph",
+                      "id": 17,
+                      "position": {
+                        "start": {
+                          "line": 8,
+                          "column": 11,
+                          "offset": 115
+                        },
+                        "end": {
+                          "line": 8,
+                          "column": 14,
+                          "offset": 118
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "text",
+                          "value": "two",
+                          "id": 18,
+                          "position": {
+                            "start": {
+                              "line": 8,
+                              "column": 11,
+                              "offset": 115
+                            },
+                            "end": {
+                              "line": 8,
+                              "column": 14,
+                              "offset": 118
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "code",
+              "lang": "python",
+              "meta": null,
+              "fence": {
+                "char": "`",
+                "length": 3
+              },
+              "value": "print(\"hi\")\n",
+              "id": 14,
+              "position": {
+                "start": {
+                  "line": 10,
+                  "column": 9,
+                  "offset": 128
+                },
+                "end": {
+                  "line": 12,
+                  "column": 12,
+                  "offset": 169
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "admonition",
+          "kind": "tip",
+          "classes": [],
+          "title": null,
+          "fold": "closed",
+          "id": 22,
+          "position": {
+            "start": {
+              "line": 14,
+              "column": 5,
+              "offset": 175
+            },
+            "end": {
+              "line": 16,
+              "column": 24,
+              "offset": 225
+            }
+          },
+          "children": [
+            {
+              "type": "admonition",
+              "kind": "danger",
+              "classes": [],
+              "title": null,
+              "fold": null,
+              "id": 23,
+              "position": {
+                "start": {
+                  "line": 15,
+                  "column": 9,
+                  "offset": 191
+                },
+                "end": {
+                  "line": 16,
+                  "column": 24,
+                  "offset": 225
+                }
+              },
+              "children": [
+                {
+                  "type": "paragraph",
+                  "id": 24,
+                  "position": {
+                    "start": {
+                      "line": 16,
+                      "column": 13,
+                      "offset": 214
+                    },
+                    "end": {
+                      "line": 16,
+                      "column": 24,
+                      "offset": 225
+                    }
+                  },
+                  "children": [
+                    {
+                      "type": "text",
+                      "value": "Three deep.",
+                      "id": 25,
+                      "position": {
+                        "start": {
+                          "line": 16,
+                          "column": 13,
+                          "offset": 214
+                        },
+                        "end": {
+                          "line": 16,
+                          "column": 24,
+                          "offset": 225
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "id": 26,
+          "position": {
+            "start": {
+              "line": 18,
+              "column": 5,
+              "offset": 231
+            },
+            "end": {
+              "line": 18,
+              "column": 19,
+              "offset": 245
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "Back in outer.",
+              "id": 27,
+              "position": {
+                "start": {
+                  "line": 18,
+                  "column": 5,
+                  "offset": 231
+                },
+                "end": {
+                  "line": 18,
+                  "column": 19,
+                  "offset": 245
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 3,
+      "position": {
+        "start": {
+          "line": 20,
+          "column": 1,
+          "offset": 247
+        },
+        "end": {
+          "line": 20,
+          "column": 9,
+          "offset": 255
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Outside.",
+          "id": 7,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 1,
+              "offset": 247
+            },
+            "end": {
+              "line": 20,
+              "column": 9,
+              "offset": 255
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

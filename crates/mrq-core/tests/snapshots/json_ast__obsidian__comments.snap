@@ -1,0 +1,454 @@
+---
+source: crates/mrq-core/tests/json_ast.rs
+expression: text
+---
+{
+  "mrq_ast": 1,
+  "flavor": "obsidian",
+  "frontmatter": null,
+  "type": "root",
+  "id": 0,
+  "position": {
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 27,
+      "column": 1,
+      "offset": 380
+    }
+  },
+  "children": [
+    {
+      "type": "paragraph",
+      "id": 1,
+      "position": {
+        "start": {
+          "line": 1,
+          "column": 1,
+          "offset": 0
+        },
+        "end": {
+          "line": 1,
+          "column": 66,
+          "offset": 65
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Inline ",
+          "id": 44,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 1,
+              "offset": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 8,
+              "offset": 7
+            }
+          }
+        },
+        {
+          "type": "comment",
+          "syntax": "percent",
+          "value": "hidden",
+          "id": 42,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 8,
+              "offset": 7
+            },
+            "end": {
+              "line": 1,
+              "column": 18,
+              "offset": 17
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " text and ",
+          "id": 45,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 18,
+              "offset": 17
+            },
+            "end": {
+              "line": 1,
+              "column": 28,
+              "offset": 27
+            }
+          }
+        },
+        {
+          "type": "comment",
+          "syntax": "percent",
+          "value": "across *emphasis* and `code`",
+          "id": 43,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 28,
+              "offset": 27
+            },
+            "end": {
+              "line": 1,
+              "column": 60,
+              "offset": 59
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " here.",
+          "id": 46,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 60,
+              "offset": 59
+            },
+            "end": {
+              "line": 1,
+              "column": 66,
+              "offset": 65
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "comment",
+      "syntax": "percent",
+      "value": "A paragraph that is only a comment",
+      "id": 47,
+      "position": {
+        "start": {
+          "line": 3,
+          "column": 1,
+          "offset": 67
+        },
+        "end": {
+          "line": 3,
+          "column": 39,
+          "offset": 105
+        }
+      }
+    },
+    {
+      "type": "comment",
+      "syntax": "percent",
+      "value": "\nA comment over several lines\nof one paragraph.\n",
+      "id": 48,
+      "position": {
+        "start": {
+          "line": 5,
+          "column": 1,
+          "offset": 107
+        },
+        "end": {
+          "line": 8,
+          "column": 3,
+          "offset": 159
+        }
+      }
+    },
+    {
+      "type": "comment",
+      "syntax": "percent",
+      "value": "\nA comment over blocks.\n\n```\n%% not a closer\n```\n\nStill hidden.\n",
+      "id": 41,
+      "position": {
+        "start": {
+          "line": 10,
+          "column": 1,
+          "offset": 161
+        },
+        "end": {
+          "line": 18,
+          "column": 3,
+          "offset": 229
+        }
+      }
+    },
+    {
+      "type": "paragraph",
+      "id": 7,
+      "position": {
+        "start": {
+          "line": 20,
+          "column": 1,
+          "offset": 231
+        },
+        "end": {
+          "line": 20,
+          "column": 61,
+          "offset": 291
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Visible again, with an ",
+          "id": 31,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 1,
+              "offset": 231
+            },
+            "end": {
+              "line": 20,
+              "column": 24,
+              "offset": 254
+            }
+          }
+        },
+        {
+          "type": "comment",
+          "syntax": "html",
+          "value": " html comment ",
+          "id": 32,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 24,
+              "offset": 254
+            },
+            "end": {
+              "line": 20,
+              "column": 45,
+              "offset": 275
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " and ",
+          "id": 33,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 45,
+              "offset": 275
+            },
+            "end": {
+              "line": 20,
+              "column": 50,
+              "offset": 280
+            }
+          }
+        },
+        {
+          "type": "inlineCode",
+          "value": "%%code%%",
+          "id": 34,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 50,
+              "offset": 280
+            },
+            "end": {
+              "line": 20,
+              "column": 60,
+              "offset": 290
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ".",
+          "id": 35,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 60,
+              "offset": 290
+            },
+            "end": {
+              "line": 20,
+              "column": 61,
+              "offset": 291
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 8,
+      "position": {
+        "start": {
+          "line": 22,
+          "column": 1,
+          "offset": 293
+        },
+        "end": {
+          "line": 22,
+          "column": 29,
+          "offset": 321
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Escaped %%not a comment%%.",
+          "id": 36,
+          "position": {
+            "start": {
+              "line": 22,
+              "column": 1,
+              "offset": 293
+            },
+            "end": {
+              "line": 22,
+              "column": 29,
+              "offset": 321
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 9,
+      "position": {
+        "start": {
+          "line": 24,
+          "column": 1,
+          "offset": 323
+        },
+        "end": {
+          "line": 24,
+          "column": 23,
+          "offset": 345
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "An unclosed %% opener.",
+          "id": 37,
+          "position": {
+            "start": {
+              "line": 24,
+              "column": 1,
+              "offset": 323
+            },
+            "end": {
+              "line": 24,
+              "column": 23,
+              "offset": 345
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "ordered": false,
+      "start": null,
+      "spread": false,
+      "marker": "-",
+      "delimiter": null,
+      "id": 10,
+      "position": {
+        "start": {
+          "line": 26,
+          "column": 1,
+          "offset": 347
+        },
+        "end": {
+          "line": 26,
+          "column": 33,
+          "offset": 379
+        }
+      },
+      "children": [
+        {
+          "type": "listItem",
+          "checked": null,
+          "taskMarker": null,
+          "id": 38,
+          "position": {
+            "start": {
+              "line": 26,
+              "column": 1,
+              "offset": 347
+            },
+            "end": {
+              "line": 26,
+              "column": 33,
+              "offset": 379
+            }
+          },
+          "children": [
+            {
+              "type": "paragraph",
+              "id": 39,
+              "position": {
+                "start": {
+                  "line": 26,
+                  "column": 3,
+                  "offset": 349
+                },
+                "end": {
+                  "line": 26,
+                  "column": 33,
+                  "offset": 379
+                }
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "value": "a list item ",
+                  "id": 50,
+                  "position": {
+                    "start": {
+                      "line": 26,
+                      "column": 3,
+                      "offset": 349
+                    },
+                    "end": {
+                      "line": 26,
+                      "column": 15,
+                      "offset": 361
+                    }
+                  }
+                },
+                {
+                  "type": "comment",
+                  "syntax": "percent",
+                  "value": "with a comment",
+                  "id": 49,
+                  "position": {
+                    "start": {
+                      "line": 26,
+                      "column": 15,
+                      "offset": 361
+                    },
+                    "end": {
+                      "line": 26,
+                      "column": 33,
+                      "offset": 379
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

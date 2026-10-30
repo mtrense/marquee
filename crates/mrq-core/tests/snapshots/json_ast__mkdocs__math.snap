@@ -1,0 +1,342 @@
+---
+source: crates/mrq-core/tests/json_ast.rs
+expression: text
+---
+{
+  "mrq_ast": 1,
+  "flavor": "mkdocs",
+  "frontmatter": null,
+  "type": "root",
+  "id": 0,
+  "position": {
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 14,
+      "column": 1,
+      "offset": 142
+    }
+  },
+  "children": [
+    {
+      "type": "paragraph",
+      "id": 1,
+      "position": {
+        "start": {
+          "line": 1,
+          "column": 1,
+          "offset": 0
+        },
+        "end": {
+          "line": 1,
+          "column": 34,
+          "offset": 33
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Inline ",
+          "id": 6,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 1,
+              "offset": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 8,
+              "offset": 7
+            }
+          }
+        },
+        {
+          "type": "math",
+          "display": false,
+          "value": "a + b",
+          "id": 7,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 8,
+              "offset": 7
+            },
+            "end": {
+              "line": 1,
+              "column": 15,
+              "offset": 14
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " and display ",
+          "id": 8,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 15,
+              "offset": 14
+            },
+            "end": {
+              "line": 1,
+              "column": 28,
+              "offset": 27
+            }
+          }
+        },
+        {
+          "type": "math",
+          "display": true,
+          "value": "c",
+          "id": 9,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 28,
+              "offset": 27
+            },
+            "end": {
+              "line": 1,
+              "column": 33,
+              "offset": 32
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ".",
+          "id": 10,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 33,
+              "offset": 32
+            },
+            "end": {
+              "line": 1,
+              "column": 34,
+              "offset": 33
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 2,
+      "position": {
+        "start": {
+          "line": 3,
+          "column": 1,
+          "offset": 35
+        },
+        "end": {
+          "line": 5,
+          "column": 3,
+          "offset": 49
+        }
+      },
+      "children": [
+        {
+          "type": "math",
+          "display": true,
+          "value": "\nE = mc^2\n",
+          "id": 11,
+          "position": {
+            "start": {
+              "line": 3,
+              "column": 1,
+              "offset": 35
+            },
+            "end": {
+              "line": 5,
+              "column": 3,
+              "offset": 49
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 3,
+      "position": {
+        "start": {
+          "line": 7,
+          "column": 1,
+          "offset": 51
+        },
+        "end": {
+          "line": 7,
+          "column": 33,
+          "offset": 83
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Generic ",
+          "id": 21,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 1,
+              "offset": 51
+            },
+            "end": {
+              "line": 7,
+              "column": 9,
+              "offset": 59
+            }
+          }
+        },
+        {
+          "type": "math",
+          "display": false,
+          "value": "x^2",
+          "id": 19,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 9,
+              "offset": 59
+            },
+            "end": {
+              "line": 7,
+              "column": 16,
+              "offset": 66
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " and ",
+          "id": 22,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 16,
+              "offset": 66
+            },
+            "end": {
+              "line": 7,
+              "column": 21,
+              "offset": 71
+            }
+          }
+        },
+        {
+          "type": "math",
+          "display": true,
+          "value": "y",
+          "id": 20,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 21,
+              "offset": 71
+            },
+            "end": {
+              "line": 7,
+              "column": 26,
+              "offset": 76
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " forms.",
+          "id": 23,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 26,
+              "offset": 76
+            },
+            "end": {
+              "line": 7,
+              "column": 33,
+              "offset": 83
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 4,
+      "position": {
+        "start": {
+          "line": 9,
+          "column": 1,
+          "offset": 85
+        },
+        "end": {
+          "line": 11,
+          "column": 3,
+          "offset": 108
+        }
+      },
+      "children": [
+        {
+          "type": "math",
+          "display": true,
+          "value": "\n\\int_0^1 f(x)\\,dx\n",
+          "id": 24,
+          "position": {
+            "start": {
+              "line": 9,
+              "column": 1,
+              "offset": 85
+            },
+            "end": {
+              "line": 11,
+              "column": 3,
+              "offset": 108
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 5,
+      "position": {
+        "start": {
+          "line": 13,
+          "column": 1,
+          "offset": 110
+        },
+        "end": {
+          "line": 13,
+          "column": 32,
+          "offset": 141
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Escaped \\(not math\\) and $5.",
+          "id": 18,
+          "position": {
+            "start": {
+              "line": 13,
+              "column": 1,
+              "offset": 110
+            },
+            "end": {
+              "line": 13,
+              "column": 32,
+              "offset": 141
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

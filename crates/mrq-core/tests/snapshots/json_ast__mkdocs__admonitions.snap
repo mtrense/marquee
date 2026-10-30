@@ -1,0 +1,744 @@
+---
+source: crates/mrq-core/tests/json_ast.rs
+expression: text
+---
+{
+  "mrq_ast": 1,
+  "flavor": "mkdocs",
+  "frontmatter": null,
+  "type": "root",
+  "id": 0,
+  "position": {
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 33,
+      "column": 1,
+      "offset": 424
+    }
+  },
+  "children": [
+    {
+      "type": "heading",
+      "depth": 1,
+      "setext": false,
+      "attrs": null,
+      "id": 1,
+      "position": {
+        "start": {
+          "line": 1,
+          "column": 1,
+          "offset": 0
+        },
+        "end": {
+          "line": 1,
+          "column": 14,
+          "offset": 13
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Admonitions",
+          "id": 12,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 3,
+              "offset": 2
+            },
+            "end": {
+              "line": 1,
+              "column": 14,
+              "offset": 13
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "admonition",
+      "kind": "note",
+      "classes": [],
+      "title": null,
+      "fold": null,
+      "id": 47,
+      "position": {
+        "start": {
+          "line": 3,
+          "column": 1,
+          "offset": 15
+        },
+        "end": {
+          "line": 4,
+          "column": 34,
+          "offset": 57
+        }
+      },
+      "children": [
+        {
+          "type": "paragraph",
+          "id": 48,
+          "position": {
+            "start": {
+              "line": 4,
+              "column": 5,
+              "offset": 28
+            },
+            "end": {
+              "line": 4,
+              "column": 34,
+              "offset": 57
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "A plain note with ",
+              "id": 49,
+              "position": {
+                "start": {
+                  "line": 4,
+                  "column": 5,
+                  "offset": 28
+                },
+                "end": {
+                  "line": 4,
+                  "column": 23,
+                  "offset": 46
+                }
+              }
+            },
+            {
+              "type": "emphasis",
+              "id": 50,
+              "position": {
+                "start": {
+                  "line": 4,
+                  "column": 23,
+                  "offset": 46
+                },
+                "end": {
+                  "line": 4,
+                  "column": 33,
+                  "offset": 56
+                }
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "value": "emphasis",
+                  "id": 52,
+                  "position": {
+                    "start": {
+                      "line": 4,
+                      "column": 24,
+                      "offset": 47
+                    },
+                    "end": {
+                      "line": 4,
+                      "column": 32,
+                      "offset": 55
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": ".",
+              "id": 51,
+              "position": {
+                "start": {
+                  "line": 4,
+                  "column": 33,
+                  "offset": 56
+                },
+                "end": {
+                  "line": 4,
+                  "column": 34,
+                  "offset": 57
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "admonition",
+      "kind": "warning",
+      "classes": [],
+      "title": "Careful now",
+      "fold": null,
+      "id": 53,
+      "position": {
+        "start": {
+          "line": 6,
+          "column": 1,
+          "offset": 59
+        },
+        "end": {
+          "line": 10,
+          "column": 22,
+          "offset": 142
+        }
+      },
+      "children": [
+        {
+          "type": "paragraph",
+          "id": 54,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 5,
+              "offset": 89
+            },
+            "end": {
+              "line": 8,
+              "column": 15,
+              "offset": 119
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "First paragraph",
+              "id": 55,
+              "position": {
+                "start": {
+                  "line": 7,
+                  "column": 5,
+                  "offset": 89
+                },
+                "end": {
+                  "line": 7,
+                  "column": 20,
+                  "offset": 104
+                }
+              }
+            },
+            {
+              "type": "softBreak",
+              "id": 56,
+              "position": {
+                "start": {
+                  "line": 7,
+                  "column": 20,
+                  "offset": 104
+                },
+                "end": {
+                  "line": 8,
+                  "column": 1,
+                  "offset": 105
+                }
+              }
+            },
+            {
+              "type": "text",
+              "value": "continued.",
+              "id": 57,
+              "position": {
+                "start": {
+                  "line": 8,
+                  "column": 5,
+                  "offset": 109
+                },
+                "end": {
+                  "line": 8,
+                  "column": 15,
+                  "offset": 119
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "id": 58,
+          "position": {
+            "start": {
+              "line": 10,
+              "column": 5,
+              "offset": 125
+            },
+            "end": {
+              "line": 10,
+              "column": 22,
+              "offset": 142
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "Second paragraph.",
+              "id": 59,
+              "position": {
+                "start": {
+                  "line": 10,
+                  "column": 5,
+                  "offset": 125
+                },
+                "end": {
+                  "line": 10,
+                  "column": 22,
+                  "offset": 142
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "admonition",
+      "kind": "tip",
+      "classes": [],
+      "title": "Folded",
+      "fold": "closed",
+      "id": 60,
+      "position": {
+        "start": {
+          "line": 12,
+          "column": 1,
+          "offset": 144
+        },
+        "end": {
+          "line": 13,
+          "column": 23,
+          "offset": 183
+        }
+      },
+      "children": [
+        {
+          "type": "paragraph",
+          "id": 61,
+          "position": {
+            "start": {
+              "line": 13,
+              "column": 5,
+              "offset": 165
+            },
+            "end": {
+              "line": 13,
+              "column": 23,
+              "offset": 183
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "Closed by default.",
+              "id": 62,
+              "position": {
+                "start": {
+                  "line": 13,
+                  "column": 5,
+                  "offset": 165
+                },
+                "end": {
+                  "line": 13,
+                  "column": 23,
+                  "offset": 183
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "admonition",
+      "kind": "info",
+      "classes": [
+        "inline",
+        "end"
+      ],
+      "title": null,
+      "fold": "open",
+      "id": 63,
+      "position": {
+        "start": {
+          "line": 15,
+          "column": 1,
+          "offset": 185
+        },
+        "end": {
+          "line": 16,
+          "column": 30,
+          "offset": 235
+        }
+      },
+      "children": [
+        {
+          "type": "paragraph",
+          "id": 64,
+          "position": {
+            "start": {
+              "line": 16,
+              "column": 5,
+              "offset": 210
+            },
+            "end": {
+              "line": 16,
+              "column": 30,
+              "offset": 235
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "Open, with extra classes.",
+              "id": 65,
+              "position": {
+                "start": {
+                  "line": 16,
+                  "column": 5,
+                  "offset": 210
+                },
+                "end": {
+                  "line": 16,
+                  "column": 30,
+                  "offset": 235
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "admonition",
+      "kind": "danger",
+      "classes": [],
+      "title": "",
+      "fold": null,
+      "id": 66,
+      "position": {
+        "start": {
+          "line": 18,
+          "column": 1,
+          "offset": 237
+        },
+        "end": {
+          "line": 19,
+          "column": 18,
+          "offset": 268
+        }
+      },
+      "children": [
+        {
+          "type": "paragraph",
+          "id": 67,
+          "position": {
+            "start": {
+              "line": 19,
+              "column": 5,
+              "offset": 255
+            },
+            "end": {
+              "line": 19,
+              "column": 18,
+              "offset": 268
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "No title bar.",
+              "id": 68,
+              "position": {
+                "start": {
+                  "line": 19,
+                  "column": 5,
+                  "offset": 255
+                },
+                "end": {
+                  "line": 19,
+                  "column": 18,
+                  "offset": 268
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "admonition",
+      "kind": "abstract",
+      "classes": [],
+      "title": null,
+      "fold": null,
+      "id": 69,
+      "position": {
+        "start": {
+          "line": 21,
+          "column": 1,
+          "offset": 270
+        },
+        "end": {
+          "line": 21,
+          "column": 13,
+          "offset": 282
+        }
+      },
+      "children": []
+    },
+    {
+      "type": "admonition",
+      "kind": "example",
+      "classes": [],
+      "title": "Directly after",
+      "fold": null,
+      "id": 76,
+      "position": {
+        "start": {
+          "line": 22,
+          "column": 1,
+          "offset": 283
+        },
+        "end": {
+          "line": 23,
+          "column": 10,
+          "offset": 321
+        }
+      },
+      "children": [
+        {
+          "type": "paragraph",
+          "id": 77,
+          "position": {
+            "start": {
+              "line": 23,
+              "column": 5,
+              "offset": 316
+            },
+            "end": {
+              "line": 23,
+              "column": 10,
+              "offset": 321
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "Body.",
+              "id": 78,
+              "position": {
+                "start": {
+                  "line": 23,
+                  "column": 5,
+                  "offset": 316
+                },
+                "end": {
+                  "line": 23,
+                  "column": 10,
+                  "offset": 321
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 79,
+      "position": {
+        "start": {
+          "line": 24,
+          "column": 1,
+          "offset": 322
+        },
+        "end": {
+          "line": 24,
+          "column": 15,
+          "offset": 336
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "after the body",
+          "id": 80,
+          "position": {
+            "start": {
+              "line": 24,
+              "column": 1,
+              "offset": 322
+            },
+            "end": {
+              "line": 24,
+              "column": 15,
+              "offset": 336
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "admonition",
+      "kind": "note",
+      "classes": [],
+      "title": null,
+      "fold": null,
+      "id": 81,
+      "position": {
+        "start": {
+          "line": 26,
+          "column": 1,
+          "offset": 338
+        },
+        "end": {
+          "line": 27,
+          "column": 31,
+          "offset": 376
+        }
+      },
+      "children": [
+        {
+          "type": "paragraph",
+          "id": 82,
+          "position": {
+            "start": {
+              "line": 27,
+              "column": 5,
+              "offset": 350
+            },
+            "end": {
+              "line": 27,
+              "column": 31,
+              "offset": 376
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "No space after the marker.",
+              "id": 83,
+              "position": {
+                "start": {
+                  "line": 27,
+                  "column": 5,
+                  "offset": 350
+                },
+                "end": {
+                  "line": 27,
+                  "column": 31,
+                  "offset": 376
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 10,
+      "position": {
+        "start": {
+          "line": 29,
+          "column": 1,
+          "offset": 378
+        },
+        "end": {
+          "line": 30,
+          "column": 16,
+          "offset": 416
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "!!! not a \"valid title",
+          "id": 43,
+          "position": {
+            "start": {
+              "line": 29,
+              "column": 1,
+              "offset": 378
+            },
+            "end": {
+              "line": 29,
+              "column": 23,
+              "offset": 400
+            }
+          }
+        },
+        {
+          "type": "softBreak",
+          "id": 44,
+          "position": {
+            "start": {
+              "line": 29,
+              "column": 23,
+              "offset": 400
+            },
+            "end": {
+              "line": 30,
+              "column": 1,
+              "offset": 401
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": "Stays text.",
+          "id": 45,
+          "position": {
+            "start": {
+              "line": 30,
+              "column": 5,
+              "offset": 405
+            },
+            "end": {
+              "line": 30,
+              "column": 16,
+              "offset": 416
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 11,
+      "position": {
+        "start": {
+          "line": 32,
+          "column": 1,
+          "offset": 418
+        },
+        "end": {
+          "line": 32,
+          "column": 6,
+          "offset": 423
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Text.",
+          "id": 46,
+          "position": {
+            "start": {
+              "line": 32,
+              "column": 1,
+              "offset": 418
+            },
+            "end": {
+              "line": 32,
+              "column": 6,
+              "offset": 423
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1384 @@
+---
+source: crates/mrq-core/tests/json_ast.rs
+expression: text
+---
+{
+  "mrq_ast": 1,
+  "flavor": "obsidian",
+  "frontmatter": {
+    "aliases": [
+      "Links"
+    ]
+  },
+  "type": "root",
+  "id": 0,
+  "position": {
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 25,
+      "column": 1,
+      "offset": 736
+    }
+  },
+  "children": [
+    {
+      "type": "frontmatter",
+      "format": "yaml",
+      "value": "aliases: [Links]\n",
+      "id": 1,
+      "position": {
+        "start": {
+          "line": 1,
+          "column": 1,
+          "offset": 0
+        },
+        "end": {
+          "line": 3,
+          "column": 4,
+          "offset": 24
+        }
+      }
+    },
+    {
+      "type": "heading",
+      "depth": 1,
+      "setext": false,
+      "attrs": null,
+      "id": 2,
+      "position": {
+        "start": {
+          "line": 4,
+          "column": 1,
+          "offset": 25
+        },
+        "end": {
+          "line": 4,
+          "column": 12,
+          "offset": 36
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Wikilinks",
+          "id": 3,
+          "position": {
+            "start": {
+              "line": 4,
+              "column": 3,
+              "offset": 27
+            },
+            "end": {
+              "line": 4,
+              "column": 12,
+              "offset": 36
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 4,
+      "position": {
+        "start": {
+          "line": 6,
+          "column": 1,
+          "offset": 38
+        },
+        "end": {
+          "line": 7,
+          "column": 108,
+          "offset": 241
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Plain ",
+          "id": 51,
+          "position": {
+            "start": {
+              "line": 6,
+              "column": 1,
+              "offset": 38
+            },
+            "end": {
+              "line": 6,
+              "column": 7,
+              "offset": 44
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "Page",
+          "anchor": null,
+          "alias": null,
+          "id": 43,
+          "position": {
+            "start": {
+              "line": 6,
+              "column": 7,
+              "offset": 44
+            },
+            "end": {
+              "line": 6,
+              "column": 15,
+              "offset": 52
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ", with heading ",
+          "id": 52,
+          "position": {
+            "start": {
+              "line": 6,
+              "column": 15,
+              "offset": 52
+            },
+            "end": {
+              "line": 6,
+              "column": 30,
+              "offset": 67
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "Page",
+          "anchor": "Setup",
+          "alias": null,
+          "id": 44,
+          "position": {
+            "start": {
+              "line": 6,
+              "column": 30,
+              "offset": 67
+            },
+            "end": {
+              "line": 6,
+              "column": 44,
+              "offset": 81
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ", alias ",
+          "id": 53,
+          "position": {
+            "start": {
+              "line": 6,
+              "column": 44,
+              "offset": 81
+            },
+            "end": {
+              "line": 6,
+              "column": 52,
+              "offset": 89
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "Page",
+          "anchor": null,
+          "alias": "shown",
+          "id": 45,
+          "position": {
+            "start": {
+              "line": 6,
+              "column": 52,
+              "offset": 89
+            },
+            "end": {
+              "line": 6,
+              "column": 66,
+              "offset": 103
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " and all ",
+          "id": 54,
+          "position": {
+            "start": {
+              "line": 6,
+              "column": 66,
+              "offset": 103
+            },
+            "end": {
+              "line": 6,
+              "column": 75,
+              "offset": 112
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "Page",
+          "anchor": "Setup",
+          "alias": "three",
+          "id": 46,
+          "position": {
+            "start": {
+              "line": 6,
+              "column": 75,
+              "offset": 112
+            },
+            "end": {
+              "line": 6,
+              "column": 95,
+              "offset": 132
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ".",
+          "id": 55,
+          "position": {
+            "start": {
+              "line": 6,
+              "column": 95,
+              "offset": 132
+            },
+            "end": {
+              "line": 6,
+              "column": 96,
+              "offset": 133
+            }
+          }
+        },
+        {
+          "type": "softBreak",
+          "id": 6,
+          "position": {
+            "start": {
+              "line": 6,
+              "column": 96,
+              "offset": 133
+            },
+            "end": {
+              "line": 7,
+              "column": 1,
+              "offset": 134
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": "Same page ",
+          "id": 56,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 1,
+              "offset": 134
+            },
+            "end": {
+              "line": 7,
+              "column": 11,
+              "offset": 144
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "",
+          "anchor": "Intro",
+          "alias": null,
+          "id": 47,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 11,
+              "offset": 144
+            },
+            "end": {
+              "line": 7,
+              "column": 21,
+              "offset": 154
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ", block ",
+          "id": 57,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 21,
+              "offset": 154
+            },
+            "end": {
+              "line": 7,
+              "column": 29,
+              "offset": 162
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "Page",
+          "anchor": "^b1x2",
+          "alias": null,
+          "id": 48,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 29,
+              "offset": 162
+            },
+            "end": {
+              "line": 7,
+              "column": 43,
+              "offset": 176
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ", nested headings ",
+          "id": 58,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 43,
+              "offset": 176
+            },
+            "end": {
+              "line": 7,
+              "column": 61,
+              "offset": 194
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "Page",
+          "anchor": "A#B",
+          "alias": null,
+          "id": 49,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 61,
+              "offset": 194
+            },
+            "end": {
+              "line": 7,
+              "column": 73,
+              "offset": 206
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ", spaced ",
+          "id": 59,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 73,
+              "offset": 206
+            },
+            "end": {
+              "line": 7,
+              "column": 82,
+              "offset": 215
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "Page",
+          "anchor": null,
+          "alias": "spaced alias",
+          "id": 50,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 82,
+              "offset": 215
+            },
+            "end": {
+              "line": 7,
+              "column": 107,
+              "offset": 240
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ".",
+          "id": 60,
+          "position": {
+            "start": {
+              "line": 7,
+              "column": 107,
+              "offset": 240
+            },
+            "end": {
+              "line": 7,
+              "column": 108,
+              "offset": 241
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 8,
+      "position": {
+        "start": {
+          "line": 9,
+          "column": 1,
+          "offset": 243
+        },
+        "end": {
+          "line": 9,
+          "column": 113,
+          "offset": 355
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Embeds ",
+          "id": 65,
+          "position": {
+            "start": {
+              "line": 9,
+              "column": 1,
+              "offset": 243
+            },
+            "end": {
+              "line": 9,
+              "column": 8,
+              "offset": 250
+            }
+          }
+        },
+        {
+          "type": "embed",
+          "target": "diagram.png",
+          "anchor": null,
+          "alias": null,
+          "id": 61,
+          "position": {
+            "start": {
+              "line": 9,
+              "column": 8,
+              "offset": 250
+            },
+            "end": {
+              "line": 9,
+              "column": 24,
+              "offset": 266
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ", sized ",
+          "id": 66,
+          "position": {
+            "start": {
+              "line": 9,
+              "column": 24,
+              "offset": 266
+            },
+            "end": {
+              "line": 9,
+              "column": 32,
+              "offset": 274
+            }
+          }
+        },
+        {
+          "type": "embed",
+          "target": "photo.jpg",
+          "anchor": null,
+          "alias": "100x200",
+          "id": 62,
+          "position": {
+            "start": {
+              "line": 9,
+              "column": 32,
+              "offset": 274
+            },
+            "end": {
+              "line": 9,
+              "column": 54,
+              "offset": 296
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ", a section ",
+          "id": 67,
+          "position": {
+            "start": {
+              "line": 9,
+              "column": 54,
+              "offset": 296
+            },
+            "end": {
+              "line": 9,
+              "column": 66,
+              "offset": 308
+            }
+          }
+        },
+        {
+          "type": "embed",
+          "target": "Note",
+          "anchor": "Heading",
+          "alias": null,
+          "id": 63,
+          "position": {
+            "start": {
+              "line": 9,
+              "column": 66,
+              "offset": 308
+            },
+            "end": {
+              "line": 9,
+              "column": 83,
+              "offset": 325
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " and a block ",
+          "id": 68,
+          "position": {
+            "start": {
+              "line": 9,
+              "column": 83,
+              "offset": 325
+            },
+            "end": {
+              "line": 9,
+              "column": 96,
+              "offset": 338
+            }
+          }
+        },
+        {
+          "type": "embed",
+          "target": "Note",
+          "anchor": "^quote",
+          "alias": null,
+          "id": 64,
+          "position": {
+            "start": {
+              "line": 9,
+              "column": 96,
+              "offset": 338
+            },
+            "end": {
+              "line": 9,
+              "column": 112,
+              "offset": 354
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ".",
+          "id": 69,
+          "position": {
+            "start": {
+              "line": 9,
+              "column": 112,
+              "offset": 354
+            },
+            "end": {
+              "line": 9,
+              "column": 113,
+              "offset": 355
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 10,
+      "position": {
+        "start": {
+          "line": 11,
+          "column": 1,
+          "offset": 357
+        },
+        "end": {
+          "line": 11,
+          "column": 76,
+          "offset": 434
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Across inlines ",
+          "id": 73,
+          "position": {
+            "start": {
+              "line": 11,
+              "column": 1,
+              "offset": 357
+            },
+            "end": {
+              "line": 11,
+              "column": 16,
+              "offset": 372
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "a *b* c",
+          "anchor": null,
+          "alias": null,
+          "id": 70,
+          "position": {
+            "start": {
+              "line": 11,
+              "column": 16,
+              "offset": 372
+            },
+            "end": {
+              "line": 11,
+              "column": 27,
+              "offset": 383
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " and before*",
+          "id": 74,
+          "position": {
+            "start": {
+              "line": 11,
+              "column": 27,
+              "offset": 383
+            },
+            "end": {
+              "line": 11,
+              "column": 39,
+              "offset": 395
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "x",
+          "anchor": null,
+          "alias": null,
+          "id": 71,
+          "position": {
+            "start": {
+              "line": 11,
+              "column": 39,
+              "offset": 395
+            },
+            "end": {
+              "line": 11,
+              "column": 44,
+              "offset": 400
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": "*after, unicode ",
+          "id": 75,
+          "position": {
+            "start": {
+              "line": 11,
+              "column": 44,
+              "offset": 400
+            },
+            "end": {
+              "line": 11,
+              "column": 60,
+              "offset": 416
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "Über straße",
+          "anchor": null,
+          "alias": null,
+          "id": 72,
+          "position": {
+            "start": {
+              "line": 11,
+              "column": 60,
+              "offset": 416
+            },
+            "end": {
+              "line": 11,
+              "column": 75,
+              "offset": 433
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ".",
+          "id": 76,
+          "position": {
+            "start": {
+              "line": 11,
+              "column": 75,
+              "offset": 433
+            },
+            "end": {
+              "line": 11,
+              "column": 76,
+              "offset": 434
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "align": [
+        null,
+        null
+      ],
+      "id": 15,
+      "position": {
+        "start": {
+          "line": 13,
+          "column": 1,
+          "offset": 436
+        },
+        "end": {
+          "line": 15,
+          "column": 50,
+          "offset": 517
+        }
+      },
+      "children": [
+        {
+          "type": "tableRow",
+          "header": true,
+          "id": 16,
+          "position": {
+            "start": {
+              "line": 13,
+              "column": 1,
+              "offset": 436
+            },
+            "end": {
+              "line": 13,
+              "column": 16,
+              "offset": 451
+            }
+          },
+          "children": [
+            {
+              "type": "tableCell",
+              "id": 22,
+              "position": {
+                "start": {
+                  "line": 13,
+                  "column": 2,
+                  "offset": 437
+                },
+                "end": {
+                  "line": 13,
+                  "column": 8,
+                  "offset": 443
+                }
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Link",
+                  "id": 25,
+                  "position": {
+                    "start": {
+                      "line": 13,
+                      "column": 3,
+                      "offset": 438
+                    },
+                    "end": {
+                      "line": 13,
+                      "column": 7,
+                      "offset": 442
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "id": 23,
+              "position": {
+                "start": {
+                  "line": 13,
+                  "column": 9,
+                  "offset": 444
+                },
+                "end": {
+                  "line": 13,
+                  "column": 15,
+                  "offset": 450
+                }
+              },
+              "children": [
+                {
+                  "type": "text",
+                  "value": "Note",
+                  "id": 24,
+                  "position": {
+                    "start": {
+                      "line": 13,
+                      "column": 10,
+                      "offset": 445
+                    },
+                    "end": {
+                      "line": 13,
+                      "column": 14,
+                      "offset": 449
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "tableRow",
+          "header": false,
+          "id": 17,
+          "position": {
+            "start": {
+              "line": 15,
+              "column": 1,
+              "offset": 468
+            },
+            "end": {
+              "line": 15,
+              "column": 50,
+              "offset": 517
+            }
+          },
+          "children": [
+            {
+              "type": "tableCell",
+              "id": 18,
+              "position": {
+                "start": {
+                  "line": 15,
+                  "column": 2,
+                  "offset": 469
+                },
+                "end": {
+                  "line": 15,
+                  "column": 30,
+                  "offset": 497
+                }
+              },
+              "children": [
+                {
+                  "type": "wikiLink",
+                  "target": "Page",
+                  "anchor": null,
+                  "alias": "alias in a table",
+                  "id": 77,
+                  "position": {
+                    "start": {
+                      "line": 15,
+                      "column": 3,
+                      "offset": 470
+                    },
+                    "end": {
+                      "line": 15,
+                      "column": 29,
+                      "offset": 496
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "tableCell",
+              "id": 19,
+              "position": {
+                "start": {
+                  "line": 15,
+                  "column": 31,
+                  "offset": 498
+                },
+                "end": {
+                  "line": 15,
+                  "column": 49,
+                  "offset": 516
+                }
+              },
+              "children": [
+                {
+                  "type": "embed",
+                  "target": "img.png",
+                  "anchor": null,
+                  "alias": "50",
+                  "id": 78,
+                  "position": {
+                    "start": {
+                      "line": 15,
+                      "column": 32,
+                      "offset": 499
+                    },
+                    "end": {
+                      "line": 15,
+                      "column": 48,
+                      "offset": 515
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 26,
+      "position": {
+        "start": {
+          "line": 17,
+          "column": 1,
+          "offset": 519
+        },
+        "end": {
+          "line": 18,
+          "column": 66,
+          "offset": 634
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Not links: ",
+          "id": 27,
+          "position": {
+            "start": {
+              "line": 17,
+              "column": 1,
+              "offset": 519
+            },
+            "end": {
+              "line": 17,
+              "column": 12,
+              "offset": 530
+            }
+          }
+        },
+        {
+          "type": "inlineCode",
+          "value": "[[code]]",
+          "id": 28,
+          "position": {
+            "start": {
+              "line": 17,
+              "column": 12,
+              "offset": 530
+            },
+            "end": {
+              "line": 17,
+              "column": 22,
+              "offset": 540
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ", [[escaped]], [[]], [[open",
+          "id": 29,
+          "position": {
+            "start": {
+              "line": 17,
+              "column": 22,
+              "offset": 540
+            },
+            "end": {
+              "line": 17,
+              "column": 50,
+              "offset": 568
+            }
+          }
+        },
+        {
+          "type": "softBreak",
+          "id": 30,
+          "position": {
+            "start": {
+              "line": 17,
+              "column": 50,
+              "offset": 568
+            },
+            "end": {
+              "line": 18,
+              "column": 1,
+              "offset": 569
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": "next line]], ",
+          "id": 31,
+          "position": {
+            "start": {
+              "line": 18,
+              "column": 1,
+              "offset": 569
+            },
+            "end": {
+              "line": 18,
+              "column": 14,
+              "offset": 582
+            }
+          }
+        },
+        {
+          "type": "link",
+          "url": "Page.md",
+          "title": "[[title]]",
+          "form": "inline",
+          "label": null,
+          "referenceType": null,
+          "id": 32,
+          "position": {
+            "start": {
+              "line": 18,
+              "column": 14,
+              "offset": 582
+            },
+            "end": {
+              "line": 18,
+              "column": 41,
+              "offset": 609
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "text",
+              "id": 36,
+              "position": {
+                "start": {
+                  "line": 18,
+                  "column": 15,
+                  "offset": 583
+                },
+                "end": {
+                  "line": 18,
+                  "column": 19,
+                  "offset": 587
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": ", [",
+          "id": 80,
+          "position": {
+            "start": {
+              "line": 18,
+              "column": 41,
+              "offset": 609
+            },
+            "end": {
+              "line": 18,
+              "column": 44,
+              "offset": 612
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "x",
+          "anchor": null,
+          "alias": null,
+          "id": 79,
+          "position": {
+            "start": {
+              "line": 18,
+              "column": 44,
+              "offset": 612
+            },
+            "end": {
+              "line": 18,
+              "column": 49,
+              "offset": 617
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": "] and ",
+          "id": 81,
+          "position": {
+            "start": {
+              "line": 18,
+              "column": 49,
+              "offset": 617
+            },
+            "end": {
+              "line": 18,
+              "column": 55,
+              "offset": 623
+            }
+          }
+        },
+        {
+          "type": "math",
+          "display": false,
+          "value": "[[math]]",
+          "id": 34,
+          "position": {
+            "start": {
+              "line": 18,
+              "column": 55,
+              "offset": 623
+            },
+            "end": {
+              "line": 18,
+              "column": 65,
+              "offset": 633
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ".",
+          "id": 35,
+          "position": {
+            "start": {
+              "line": 18,
+              "column": 65,
+              "offset": 633
+            },
+            "end": {
+              "line": 18,
+              "column": 66,
+              "offset": 634
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "id": 37,
+      "position": {
+        "start": {
+          "line": 20,
+          "column": 1,
+          "offset": 636
+        },
+        "end": {
+          "line": 20,
+          "column": 71,
+          "offset": 706
+        }
+      },
+      "children": [
+        {
+          "type": "text",
+          "value": "Nested opener [[a ",
+          "id": 84,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 1,
+              "offset": 636
+            },
+            "end": {
+              "line": 20,
+              "column": 19,
+              "offset": 654
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "b",
+          "anchor": null,
+          "alias": null,
+          "id": 82,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 19,
+              "offset": 654
+            },
+            "end": {
+              "line": 20,
+              "column": 24,
+              "offset": 659
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " picks the inner one; ",
+          "id": 85,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 24,
+              "offset": 659
+            },
+            "end": {
+              "line": 20,
+              "column": 46,
+              "offset": 681
+            }
+          }
+        },
+        {
+          "type": "link",
+          "url": "u",
+          "title": null,
+          "form": "inline",
+          "label": null,
+          "referenceType": null,
+          "id": 39,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 46,
+              "offset": 681
+            },
+            "end": {
+              "line": 20,
+              "column": 60,
+              "offset": 695
+            }
+          },
+          "children": [
+            {
+              "type": "text",
+              "value": "real link",
+              "id": 41,
+              "position": {
+                "start": {
+                  "line": 20,
+                  "column": 47,
+                  "offset": 682
+                },
+                "end": {
+                  "line": 20,
+                  "column": 56,
+                  "offset": 691
+                }
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": " ",
+          "id": 86,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 60,
+              "offset": 695
+            },
+            "end": {
+              "line": 20,
+              "column": 61,
+              "offset": 696
+            }
+          }
+        },
+        {
+          "type": "wikiLink",
+          "target": "after",
+          "anchor": null,
+          "alias": null,
+          "id": 83,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 61,
+              "offset": 696
+            },
+            "end": {
+              "line": 20,
+              "column": 70,
+              "offset": 705
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": ".",
+          "id": 87,
+          "position": {
+            "start": {
+              "line": 20,
+              "column": 70,
+              "offset": 705
+            },
+            "end": {
+              "line": 20,
+              "column": 71,
+              "offset": 706
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "code",
+      "lang": null,
+      "meta": null,
+      "fence": {
+        "char": "`",
+        "length": 3
+      },
+      "value": "[[in a code block]]\n",
+      "id": 42,
+      "position": {
+        "start": {
+          "line": 22,
+          "column": 1,
+          "offset": 708
+        },
+        "end": {
+          "line": 24,
+          "column": 4,
+          "offset": 735
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,2074 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "mrq AST (JSON projection, version 1)",
+  "description": "The mdast-like JSON projection of a Markdown document parsed by mrq.",
+  "type": "object",
+  "properties": {
+    "children": {
+      "description": "Child nodes; present (possibly empty) on parent types, absent on leaves.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/JsonNode"
+      }
+    },
+    "flavor": {
+      "description": "Name of the flavor the document was parsed with, e.g. `gfm`.",
+      "type": "string"
+    },
+    "frontmatter": {
+      "description": "The parsed frontmatter mapping; null without frontmatter or when it is malformed.",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "id": {
+      "description": "Identifier of the node, unique within the document; not stable across mrq versions.",
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0
+    },
+    "mrq_ast": {
+      "description": "Format version; always 1 for this schema.",
+      "type": "integer",
+      "format": "uint32",
+      "const": 1,
+      "minimum": 0
+    },
+    "position": {
+      "description": "Where the node is in the source.",
+      "$ref": "#/$defs/Position"
+    }
+  },
+  "oneOf": [
+    {
+      "description": "The document root.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "root"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "YAML or TOML frontmatter block.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "frontmatter"
+        }
+      },
+      "$ref": "#/$defs/Frontmatter",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Paragraph; children are inlines.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "paragraph"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "ATX or setext heading; children are inlines.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "heading"
+        }
+      },
+      "$ref": "#/$defs/Heading",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`---`, `***` or `___`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "thematicBreak"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Block quote; children are blocks.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "blockquote"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Bullet or ordered list; children are `listItem`s.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "list"
+        }
+      },
+      "$ref": "#/$defs/List",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "List item, possibly a task; children are blocks.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "listItem"
+        }
+      },
+      "$ref": "#/$defs/ListItem",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Fenced or indented code block.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "code"
+        }
+      },
+      "$ref": "#/$defs/Code",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Raw HTML block.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "html"
+        }
+      },
+      "$ref": "#/$defs/Literal",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "GFM table; children are `tableRow`s, the header row first.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "table"
+        }
+      },
+      "$ref": "#/$defs/Table",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Table row; children are `tableCell`s.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tableRow"
+        }
+      },
+      "$ref": "#/$defs/TableRow",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Table cell; children are inlines.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tableCell"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`[^label]: …`; children are blocks.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "footnoteDefinition"
+        }
+      },
+      "$ref": "#/$defs/Label",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Link reference definition `[label]: url \"title\"`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "definition"
+        }
+      },
+      "$ref": "#/$defs/Definition",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Definition list; children are `definitionItem`s.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "definitionList"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "A term with its details; children are a `definitionTerm` and `definitionDetails`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "definitionItem"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Defined term; children are blocks.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "definitionTerm"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`: …` details; children are blocks.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "definitionDetails"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "mkdocs admonition `!!! kind \"title\"`; children are blocks.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "admonition"
+        }
+      },
+      "$ref": "#/$defs/Admonition",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "GFM alert or Obsidian callout `> [!kind]± title`; children are blocks.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "callout"
+        }
+      },
+      "$ref": "#/$defs/Callout",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Abbreviation definition `*[abbr]: expansion`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "abbreviationDefinition"
+        }
+      },
+      "$ref": "#/$defs/AbbreviationDefinition",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`<!-- mrq:include … -->`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "includeDirective"
+        }
+      },
+      "$ref": "#/$defs/Directive",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`<!-- mrq:toc … -->`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tocDirective"
+        }
+      },
+      "$ref": "#/$defs/Directive",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`<!-- mrq:end -->`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "directiveEnd"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Literal text.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "text"
+        }
+      },
+      "$ref": "#/$defs/Literal",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "A line ending inside a paragraph that is not a hard break.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "softBreak"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Hard line break.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "break"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Code span.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "inlineCode"
+        }
+      },
+      "$ref": "#/$defs/Literal",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`*…*`; children are inlines.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "emphasis"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`**…**`; children are inlines.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "strong"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`~~…~~`; children are inlines.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "delete"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`==…==`; children are inlines.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "highlight"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`^…^`; children are inlines.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "superscript"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`~…~`; children are inlines.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "subscript"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Link; children are the link text.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "link"
+        }
+      },
+      "$ref": "#/$defs/Link",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Image; children are the alt text.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "image"
+        }
+      },
+      "$ref": "#/$defs/Image",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Raw inline HTML.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "inlineHtml"
+        }
+      },
+      "$ref": "#/$defs/Literal",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`[^label]`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "footnoteReference"
+        }
+      },
+      "$ref": "#/$defs/Label",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Obsidian `[[target#anchor|alias]]`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "wikiLink"
+        }
+      },
+      "$ref": "#/$defs/WikiLink",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Obsidian `![[target#anchor|alias]]`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "embed"
+        }
+      },
+      "$ref": "#/$defs/WikiLink",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "Obsidian `#tag`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "tag"
+        }
+      },
+      "$ref": "#/$defs/Tag",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`$…$` or `$$…$$`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "math"
+        }
+      },
+      "$ref": "#/$defs/Math",
+      "required": [
+        "type"
+      ]
+    },
+    {
+      "description": "`<!-- … -->` or Obsidian `%%…%%`.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "comment"
+        }
+      },
+      "$ref": "#/$defs/Comment",
+      "required": [
+        "type"
+      ]
+    }
+  ],
+  "required": [
+    "flavor",
+    "frontmatter",
+    "id",
+    "mrq_ast",
+    "position"
+  ],
+  "$defs": {
+    "AbbreviationDefinition": {
+      "description": "Fields of an `abbreviationDefinition` node.",
+      "type": "object",
+      "properties": {
+        "abbr": {
+          "description": "The abbreviation, e.g. `HTML`.",
+          "type": "string"
+        },
+        "expansion": {
+          "description": "What it stands for.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "abbr",
+        "expansion"
+      ]
+    },
+    "Admonition": {
+      "description": "Fields of an `admonition` node.",
+      "type": "object",
+      "properties": {
+        "classes": {
+          "description": "Extra CSS classes after the kind.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fold": {
+          "description": "null unless collapsible (`???`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fold"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "description": "The type keyword as written, e.g. `note`.",
+          "type": "string"
+        },
+        "title": {
+          "description": "The quoted title; an empty string means an explicitly empty title.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "classes",
+        "fold",
+        "kind",
+        "title"
+      ]
+    },
+    "Align": {
+      "description": "Column alignment of a table.",
+      "oneOf": [
+        {
+          "description": "`:--`",
+          "type": "string",
+          "const": "left"
+        },
+        {
+          "description": "`:-:`",
+          "type": "string",
+          "const": "center"
+        },
+        {
+          "description": "`--:`",
+          "type": "string",
+          "const": "right"
+        }
+      ]
+    },
+    "Attribute": {
+      "description": "A `name=value` attribute.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name.",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value, unquoted.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ]
+    },
+    "Callout": {
+      "description": "Fields of a `callout` node.",
+      "type": "object",
+      "properties": {
+        "fold": {
+          "description": "null unless foldable (`+` / `-`).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fold"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "description": "The type keyword as written, e.g. `NOTE` or `tip`.",
+          "type": "string"
+        },
+        "title": {
+          "description": "Title text after the marker (Obsidian only).",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "fold",
+        "kind",
+        "title"
+      ]
+    },
+    "Code": {
+      "description": "Fields of a `code` node.",
+      "type": "object",
+      "properties": {
+        "fence": {
+          "description": "The opening fence; null for an indented code block.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lang": {
+          "description": "The first word of the info string, if any.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "meta": {
+          "description": "The rest of the info string after the language, if any.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "value": {
+          "description": "The code, including its final newline.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fence",
+        "lang",
+        "meta",
+        "value"
+      ]
+    },
+    "Comment": {
+      "description": "Fields of a `comment` node.",
+      "type": "object",
+      "properties": {
+        "syntax": {
+          "description": "HTML or Obsidian syntax.",
+          "$ref": "#/$defs/CommentSyntax"
+        },
+        "value": {
+          "description": "The text between the delimiters, verbatim.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "syntax",
+        "value"
+      ]
+    },
+    "CommentSyntax": {
+      "description": "Delimiters of a comment.",
+      "oneOf": [
+        {
+          "description": "`<!-- … -->`",
+          "type": "string",
+          "const": "html"
+        },
+        {
+          "description": "Obsidian `%% … %%`",
+          "type": "string",
+          "const": "percent"
+        }
+      ]
+    },
+    "Definition": {
+      "description": "Fields of a `definition` node (link reference definition).",
+      "type": "object",
+      "properties": {
+        "label": {
+          "description": "The label as written, without brackets (not case-folded).",
+          "type": "string"
+        },
+        "title": {
+          "description": "The title, unescaped.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "description": "The destination, unescaped.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "title",
+        "url"
+      ]
+    },
+    "Directive": {
+      "description": "Fields of an `includeDirective` or `tocDirective` node.",
+      "type": "object",
+      "properties": {
+        "attributes": {
+          "description": "`name=value` attributes in source order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DirectiveAttribute"
+          }
+        }
+      },
+      "required": [
+        "attributes"
+      ]
+    },
+    "DirectiveAttribute": {
+      "description": "One attribute of a directive.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name.",
+          "type": "string"
+        },
+        "position": {
+          "description": "Where the whole `name=value` is.",
+          "$ref": "#/$defs/Position"
+        },
+        "value": {
+          "description": "The value with quotes removed and escapes resolved.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "position",
+        "value"
+      ]
+    },
+    "Fence": {
+      "description": "Opening fence of a fenced code block.",
+      "type": "object",
+      "properties": {
+        "char": {
+          "description": "`` ` `` or `~`.",
+          "type": "string",
+          "maxLength": 1,
+          "minLength": 1
+        },
+        "length": {
+          "description": "Number of fence characters (at least 3).",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "char",
+        "length"
+      ]
+    },
+    "Fold": {
+      "description": "Whether a collapsible admonition or callout starts open.",
+      "oneOf": [
+        {
+          "description": "mkdocs `???+`, Obsidian `[!note]+`.",
+          "type": "string",
+          "const": "open"
+        },
+        {
+          "description": "mkdocs `???`, Obsidian `[!note]-`.",
+          "type": "string",
+          "const": "closed"
+        }
+      ]
+    },
+    "Frontmatter": {
+      "description": "Fields of a `frontmatter` node.",
+      "type": "object",
+      "properties": {
+        "format": {
+          "description": "YAML or TOML.",
+          "$ref": "#/$defs/FrontmatterFormat"
+        },
+        "value": {
+          "description": "The text between the delimiter lines, verbatim.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "format",
+        "value"
+      ]
+    },
+    "FrontmatterFormat": {
+      "description": "Syntax of a frontmatter block.",
+      "oneOf": [
+        {
+          "description": "`---` delimited YAML.",
+          "type": "string",
+          "const": "yaml"
+        },
+        {
+          "description": "`+++` delimited TOML.",
+          "type": "string",
+          "const": "toml"
+        }
+      ]
+    },
+    "Heading": {
+      "description": "Fields of a `heading` node.",
+      "type": "object",
+      "properties": {
+        "attrs": {
+          "description": "The `{#id .class key=value}` attribute list (mkdocs), if any.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HeadingAttrs"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "depth": {
+          "description": "Level, 1 to 6.",
+          "type": "integer",
+          "format": "uint8",
+          "maximum": 6,
+          "minimum": 1
+        },
+        "setext": {
+          "description": "Whether the heading is underlined (`===` / `---`) rather than `#`-prefixed.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "attrs",
+        "depth",
+        "setext"
+      ]
+    },
+    "HeadingAttrs": {
+      "description": "A heading's `{#id .class key=value}` attribute list.",
+      "type": "object",
+      "properties": {
+        "attributes": {
+          "description": "`key=value` entries in source order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Attribute"
+          }
+        },
+        "classes": {
+          "description": "`.class` entries in source order.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "description": "`#id`, which overrides the generated anchor.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "position": {
+          "description": "Where the `{…}` block is.",
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "attributes",
+        "classes",
+        "id",
+        "position"
+      ]
+    },
+    "Image": {
+      "description": "Fields of an `image` node.",
+      "type": "object",
+      "properties": {
+        "alt": {
+          "description": "Plain text of the alt text (the children).",
+          "type": "string"
+        },
+        "form": {
+          "description": "How the destination was written.",
+          "$ref": "#/$defs/LinkForm"
+        },
+        "label": {
+          "description": "The reference label as written; null unless `form` is `reference`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "referenceType": {
+          "description": "The reference style; null unless `form` is `reference`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReferenceType"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": {
+          "description": "The title, unescaped.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "description": "The source, unescaped (resolved through the definition for references).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "alt",
+        "form",
+        "label",
+        "referenceType",
+        "title",
+        "url"
+      ]
+    },
+    "JsonNode": {
+      "description": "One node: its type and type-specific fields, id, position and children.",
+      "type": "object",
+      "properties": {
+        "children": {
+          "description": "Child nodes; present (possibly empty) on parent types, absent on leaves.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonNode"
+          }
+        },
+        "id": {
+          "description": "Identifier of the node, unique within the document; not stable across mrq versions.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "position": {
+          "description": "Where the node is in the source.",
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "oneOf": [
+        {
+          "description": "The document root.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "root"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "YAML or TOML frontmatter block.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "frontmatter"
+            }
+          },
+          "$ref": "#/$defs/Frontmatter",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Paragraph; children are inlines.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "paragraph"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "ATX or setext heading; children are inlines.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "heading"
+            }
+          },
+          "$ref": "#/$defs/Heading",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`---`, `***` or `___`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "thematicBreak"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Block quote; children are blocks.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "blockquote"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Bullet or ordered list; children are `listItem`s.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "list"
+            }
+          },
+          "$ref": "#/$defs/List",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "List item, possibly a task; children are blocks.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "listItem"
+            }
+          },
+          "$ref": "#/$defs/ListItem",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Fenced or indented code block.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "code"
+            }
+          },
+          "$ref": "#/$defs/Code",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Raw HTML block.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "html"
+            }
+          },
+          "$ref": "#/$defs/Literal",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "GFM table; children are `tableRow`s, the header row first.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "table"
+            }
+          },
+          "$ref": "#/$defs/Table",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Table row; children are `tableCell`s.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tableRow"
+            }
+          },
+          "$ref": "#/$defs/TableRow",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Table cell; children are inlines.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tableCell"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`[^label]: …`; children are blocks.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "footnoteDefinition"
+            }
+          },
+          "$ref": "#/$defs/Label",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Link reference definition `[label]: url \"title\"`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "definition"
+            }
+          },
+          "$ref": "#/$defs/Definition",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Definition list; children are `definitionItem`s.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "definitionList"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "A term with its details; children are a `definitionTerm` and `definitionDetails`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "definitionItem"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Defined term; children are blocks.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "definitionTerm"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`: …` details; children are blocks.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "definitionDetails"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "mkdocs admonition `!!! kind \"title\"`; children are blocks.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "admonition"
+            }
+          },
+          "$ref": "#/$defs/Admonition",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "GFM alert or Obsidian callout `> [!kind]± title`; children are blocks.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "callout"
+            }
+          },
+          "$ref": "#/$defs/Callout",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Abbreviation definition `*[abbr]: expansion`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "abbreviationDefinition"
+            }
+          },
+          "$ref": "#/$defs/AbbreviationDefinition",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`<!-- mrq:include … -->`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "includeDirective"
+            }
+          },
+          "$ref": "#/$defs/Directive",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`<!-- mrq:toc … -->`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tocDirective"
+            }
+          },
+          "$ref": "#/$defs/Directive",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`<!-- mrq:end -->`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "directiveEnd"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Literal text.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "text"
+            }
+          },
+          "$ref": "#/$defs/Literal",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "A line ending inside a paragraph that is not a hard break.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "softBreak"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Hard line break.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "break"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Code span.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "inlineCode"
+            }
+          },
+          "$ref": "#/$defs/Literal",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`*…*`; children are inlines.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "emphasis"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`**…**`; children are inlines.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "strong"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`~~…~~`; children are inlines.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "delete"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`==…==`; children are inlines.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "highlight"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`^…^`; children are inlines.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "superscript"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`~…~`; children are inlines.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "subscript"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Link; children are the link text.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "link"
+            }
+          },
+          "$ref": "#/$defs/Link",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Image; children are the alt text.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "image"
+            }
+          },
+          "$ref": "#/$defs/Image",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Raw inline HTML.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "inlineHtml"
+            }
+          },
+          "$ref": "#/$defs/Literal",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`[^label]`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "footnoteReference"
+            }
+          },
+          "$ref": "#/$defs/Label",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Obsidian `[[target#anchor|alias]]`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "wikiLink"
+            }
+          },
+          "$ref": "#/$defs/WikiLink",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Obsidian `![[target#anchor|alias]]`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "embed"
+            }
+          },
+          "$ref": "#/$defs/WikiLink",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "Obsidian `#tag`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tag"
+            }
+          },
+          "$ref": "#/$defs/Tag",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`$…$` or `$$…$$`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "math"
+            }
+          },
+          "$ref": "#/$defs/Math",
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "description": "`<!-- … -->` or Obsidian `%%…%%`.",
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "comment"
+            }
+          },
+          "$ref": "#/$defs/Comment",
+          "required": [
+            "type"
+          ]
+        }
+      ],
+      "required": [
+        "id",
+        "position"
+      ]
+    },
+    "Label": {
+      "description": "Fields of a footnote definition or reference.",
+      "type": "object",
+      "properties": {
+        "label": {
+          "description": "The label as written, without `[^` and `]`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label"
+      ]
+    },
+    "Link": {
+      "description": "Fields of a `link` node.",
+      "type": "object",
+      "properties": {
+        "form": {
+          "description": "How the destination was written.",
+          "$ref": "#/$defs/LinkForm"
+        },
+        "label": {
+          "description": "The reference label as written; null unless `form` is `reference`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "referenceType": {
+          "description": "The reference style; null unless `form` is `reference`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReferenceType"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "title": {
+          "description": "The title, unescaped.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "description": "The destination, unescaped (resolved through the definition for references).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "form",
+        "label",
+        "referenceType",
+        "title",
+        "url"
+      ]
+    },
+    "LinkForm": {
+      "description": "How a link's destination was written.",
+      "oneOf": [
+        {
+          "description": "`[text](url \"title\")`",
+          "type": "string",
+          "const": "inline"
+        },
+        {
+          "description": "`[text][label]`, `[label][]` or `[label]`.",
+          "type": "string",
+          "const": "reference"
+        },
+        {
+          "description": "`<https://…>` or `<user@host>`.",
+          "type": "string",
+          "const": "autolink"
+        },
+        {
+          "description": "A GFM extended autolink: a bare URL or e-mail address in text.",
+          "type": "string",
+          "const": "bare"
+        }
+      ]
+    },
+    "List": {
+      "description": "Fields of a `list` node.",
+      "type": "object",
+      "properties": {
+        "delimiter": {
+          "description": "`.` or `)` after the numbers of an ordered list; null for bullet lists.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1,
+          "minLength": 1
+        },
+        "marker": {
+          "description": "Bullet character (`-`, `*` or `+`); null for ordered lists.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1,
+          "minLength": 1
+        },
+        "ordered": {
+          "description": "Ordered (`1.`) rather than bullet (`-`).",
+          "type": "boolean"
+        },
+        "spread": {
+          "description": "Whether the list is loose (items separated by blank lines).",
+          "type": "boolean"
+        },
+        "start": {
+          "description": "Number of the first item of an ordered list; null for bullet lists.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "delimiter",
+        "marker",
+        "ordered",
+        "spread",
+        "start"
+      ]
+    },
+    "ListItem": {
+      "description": "Fields of a `listItem` node.",
+      "type": "object",
+      "properties": {
+        "checked": {
+          "description": "null if the item is not a task; false for `[ ]`; true for `[x]` and custom markers.",
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "taskMarker": {
+          "description": "The custom task marker (Obsidian `[?]`, `[-]`, …); null otherwise.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1,
+          "minLength": 1
+        }
+      },
+      "required": [
+        "checked",
+        "taskMarker"
+      ]
+    },
+    "Literal": {
+      "description": "Fields of a node whose content is a string.",
+      "type": "object",
+      "properties": {
+        "value": {
+          "description": "The content (text with escapes resolved, code, or raw HTML).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value"
+      ]
+    },
+    "Math": {
+      "description": "Fields of a `math` node.",
+      "type": "object",
+      "properties": {
+        "display": {
+          "description": "`$$…$$` (display) rather than `$…$` (inline).",
+          "type": "boolean"
+        },
+        "value": {
+          "description": "The TeX source between the delimiters.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "display",
+        "value"
+      ]
+    },
+    "Point": {
+      "description": "A place in the source.",
+      "type": "object",
+      "properties": {
+        "column": {
+          "description": "1-based column in UTF-16 code units.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "line": {
+          "description": "1-based line.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "offset": {
+          "description": "0-based offset in UTF-8 bytes from the start of the source.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "column",
+        "line",
+        "offset"
+      ]
+    },
+    "Position": {
+      "description": "A source range: `start` and the point just past the end.",
+      "type": "object",
+      "properties": {
+        "end": {
+          "description": "Just past the last character of the node.",
+          "$ref": "#/$defs/Point"
+        },
+        "start": {
+          "description": "First character of the node.",
+          "$ref": "#/$defs/Point"
+        }
+      },
+      "required": [
+        "end",
+        "start"
+      ]
+    },
+    "ReferenceType": {
+      "description": "Style of a reference link.",
+      "oneOf": [
+        {
+          "description": "`[text][label]`",
+          "type": "string",
+          "const": "full"
+        },
+        {
+          "description": "`[label][]`",
+          "type": "string",
+          "const": "collapsed"
+        },
+        {
+          "description": "`[label]`",
+          "type": "string",
+          "const": "shortcut"
+        }
+      ]
+    },
+    "Table": {
+      "description": "Fields of a `table` node.",
+      "type": "object",
+      "properties": {
+        "align": {
+          "description": "One entry per column; null for columns without alignment.",
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Align"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "align"
+      ]
+    },
+    "TableRow": {
+      "description": "Fields of a `tableRow` node.",
+      "type": "object",
+      "properties": {
+        "header": {
+          "description": "Whether this is the header row.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "header"
+      ]
+    },
+    "Tag": {
+      "description": "Fields of a `tag` node.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The tag without its leading `#`, e.g. `project/active`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "WikiLink": {
+      "description": "Fields of a `wikiLink` or `embed` node: `[[target#anchor|alias]]`.",
+      "type": "object",
+      "properties": {
+        "alias": {
+          "description": "Text after `|`: display text, or a size such as `100x200` for embeds.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "anchor": {
+          "description": "Text after `#`: a heading, or `^block-id`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target": {
+          "description": "The page or file name; empty for a same-page link `[[#heading]]`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "alias",
+        "anchor",
+        "target"
+      ]
+    }
+  }
+}

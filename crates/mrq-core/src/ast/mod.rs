@@ -46,13 +46,14 @@
 //! # Stability
 //!
 //! [`NodeKind`], [`NodeType`] and the payload enums are `#[non_exhaustive]`: new syntax
-//! adds variants without a breaking change. The JSON projection, not this module, is the
-//! versioned external contract.
+//! adds variants without a breaking change. The JSON projection ([`json`]), not this
+//! module, is the versioned external contract.
 //!
 //! [`ByteRange`]: crate::source::ByteRange
 
 mod builder;
 mod dump;
+pub mod json;
 mod kind;
 mod text;
 mod tree;

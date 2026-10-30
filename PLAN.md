@@ -161,7 +161,7 @@ flowchart LR
 - [x] **M1.5 Obsidian flavor.** Wikilinks `[[a#b|c]]`, embeds `![[x]]`, callouts (shared with GFM alerts), `#tags`, `%%comments%%`, math. **AC:** fixture snapshots of the AST.
 - [x] **M1.6 mkdocs flavor.** `!!!`/`???` admonitions with indented bodies (a post-parse pass that re-parses the body as a nested document), `{#id .class}` heading attributes, definition lists, abbreviations, math. **AC:** fixture snapshots, and nested admonitions work.
 - [x] **M1.7 Document and Workspace.** `Document::parse`, `Document::load`, `Workspace` (a set of documents, path resolution relative to each file, a lazily built anchor index per file). **AC:** the API example from the README compiles as a doctest (with query stubbed out until M3).
-- [ ] **M1.8 JSON projection.** Stable, versioned (`"mrq_ast": 1`) mdast-like JSON (`type`, `children`, `position` with line/col/offset, kind-specific fields). Serialize, and deserialize for tests. **AC:** JSON Schema of the projection checked in, and snapshot tests.
+- [x] **M1.8 JSON projection.** Stable, versioned (`"mrq_ast": 1`) mdast-like JSON (`type`, `children`, `position` with line/col/offset, kind-specific fields). Serialize, and deserialize for tests. **AC:** JSON Schema of the projection checked in, and snapshot tests.
 - [ ] **M1.9 Directive parsing.** Recognize `<!-- mrq:include … -->`, `<!-- mrq:toc … -->` and `<!-- mrq:end -->` in HTML comment nodes, parse attributes (quoted and unquoted values), and pair start and end markers into directive regions. **AC:** errors for unmatched or nested-incorrectly markers carry spans.
 
 ### M2: `toc` and `stats`

@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, OnceLock};
 
 use super::AnchorIndex;
+use crate::ast::json::{self, JsonAst};
 use crate::ast::{Ast, Node, NodeId, NodeKind, Span};
 use crate::diag::Diagnostic;
 use crate::flavor::{self, Flavor, FlavorError, FlavorOrigin, Registry, Resolved};
@@ -297,6 +298,11 @@ impl Document {
                 _ => None,
             })
             .collect()
+    }
+
+    /// The [JSON projection](crate::ast::json) of the document.
+    pub fn to_json_ast(&self) -> JsonAst {
+        json::project(self)
     }
 
     /// The nodes `query` matches.
