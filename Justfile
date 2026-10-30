@@ -10,13 +10,13 @@ fmt:
 fmt-check:
     cargo fmt --all --check
 
-# Lint with clippy; warnings are errors.
+# Lint with clippy, every feature on; warnings are errors.
 lint:
-    cargo clippy --workspace --all-targets -- -D warnings
+    cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-# Run all tests.
+# Run all tests, every feature on (external-link tests start a mock HTTP server on 127.0.0.1).
 test:
-    cargo test --workspace
+    cargo test --workspace --all-features
 
 # Advisories, licences, bans, duplicates and sources from deny.toml; needs `cargo install cargo-deny`.
 deny:

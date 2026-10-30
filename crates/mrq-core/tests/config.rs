@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use mrq_core::config::{
     Config, ConfigError, ConfigLoader, FlavorName, LintExtends, OrderedList, Origin, Wrap,
-    user_config_path,
+    user_cache_dir, user_config_path,
 };
 
 /// A temp tree: `<root>/user/config.yaml`, `<root>/a/.mrq.yaml`, `<root>/a/b/.mrq.yaml`
@@ -395,6 +395,30 @@ fn user_config_path_prefers_mrq_config_home_then_xdg_then_home() {
         Some(PathBuf::from("/h/.config/mrq/config.yaml"))
     );
     assert_eq!(user_config_path(env(&[])), None);
+}
+
+#[test]
+fn user_cache_dir_prefers_mrq_cache_home_then_xdg_then_home() {
+    let env = |vars: &'static [(&'static str, &'static str)]| {
+        move |key: &str| {
+            vars.iter()
+                .find(|(k, _)| *k == key)
+                .map(|(_, v)| (*v).to_owned())
+        }
+    };
+    assert_eq!(
+        user_cache_dir(env(&[("MRQ_CACHE_HOME", "/m"), ("XDG_CACHE_HOME", "/x")])),
+        Some(PathBuf::from("/m"))
+    );
+    assert_eq!(
+        user_cache_dir(env(&[("XDG_CACHE_HOME", "/x"), ("HOME", "/h")])),
+        Some(PathBuf::from("/x/mrq"))
+    );
+    assert_eq!(
+        user_cache_dir(env(&[("XDG_CACHE_HOME", ""), ("USERPROFILE", "/u")])),
+        Some(PathBuf::from("/u/.cache/mrq"))
+    );
+    assert_eq!(user_cache_dir(env(&[])), None);
 }
 
 #[test]

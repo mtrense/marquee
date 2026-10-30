@@ -24,7 +24,8 @@
 //!
 //! # Internal checks
 //!
-//! A [`Checker`] reports what is broken inside a workspace, without network access. Each
+//! A [`Checker`] reports what is broken inside a workspace, without network access unless
+//! [external links](#external-links) are enabled. Each
 //! [`Diagnostic`](crate::diag::Diagnostic) carries one of these [`codes`] (plain words,
 //! like the parser's `frontmatter` and `directive`; `MRQ###` is for lint rules):
 //!
@@ -43,6 +44,7 @@
 //! | `missing-include` | error | the `path=…` attribute; the start marker if there is none | an `mrq:include` has no `path`, or its file does not exist |
 //! | `include-cycle` | error | the `path=…` attribute, with the chain of files in the help | following `mrq:include` paths from the directive leads back to its own file |
 //! | `stale-toc` | warning | the start marker | an `mrq:toc` region differs from what `mrq toc --insert` writes (also a bare start marker), as [`toc::refresh_edits`](crate::toc::refresh_edits) finds; an invalid `depth` is a `directive` error |
+//! | `broken-external-link` | error | the link or image | an http(s) URL is broken (an HTTP error status after retries, a timeout, a connection or TLS error), as the [`ExternalChecker`] reports; only with [`Checker::with_external_links`], see [External links](#external-links) |
 //!
 //! How targets are found:
 //!
@@ -62,7 +64,7 @@
 //!   they are found in the text. Reference definitions are recovered from the source
 //!   by [`reference_definitions`]. Labels match as in `CommonMark` (case and whitespace
 //!   folded). Footnotes are only checked for flavors that have them.
-//! - External URLs and `mailto:` addresses are not checked here.
+//! - External URLs are only checked when enabled (see below); `mailto:` addresses never.
 //! - **Includes** resolve like file links (relative to the including file, a leading
 //!   `/` from the root, no percent-decoding) and exist if they are in the workspace or a
 //!   file on disk. Cycles are found by following the `mrq:include`s of Markdown files
@@ -84,16 +86,65 @@
 //! [`Frontmatter::entry_at_pointer`](crate::frontmatter::Frontmatter::entry_at_pointer).
 //! Schemas cannot `$ref` other files or URLs: nothing is read besides the schema file
 //! itself, and nothing is fetched from the network.
+//!
+//! # External links
+//!
+//! External links are checked only on request: a [`Checker`] checks none unless
+//! [`Checker::with_external_links`] gives it an [`ExternalChecker`], the seam to the
+//! network that tests and the LSP can substitute. [`ExternalOptions`] holds whether to
+//! check at all (`validate.external`, or `--external` through
+//! [`ExternalOptions::with_flag`]) and the `validate.external_exclude` patterns
+//! ([`ExternalExclude`], regular expressions matched anywhere in the URL). Only `http:` and
+//! `https:` URLs that no pattern excludes reach the checker, each distinct URL once, as
+//! written (with any `#fragment`); results are remembered for the checker's lifetime.
+//!
+//! With the `external-links` feature (off by default), `HttpChecker` checks them over
+//! HTTP(S) with reqwest and rustls (never OpenSSL) on a tokio runtime of its own, as
+//! `HttpOptions` sets: retries with exponential backoff, a request timeout, a total and a
+//! per-host concurrency limit, a minimum interval between requests to one host, and an
+//! optional on-disk cache (`CacheOptions`, by default `external-links.json` in the user
+//! cache directory, [`user_cache_dir`](crate::config::user_cache_dir), for one day) of
+//! the URLs found working. Building one sends nothing.
+//!
+//! ```
+//! use mrq_core::{Document, Workspace};
+//! use mrq_core::config::Config;
+//! use mrq_core::validate::{Checker, ExternalChecker, ExternalOptions, ExternalStatus, codes};
+//!
+//! #[derive(Debug)]
+//! struct Offline;
+//! impl ExternalChecker for Offline {
+//!     fn check(&self, urls: &[&str]) -> Vec<ExternalStatus> {
+//!         urls.iter().map(|_| ExternalStatus::Broken("offline".into())).collect()
+//!     }
+//! }
+//!
+//! let options = ExternalOptions::from_config(&Config::default())?.with_flag(true);
+//! assert!(options.enabled);
+//! let ws = Workspace::new(".");
+//! let doc = Document::parse("[x](https://example.org/)\n");
+//! let diagnostics = Checker::new(&ws).with_external_links(&Offline, &options.exclude).check(&doc);
+//! assert_eq!(diagnostics[0].code, codes::BROKEN_EXTERNAL_LINK);
+//! # Ok::<(), mrq_core::validate::ExcludeError>(())
+//! ```
 
 mod brackets;
 mod check;
 mod directives;
+mod external;
+#[cfg(feature = "external-links")]
+mod http;
 mod links;
 mod refdefs;
 #[cfg(feature = "frontmatter-schema")]
 mod schema;
 
 pub use check::{Checker, codes};
+pub use external::{
+    ExcludeError, ExternalChecker, ExternalExclude, ExternalOptions, ExternalStatus,
+};
+#[cfg(feature = "external-links")]
+pub use http::{CacheOptions, HttpChecker, HttpError, HttpOptions};
 pub(crate) use links::scheme;
 pub use links::{DocumentLink, Target, links};
 pub use refdefs::{ReferenceDefinition, reference_definitions};

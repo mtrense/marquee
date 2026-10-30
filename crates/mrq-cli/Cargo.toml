@@ -15,6 +15,10 @@ path = "src/lib.rs"
 name = "mrq"
 path = "src/main.rs"
 
+[features]
+# Checking external http(s) links (wired to `mrq validate --external` in M4.6).
+external-links = ["mrq-core/external-links"]
+
 [dependencies]
 mrq-core.workspace = true
 mrq-render.workspace = true

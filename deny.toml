@@ -37,6 +37,13 @@ exceptions = [
   { allow = ["Zlib"], crate = "foldhash" },
   # MIT No Attribution; pulled in by jsonschema (via fluent-uri) for frontmatter schemas.
   { allow = ["MIT-0"], crate = "borrow-or-share" },
+  # The TLS stack of the `external-links` feature (reqwest + rustls with the ring provider).
+  { allow = ["ISC"], crate = "ring" },
+  { allow = ["ISC"], crate = "untrusted" },
+  { allow = ["ISC"], crate = "rustls-webpki" },
+  { allow = ["BSD-3-Clause"], crate = "subtle" },
+  # Mozilla's root certificates as data; rustls-platform-verifier's fallback trust store.
+  { allow = ["CDLA-Permissive-2.0"], crate = "webpki-root-certs" },
 ]
 
 [licenses.private]

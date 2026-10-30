@@ -19,6 +19,10 @@ human = ["dep:miette", "miette/fancy-no-syscall"]
 # Frontmatter JSON Schema checks (`validate.frontmatter`) via jsonschema, built without its
 # default features: no HTTP or file `$ref` retrieval, so validation never touches the network.
 frontmatter-schema = ["dep:jsonschema"]
+# External http(s) link checks (`HttpChecker`) via reqwest with rustls (ring provider, never
+# OpenSSL) on a tokio runtime of its own. Off by default; even when built, nothing is
+# requested unless a caller enables the checks.
+external-links = ["dep:reqwest", "dep:rustls", "dep:tokio", "dep:futures-util"]
 
 [dependencies]
 thiserror.workspace = true
@@ -41,6 +45,10 @@ winnow.workspace = true
 jaq-core.workspace = true
 jaq-std.workspace = true
 jaq-json.workspace = true
+reqwest = { workspace = true, optional = true }
+rustls = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true, features = ["rt", "sync", "time"] }
+futures-util = { workspace = true, optional = true }
 
 [dev-dependencies]
 proptest.workspace = true

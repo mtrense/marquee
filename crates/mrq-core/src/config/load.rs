@@ -50,6 +50,26 @@ pub fn user_config_path(env: impl Fn(&str) -> Option<String>) -> Option<PathBuf>
     Some(home.join(".config").join("mrq").join("config.yaml"))
 }
 
+/// The user cache directory of mrq: `$MRQ_CACHE_HOME`, else `$XDG_CACHE_HOME/mrq`, else
+/// `~/.cache/mrq` (home from `HOME`, then `USERPROFILE`), like [`user_config_path`].
+/// Empty variables count as unset. `env` looks up environment variables; `None` when no
+/// location can be determined.
+pub fn user_cache_dir(env: impl Fn(&str) -> Option<String>) -> Option<PathBuf> {
+    let var = |key: &str| {
+        env(key)
+            .filter(|value| !value.is_empty())
+            .map(PathBuf::from)
+    };
+    if let Some(dir) = var("MRQ_CACHE_HOME") {
+        return Some(dir);
+    }
+    if let Some(dir) = var("XDG_CACHE_HOME") {
+        return Some(dir.join("mrq"));
+    }
+    let home = var("HOME").or_else(|| var("USERPROFILE"))?;
+    Some(home.join(".cache").join("mrq"))
+}
+
 /// Builds the layered configuration.
 ///
 /// Layers, lowest to highest priority; later layers override earlier ones key by key

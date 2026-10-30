@@ -44,7 +44,7 @@ This plan implements the tool described in [README.md](README.md). It has three 
 | Tree-sitter (feature) | `tree-sitter`, `tree-sitter-{rust,python,javascript,typescript,go,…}` |
 | Query | `winnow` (DSL and CSS parsers), `jaq-core`, `jaq-std`, `jaq-json`, `regex` |
 | Diff | `similar` |
-| External links (feature) | `lychee-lib` |
+| External links (feature) | `reqwest` (rustls with ring) behind the `ExternalChecker` trait. `lychee-lib` was tried and dropped in M4.5: it pulls about 280 crates, including octocrab, a C crypto library (aws-lc-sys) and four RustSec advisories without a fix (quick-xml, rsa, crypto-bigint). |
 | HTTP for remote include and Kroki (feature) | `reqwest` (rustls) |
 | PDF (feature) | `typst`, `typst-pdf` (or `typst-as-lib`) |
 | man | `roff` |
@@ -218,7 +218,7 @@ flowchart LR
 - [x] **M4.2 Internal checks.** Missing files and assets, missing anchors (same file and cross-file, through the flavor slugger), duplicate anchors, undefined and unused footnotes, undefined and unused reference definitions, wikilink targets (obsidian, resolved by vault-wide filename lookup). **AC:** diagnostic codes documented, and a fixture repository with expected diagnostics snapshot.
 - [x] **M4.3 Frontmatter schema.** Glob-to-schema mapping from config. Validate with jsonschema (drafts 7 and 2020-12), and map instance paths to spans in the frontmatter. Enums, types and required keys are reported with the expected values. **AC:** error spans point at the offending key or value.
 - [x] **M4.4 Directive checks.** Missing include targets, cycles (with the chain in labels), stale `mrq:include`/`mrq:toc` regions (reusing M7 and M2.2). **AC:** fixtures. Added after M7 if needed, otherwise stubbed behind a TODO diagnostic.
-- [ ] **M4.5 External links.** Feature `external-links`: collect URLs, check them via a lychee-lib client with retries, rate limits, `external_exclude`, an on-disk cache with TTL, and `--external`. **AC:** integration test against a local mock HTTP server, and nothing hits the network by default.
+- [x] **M4.5 External links.** Feature `external-links`: collect URLs, check them via a lychee-lib client with retries, rate limits, `external_exclude`, an on-disk cache with TTL, and `--external`. **AC:** integration test against a local mock HTTP server, and nothing hits the network by default.
 - [ ] **M4.6 `mrq validate` command.** Runs all checks over a workspace, supports every output format, exit codes. **AC:** CLI snapshots, and the SARIF output is accepted by `github/codeql-action/upload-sarif` (manual check documented).
 
 ### M5: Lint

@@ -33,7 +33,9 @@ mod model;
 mod show;
 
 pub use error::{CONFIG_ERROR_CODE, ConfigError, Location};
-pub use load::{CONFIG_FILE_NAMES, ConfigLoader, LoadedConfig, Origin, user_config_path};
+pub use load::{
+    CONFIG_FILE_NAMES, ConfigLoader, LoadedConfig, Origin, user_cache_dir, user_config_path,
+};
 pub use model::{
     CodeFence, Config, DiagramsConfig, Emphasis, FlavorName, FmtConfig, FrontmatterFormat,
     FrontmatterSchema, IncludeConfig, KrokiConfig, LintConfig, LintExtends, ListMarker,

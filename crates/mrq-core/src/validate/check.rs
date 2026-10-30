@@ -10,7 +10,9 @@ use ignore::WalkBuilder;
 use super::FrontmatterSchemas;
 use super::brackets::{Unresolved, unresolved};
 use super::directives::check_toc;
+use super::external::External;
 use super::{DocumentLink, Target, links, reference_definitions};
+use super::{ExternalChecker, ExternalExclude};
 use crate::ast::{NodeKind, NodeType, Span};
 use crate::diag::{Diagnostic, Label, Severity};
 use crate::flavor::obsidian_anchor;
@@ -46,6 +48,9 @@ pub mod codes {
     pub const MISSING_INCLUDE: &str = "missing-include";
     /// An `mrq:include` that, through the files it includes, includes its own file.
     pub const INCLUDE_CYCLE: &str = "include-cycle";
+    /// An external http(s) link that the [`ExternalChecker`](super::ExternalChecker)
+    /// finds broken.
+    pub const BROKEN_EXTERNAL_LINK: &str = "broken-external-link";
 }
 
 /// Runs the internal checks over the documents of a [`Workspace`].
@@ -75,6 +80,8 @@ pub struct Checker<'w> {
     vault: Option<Vec<VaultFile>>,
     #[cfg(feature = "frontmatter-schema")]
     schemas: Option<&'w FrontmatterSchemas>,
+    /// External link checks, if enabled.
+    external: Option<External<'w>>,
 }
 
 /// A file a wikilink may name.
@@ -94,6 +101,7 @@ impl<'w> Checker<'w> {
             vault: None,
             #[cfg(feature = "frontmatter-schema")]
             schemas: None,
+            external: None,
         }
     }
 
@@ -105,10 +113,29 @@ impl<'w> Checker<'w> {
         self
     }
 
+    /// Also checks external http(s) links with `checker`, except those `exclude` matches
+    /// (code [`codes::BROKEN_EXTERNAL_LINK`]). Without this, no external link is checked.
+    ///
+    /// Each distinct URL is checked once per checker: [`check_workspace`](Self::check_workspace)
+    /// hands the URLs of all documents to `checker` in one batch, [`check`](Self::check)
+    /// those of its document that are not checked yet.
+    #[must_use]
+    pub fn with_external_links(
+        mut self,
+        checker: &'w dyn ExternalChecker,
+        exclude: &'w ExternalExclude,
+    ) -> Self {
+        self.external = Some(External::new(checker, exclude));
+        self
+    }
+
     /// The diagnostics for `document`, ordered by position.
     pub fn check(&mut self, document: &Document) -> Vec<Diagnostic> {
         let mut out = Vec::new();
         self.check_links(document, &mut out);
+        if let Some(external) = &mut self.external {
+            external.check(document, &links(document, self.workspace), &mut out);
+        }
         check_duplicate_anchors(document, &mut out);
         check_footnotes(document, &mut out);
         check_references(document, &self.links_of(document), &mut out);
@@ -126,6 +153,13 @@ impl<'w> Checker<'w> {
     /// workspace order.
     pub fn check_workspace(&mut self) -> Vec<Diagnostic> {
         let workspace = self.workspace;
+        if let Some(external) = &mut self.external {
+            let all: Vec<DocumentLink> = workspace
+                .documents()
+                .flat_map(|document| links(document, workspace))
+                .collect();
+            external.prefetch(&all);
+        }
         workspace
             .documents()
             .flat_map(|document| self.check(document))
