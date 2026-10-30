@@ -1,12 +1,14 @@
-//! Acceptance tests for `mrq_core::validate`: link classification and resolution over
-//! parsed documents.
+//! Acceptance tests for `mrq_core::validate`: link classification and resolution, and the
+//! internal checks over parsed documents and a fixture repository.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use mrq_core::ast::NodeType;
+use mrq_core::diag::{Severity, emit_plain};
 use mrq_core::document::{Document, DocumentOptions, Workspace};
+use mrq_core::input::InputResolver;
 use mrq_core::source::SourceFile;
-use mrq_core::validate::{self, DocumentLink, Target};
+use mrq_core::validate::{self, Checker, DocumentLink, Target, codes};
 
 /// `text` parsed as `site/docs/a.md` (flavor from the frontmatter, else gfm).
 fn doc_at(text: &str) -> Document {
@@ -183,5 +185,219 @@ fn stdin_documents_resolve_against_the_root() {
     assert_eq!(
         targets,
         [file("site/b/c.md", None), file("site/d.md", None)]
+    );
+}
+
+/// `text` parsed as `path` with `flavor`.
+fn doc_with(flavor: &str, path: &str, text: &str) -> Document {
+    let source = SourceFile::new(Some(PathBuf::from(path)), text);
+    DocumentOptions::new()
+        .flavor(flavor)
+        .parse_source(source)
+        .unwrap()
+}
+
+/// (code, severity, source of the primary span) of every diagnostic `Checker` reports
+/// for `doc` in a workspace under `site` holding `others`.
+fn check(doc: &Document, others: Vec<Document>) -> Vec<(String, Severity, String)> {
+    let mut ws = Workspace::new("site");
+    for other in others {
+        ws.insert(other);
+    }
+    Checker::new(&ws)
+        .check(doc)
+        .into_iter()
+        .map(|diag| {
+            assert_eq!(diag.file, doc.name());
+            let source = doc.text()[diag.range.start..diag.range.end].to_owned();
+            (diag.code, diag.severity, source)
+        })
+        .collect()
+}
+
+fn found(code: &str, severity: Severity, source: &str) -> (String, Severity, String) {
+    (code.into(), severity, source.into())
+}
+
+#[test]
+fn same_document_anchors_go_through_the_slugger() {
+    let doc = doc_at("# Intro: Setup!\n\n[ok](#intro-setup) [bad](#intro) [top](#)\n");
+    assert_eq!(
+        check(&doc, vec![]),
+        [found(
+            codes::MISSING_ANCHOR,
+            Severity::Error,
+            "[bad](#intro)"
+        )]
+    );
+}
+
+#[test]
+fn files_assets_and_cross_file_anchors() {
+    let doc = doc_at(
+        "[ok](b.md) [ok](b.md#setup) [bad](b.md#nope) [gone](c.md#x) ![gone](img.png)\n\
+         [web](https://x.org/missing.md) [mail](mailto:a@b.org) [self](a.md#a) [self](a.md#nope)\n\n\
+         # A\n",
+    );
+    let b = doc_at_path("site/docs/b.md", "# Setup\n");
+    assert_eq!(
+        check(&doc, vec![b, doc.clone()]),
+        [
+            found(codes::MISSING_ANCHOR, Severity::Error, "[bad](b.md#nope)"),
+            found(codes::MISSING_FILE, Severity::Error, "[gone](c.md#x)"),
+            found(codes::MISSING_ASSET, Severity::Error, "![gone](img.png)"),
+            found(codes::MISSING_ANCHOR, Severity::Error, "[self](a.md#nope)"),
+        ]
+    );
+}
+
+fn doc_at_path(path: &str, text: &str) -> Document {
+    doc_with("gfm", path, text)
+}
+
+#[test]
+fn duplicate_anchors_are_reported_at_the_repeat() {
+    let doc = doc_with("mkdocs", "site/a.md", "# One {#x}\n\n# Two {#x}\n\n# One\n");
+    let diags = Checker::new(&Workspace::new("site")).check(&doc);
+    assert_eq!(diags.len(), 1);
+    let diag = &diags[0];
+    assert_eq!(
+        (diag.code.as_str(), diag.severity),
+        (codes::DUPLICATE_ANCHOR, Severity::Warning)
+    );
+    assert_eq!(&doc.text()[diag.range.start..diag.range.end], "# Two {#x}");
+    assert_eq!(
+        &doc.text()[diag.labels[0].range.start..diag.labels[0].range.end],
+        "# One {#x}"
+    );
+}
+
+#[test]
+fn obsidian_anchors_repeat_regardless_of_case() {
+    let doc = doc_with("obsidian", "site/a.md", "# Setup\n\n# setup\n");
+    assert_eq!(
+        check(&doc, vec![]),
+        [found(codes::DUPLICATE_ANCHOR, Severity::Warning, "# setup")]
+    );
+}
+
+#[test]
+fn undefined_and_unused_footnotes() {
+    let doc = doc_at("a[^1] b[^Two] c[^nope] d\\[^esc]\n\n[^1]: x\n[^two]: y\n[^unused]: z\n");
+    assert_eq!(
+        check(&doc, vec![]),
+        [
+            found(codes::UNDEFINED_FOOTNOTE, Severity::Error, "[^nope]"),
+            found(codes::UNUSED_FOOTNOTE, Severity::Warning, "[^unused]"),
+        ]
+    );
+}
+
+#[test]
+fn undefined_and_unused_reference_definitions() {
+    let doc = doc_at(
+        "[x][nope] [y][Used] [z][] [*em*][gone] \\[w][esc] [shortcut]\n\n\
+         [used]: https://x.org\n[unused]: https://y.org\n",
+    );
+    assert_eq!(
+        check(&doc, vec![]),
+        [
+            found(codes::UNDEFINED_REFERENCE, Severity::Error, "[nope]"),
+            found(codes::UNDEFINED_REFERENCE, Severity::Error, "[z][]"),
+            found(codes::UNDEFINED_REFERENCE, Severity::Error, "[gone]"),
+            found(
+                codes::UNUSED_REFERENCE,
+                Severity::Warning,
+                "[unused]: https://y.org"
+            ),
+        ]
+    );
+}
+
+#[test]
+fn reference_definitions_are_recovered() {
+    let doc = doc_at("[a]\n\n> [a]: <x y.md>\n");
+    let defs = validate::reference_definitions(&doc);
+    assert_eq!(defs.len(), 1);
+    assert_eq!(
+        (defs[0].label.as_str(), defs[0].url.as_str()),
+        ("a", "x y.md")
+    );
+}
+
+#[test]
+fn wikilinks_are_looked_up_by_name_across_the_vault() {
+    let doc = doc_with(
+        "obsidian",
+        "site/vault/Home.md",
+        "# Home\n\n[[Other Note]] [[other note#part 1]] [[Other Note#Nope]] [[Missing]]\n\
+         [[sub/Deep]] [[Deep.md|deep]] [[vault/sub/Deep#Down]] [[Other Note#^blk]] [[Other Note#^nope]]\n\
+         [[#home]] [[#Gone]] [[#^here]] [[#^gone]] text ^here\n",
+    );
+    let other = doc_with(
+        "obsidian",
+        "site/vault/Other Note.md",
+        "# Part 1\n\nA paragraph. ^blk\n",
+    );
+    let deep = doc_with("obsidian", "site/vault/sub/Deep.md", "## Down\n");
+    assert_eq!(
+        check(&doc, vec![other, deep]),
+        [
+            found(
+                codes::MISSING_ANCHOR,
+                Severity::Error,
+                "[[Other Note#Nope]]"
+            ),
+            found(codes::UNRESOLVED_WIKILINK, Severity::Warning, "[[Missing]]"),
+            found(
+                codes::MISSING_ANCHOR,
+                Severity::Error,
+                "[[Other Note#^nope]]"
+            ),
+            found(codes::MISSING_ANCHOR, Severity::Error, "[[#Gone]]"),
+            found(codes::MISSING_ANCHOR, Severity::Error, "[[#^gone]]"),
+        ]
+    );
+}
+
+/// Every check over `tests/fixtures/validate`, a small repository with a gfm README, a
+/// mkdocs page and an Obsidian vault, rendered by the plain emitter with paths relative
+/// to the fixture.
+#[test]
+fn fixture_repository_diagnostics() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/validate");
+    let inputs = InputResolver::new()
+        .base_dir(&root)
+        .resolve(&["."])
+        .unwrap();
+    let ws = Workspace::from_inputs(&root, DocumentOptions::new(), &inputs).unwrap();
+    let diagnostics = Checker::new(&ws).check_workspace();
+    let sources: Vec<SourceFile> = ws.documents().map(|doc| doc.source().clone()).collect();
+    let mut out = Vec::new();
+    emit_plain(&diagnostics, &sources, &mut out).unwrap();
+    let prefix = format!("{}/", root.display()).replace('\\', "/");
+    let out = String::from_utf8(out)
+        .unwrap()
+        .replace('\\', "/")
+        .replace(&prefix, "");
+    insta::assert_snapshot!(out);
+}
+
+#[test]
+fn check_workspace_covers_every_document_in_order() {
+    let mut ws = Workspace::new("site");
+    ws.insert(doc_at_path("site/b.md", "[x](#nope)\n"));
+    ws.insert(doc_at_path("site/a.md", "[x](missing.md)\n"));
+    let diags = Checker::new(&ws).check_workspace();
+    let summary: Vec<_> = diags
+        .iter()
+        .map(|diag| (diag.file.to_str().unwrap(), diag.code.as_str()))
+        .collect();
+    assert_eq!(
+        summary,
+        [
+            ("site/b.md", codes::MISSING_ANCHOR),
+            ("site/a.md", codes::MISSING_FILE)
+        ]
     );
 }

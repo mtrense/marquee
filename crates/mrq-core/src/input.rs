@@ -338,7 +338,7 @@ fn walk(root: &Path, extra: &Arc<Gitignore>) -> Result<Vec<PathBuf>, InputError>
     Ok(files)
 }
 
-fn has_markdown_extension(path: &Path) -> bool {
+pub(crate) fn has_markdown_extension(path: &Path) -> bool {
     path.extension()
         .and_then(|ext| ext.to_str())
         .is_some_and(|ext| {

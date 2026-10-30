@@ -1,0 +1,30 @@
+---
+source: crates/mrq-core/tests/validate.rs
+expression: out
+---
+README.md:4:1: error[missing-anchor]: no anchor `#installation` in `docs/guide.md`
+  help: resolved to `docs/guide.md`
+README.md:5:51: error[missing-file]: file `CHANGELOG.md` does not exist
+  help: resolved to `CHANGELOG.md`
+README.md:7:28: error[missing-asset]: image `docs/img/banner%20wide.png` does not exist
+  help: resolved to `docs/img/banner wide.png`
+README.md:9:28: error[missing-anchor]: no anchor `#nowhere` in this document
+README.md:14:47: error[undefined-footnote]: footnote `[^missing]` is not defined
+README.md:16:40: error[undefined-reference]: reference `[api]` is not defined
+README.md:16:47: error[undefined-reference]: reference `[old docs]` is not defined
+README.md:20:1: warning[unused-footnote]: footnote `[^orphan]` is never referenced
+README.md:23:1: warning[unused-reference]: reference definition `[unused]` is never used
+docs/guide.md:6:1: error[missing-anchor]: no anchor `#gone` in `../README.md`
+  help: resolved to `README.md`
+docs/guide.md:10:43: error[missing-anchor]: no anchor `#setup-2` in this document
+docs/mkdocs.md:7:1: warning[duplicate-anchor]: anchor `#install` is already used by an earlier heading
+  label: docs/mkdocs.md:5:1: first used here
+vault/Home.md:7:49: error[missing-anchor]: no anchor `#Part 9` in `Other Note`
+  help: `Other Note` is `vault/Other Note.md`
+vault/Home.md:7:72: warning[unresolved-wikilink]: no file named `Nowhere` in the vault
+vault/Home.md:8:66: error[missing-anchor]: no anchor `#^gone` in `Other Note`
+  help: `Other Note` is `vault/Other Note.md`
+vault/Home.md:9:15: error[missing-anchor]: no anchor `#Away` in this document
+vault/Home.md:11:18: warning[unresolved-wikilink]: no file named `missing.png` in the vault
+vault/Home.md:13:1: warning[duplicate-anchor]: anchor `#home` is already used by an earlier heading
+  label: vault/Home.md:5:1: first used here

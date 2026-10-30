@@ -1,0 +1,5 @@
+---
+mrq:
+  flavor: obsidian
+---
+# Goals
