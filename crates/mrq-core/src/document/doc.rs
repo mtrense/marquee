@@ -7,6 +7,7 @@ use super::AnchorIndex;
 use crate::ast::json::{self, JsonAst};
 use crate::ast::{Ast, Node, NodeId, NodeKind, Span};
 use crate::diag::Diagnostic;
+use crate::directive::DirectiveRegion;
 use crate::flavor::{self, Flavor, FlavorError, FlavorOrigin, Registry, Resolved};
 use crate::frontmatter::Frontmatter;
 use crate::input::{Input, InputError};
@@ -139,6 +140,7 @@ impl DocumentOptions {
             flavor_origin: resolved.origin,
             ast: parsed.ast,
             frontmatter: parsed.frontmatter,
+            directives: parsed.directives,
             diagnostics,
             anchors: OnceLock::new(),
         })
@@ -202,6 +204,7 @@ pub struct Document {
     flavor_origin: FlavorOrigin,
     ast: Ast,
     frontmatter: Option<Frontmatter>,
+    directives: Vec<DirectiveRegion>,
     diagnostics: Vec<Diagnostic>,
     anchors: OnceLock<AnchorIndex>,
 }
@@ -266,10 +269,18 @@ impl Document {
         self.frontmatter.as_ref()
     }
 
-    /// What parsing found: malformed frontmatter, a bad frontmatter flavor, then what the
-    /// flavor passes reported.
+    /// What parsing found: malformed frontmatter, a bad frontmatter flavor, what the
+    /// flavor passes reported, then malformed or unpaired
+    /// [directives](crate::directive).
     pub fn diagnostics(&self) -> &[Diagnostic] {
         &self.diagnostics
+    }
+
+    /// The `mrq:include` and `mrq:toc` regions in document order (by start marker),
+    /// paired with their `mrq:end` markers. Broken markers are left out and reported in
+    /// [`diagnostics`](Self::diagnostics); see [`directive`](crate::directive).
+    pub fn directives(&self) -> &[DirectiveRegion] {
+        &self.directives
     }
 
     /// The heading anchors, built on first use.

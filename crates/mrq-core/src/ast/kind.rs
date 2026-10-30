@@ -70,7 +70,8 @@ pub enum NodeKind {
     /// abbreviation definition `*[HTML]: Hyper Text Markup Language` (mkdocs). Leaf.
     AbbreviationDefinition(AbbreviationDefinition),
     /// `<!-- mrq:include … -->`. Leaf; the included region is delimited by a following
-    /// [`DirectiveEnd`](Self::DirectiveEnd) sibling.
+    /// [`DirectiveEnd`](Self::DirectiveEnd) sibling. The pairing is kept apart, in
+    /// [`DirectiveRegion`](crate::directive::DirectiveRegion)s.
     IncludeDirective(Directive),
     /// `<!-- mrq:toc … -->`. Leaf; region as for [`IncludeDirective`](Self::IncludeDirective).
     TocDirective(Directive),
@@ -696,14 +697,15 @@ impl Directive {
     }
 }
 
-/// One `name=value` or `name="value"` attribute of a [`Directive`].
+/// One `name=value`, `name="value"`, `name='value'` or bare `name` attribute of a
+/// [`Directive`]; see [`directive`](crate::directive) for the syntax.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DirectiveAttribute {
     /// The attribute name.
     pub name: String,
-    /// The value with quotes removed and escapes resolved.
+    /// The value with quotes removed and escapes resolved; `true` for a bare `name`.
     pub value: String,
-    /// Bytes of the whole `name=value` in the source.
+    /// Bytes of the whole `name=value` (or bare `name`) in the source.
     pub span: Span,
 }
 

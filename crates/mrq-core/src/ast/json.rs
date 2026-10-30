@@ -98,7 +98,9 @@
 //! of `\n` in text; `code` values keep their final newline; footnotes and definitions
 //! carry the `label` as written but no normalized `identifier`. A task item with a custom
 //! marker (Obsidian `[?]`, `[-]`) has `checked: true` and the marker in `taskMarker`;
-//! `taskMarker` is `null` otherwise.
+//! `taskMarker` is `null` otherwise. Directive start and end markers are flat siblings:
+//! which `directiveEnd` closes which start is not projected (see
+//! [`DirectiveRegion`](crate::directive::DirectiveRegion)).
 //!
 //! # Positions
 //!

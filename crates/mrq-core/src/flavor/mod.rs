@@ -10,7 +10,8 @@
 //! - [`printer_hooks`](Flavor::printer_hooks): flavor-specific printing (placeholder).
 //!
 //! [`parse`] runs the whole pipeline for one document: split off frontmatter, parse the
-//! body with the flavor's options, run the passes.
+//! body with the flavor's options, run the passes, then recognize the flavor-independent
+//! [directives](crate::directive).
 //!
 //! ```
 //! use std::path::Path;
@@ -77,6 +78,7 @@ pub use slug::{
 
 use crate::ast::{Ast, NodeId, NodeKind};
 use crate::diag::Diagnostic;
+use crate::directive::{self, DirectiveRegion};
 use crate::frontmatter::{self, Frontmatter};
 use crate::parse::{ComrakParser, ParseOptions};
 
@@ -135,22 +137,30 @@ pub struct Parsed {
     /// The tree after all passes; a frontmatter node first if there is frontmatter.
     pub ast: Ast,
     pub frontmatter: Option<Frontmatter>,
-    /// What the passes reported. Frontmatter errors are not included; see
-    /// [`Frontmatter::diagnostic`].
+    /// The `mrq:include` and `mrq:toc` regions, in document order; see
+    /// [`directive`].
+    pub directives: Vec<DirectiveRegion>,
+    /// What the passes and directive recognition reported. Frontmatter errors are not
+    /// included; see [`Frontmatter::diagnostic`].
     pub diagnostics: Vec<Diagnostic>,
 }
 
 /// Parses `src` with `flavor`: splits off frontmatter
 /// ([`frontmatter::parse_document`]), parses the body with [`Flavor::parser`] and runs
-/// [`Flavor::passes`]. `file` names the document in diagnostics.
+/// [`Flavor::passes`], then recognizes [directives](crate::directive) (whatever the
+/// flavor). `file` names the document in diagnostics.
 pub fn parse(flavor: &dyn Flavor, src: &str, file: &Path) -> Parsed {
     let (mut ast, frontmatter) = frontmatter::parse_document(src, &flavor.parser());
     let mut cx = PassContext::new(src, file, flavor);
     cx.run_passes(&mut ast);
+    let mut diagnostics = cx.into_diagnostics();
+    let (directives, directive_diagnostics) = directive::recognize(&mut ast, src, file);
+    diagnostics.extend(directive_diagnostics);
     Parsed {
         ast,
         frontmatter,
-        diagnostics: cx.into_diagnostics(),
+        directives,
+        diagnostics,
     }
 }
 
