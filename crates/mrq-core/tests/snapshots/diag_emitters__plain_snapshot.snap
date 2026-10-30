@@ -1,0 +1,14 @@
+---
+source: crates/mrq-core/tests/diag_emitters.rs
+expression: out
+---
+docs/guide.md:3:13: error[MRQ001]: link target `missing.md` does not exist
+  label: docs/guide.md:3:5: linked from here
+  help: create the file or fix the link
+  see: https://example.com/rules/MRQ001
+docs/guide.md:4:1: warning[MD013]: line length exceeds 40 characters
+  fix: replace the crab
+README.md:4:1: info[MD001]: heading levels should only increment by one
+  label: README.md:1:1: previous heading
+docs/gone file.md: hint[MRQ999]: 50% done: a, b
+  second line

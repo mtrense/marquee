@@ -1,0 +1,15 @@
+---
+source: crates/mrq-core/tests/diag_emitters.rs
+expression: out
+---
+MRQ001 (https://example.com/rules/MRQ001)
+
+  × link target `missing.md` does not exist
+   ╭─[docs/guide.md:3:13]
+ 2 │ 
+ 3 │ See [setup](missing.md) for details.
+   ·     ───┬─── ──────────
+   ·        ╰── linked from here
+ 4 │ A very long line with ünïcödé that goes on 🦀 and on.
+   ╰────
+  help: create the file or fix the link

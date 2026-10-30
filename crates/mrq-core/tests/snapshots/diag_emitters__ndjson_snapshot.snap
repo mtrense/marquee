@@ -1,0 +1,8 @@
+---
+source: crates/mrq-core/tests/diag_emitters.rs
+expression: out
+---
+{"code":"MRQ001","severity":"error","message":"link target `missing.md` does not exist","file":"docs/guide.md","range":{"start_offset":21,"end_offset":31,"start":{"line":3,"column":13},"end":{"line":3,"column":23}},"labels":[{"message":"linked from here","range":{"start_offset":13,"end_offset":20,"start":{"line":3,"column":5},"end":{"line":3,"column":12}}}],"help":"create the file or fix the link","url":"https://example.com/rules/MRQ001"}
+{"code":"MD013","severity":"warning","message":"line length exceeds 40 characters","file":"docs/guide.md","range":{"start_offset":46,"end_offset":105,"start":{"line":4,"column":1},"end":{"line":4,"column":54}},"fix":{"message":"replace the crab","edits":[{"range":{"start_offset":93,"end_offset":97,"start":{"line":4,"column":44},"end":{"line":4,"column":46}},"replacement":"crab"}]}}
+{"code":"MD001","severity":"info","message":"heading levels should only increment by one","file":"README.md","range":{"start_offset":30,"end_offset":38,"start":{"line":4,"column":1},"end":{"line":4,"column":9}},"labels":[{"message":"previous heading","range":{"start_offset":0,"end_offset":8,"start":{"line":1,"column":1},"end":{"line":1,"column":9}}}]}
+{"code":"MRQ999","severity":"hint","message":"50% done: a, b\nsecond line","file":"docs/gone file.md","range":{"start_offset":3,"end_offset":7}}

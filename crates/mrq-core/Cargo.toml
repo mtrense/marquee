@@ -8,11 +8,22 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 
+[features]
+default = ["human"]
+# Graphical (miette) rendering of human-readable diagnostics. Without it, the human
+# format falls back to one plain `file:line:col: severity[code]: message` line per diagnostic.
+human = ["dep:miette", "miette/fancy-no-syscall"]
+
 [dependencies]
 thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+miette = { workspace = true, optional = true }
 
 [dev-dependencies]
 proptest.workspace = true
+insta.workspace = true
+jsonschema.workspace = true
 
 [lints]
 workspace = true

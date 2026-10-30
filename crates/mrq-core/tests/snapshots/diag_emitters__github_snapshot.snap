@@ -1,0 +1,8 @@
+---
+source: crates/mrq-core/tests/diag_emitters.rs
+expression: out
+---
+::error file=docs/guide.md,line=3,col=13,endLine=3,endColumn=22,title=MRQ001::link target `missing.md` does not exist%0A%0Ahelp: create the file or fix the link
+::warning file=docs/guide.md,line=4,col=1,endLine=4,endColumn=53,title=MD013::line length exceeds 40 characters
+::notice file=README.md,line=4,col=1,endLine=4,endColumn=8,title=MD001::heading levels should only increment by one
+::notice file=docs/gone file.md,title=MRQ999::50%25 done: a, b%0Asecond line

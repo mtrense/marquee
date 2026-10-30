@@ -2,8 +2,10 @@
 
 use std::ops::Range;
 
+use serde::{Deserialize, Serialize};
+
 /// A half-open range `start..end` of byte offsets into a UTF-8 source text.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct ByteRange {
     /// Offset of the first byte in the range.
     pub start: usize,
@@ -46,7 +48,7 @@ impl ByteRange {
 }
 
 /// A replacement of the bytes in `range` by `replacement`.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TextEdit {
     /// The bytes to replace; empty for a pure insertion.
     pub range: ByteRange,
