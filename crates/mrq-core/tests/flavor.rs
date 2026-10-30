@@ -163,15 +163,18 @@ fn parse_applies_flavor_options() {
 #[test]
 fn registry_lists_and_finds_flavors() {
     let registry = Registry::builtin();
-    assert_eq!(registry.names().collect::<Vec<_>>(), ["commonmark", "gfm"]);
+    assert_eq!(
+        registry.names().collect::<Vec<_>>(),
+        ["commonmark", "gfm", "obsidian"]
+    );
     assert_eq!(registry.get("gfm").unwrap().name(), "gfm");
-    assert_eq!(Registry::default().names().count(), 2);
+    assert_eq!(Registry::default().names().count(), 3);
 
     assert!(registry.get("pandoc").is_none());
     let err = registry.resolve(Some("pandoc"), None, None).unwrap_err();
     assert_eq!(
         err.to_string(),
-        "unknown flavor `pandoc` (known flavors: commonmark, gfm)"
+        "unknown flavor `pandoc` (known flavors: commonmark, gfm, obsidian)"
     );
 }
 
@@ -288,7 +291,10 @@ fn unknown_frontmatter_flavor_points_at_the_value() {
     assert_eq!(diag.code, FLAVOR_ERROR_CODE);
     assert_eq!(diag.severity, Severity::Error);
     assert_eq!(diag.range, span);
-    assert!(diag.message.contains("known flavors: commonmark, gfm"));
+    assert!(
+        diag.message
+            .contains("known flavors: commonmark, gfm, obsidian")
+    );
 }
 
 #[test]
@@ -315,7 +321,7 @@ fn unknown_cli_and_config_flavors_have_no_span() {
         }
     ));
     assert_eq!(err.span(), None);
-    let err = registry.resolve(None, None, Some("obsidian")).unwrap_err();
+    let err = registry.resolve(None, None, Some("mkdocs")).unwrap_err();
     assert!(matches!(
         &err,
         FlavorError::Unknown {

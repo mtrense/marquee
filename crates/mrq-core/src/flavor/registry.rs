@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use serde_json::Value;
 
-use super::{Commonmark, DEFAULT_FLAVOR, Flavor, Gfm};
+use super::{Commonmark, DEFAULT_FLAVOR, Flavor, Gfm, Obsidian};
 use crate::ast::Span;
 use crate::diag::{Diagnostic, Severity};
 use crate::frontmatter::Frontmatter;
@@ -102,11 +102,12 @@ impl Registry {
         }
     }
 
-    /// The built-in flavors: `commonmark` and `gfm`.
+    /// The built-in flavors: `commonmark`, `gfm` and `obsidian`.
     pub fn builtin() -> Self {
         let mut registry = Self::new();
         registry.register(Arc::new(Commonmark));
         registry.register(Arc::new(Gfm));
+        registry.register(Arc::new(Obsidian));
         registry
     }
 

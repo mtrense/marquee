@@ -1,4 +1,4 @@
-//! Heading slugs: [`Slugger`] and the GitHub implementation.
+//! Heading slugs: [`Slugger`] with the GitHub and Obsidian implementations.
 
 use std::collections::HashMap;
 use std::fmt;
@@ -25,8 +25,7 @@ pub trait Slugger: fmt::Debug + Send {
 /// slug; a suffixed slug counts as taken too, so `a`, `a`, `a-1` give `a`, `a-1`, `a-1-1`.
 #[derive(Debug, Clone, Default)]
 pub struct GithubSlugger {
-    /// Every slug returned so far → how many times it has been suffixed as a base.
-    occurrences: HashMap<String, usize>,
+    taken: Taken,
 }
 
 impl GithubSlugger {
@@ -37,12 +36,74 @@ impl GithubSlugger {
 
 impl Slugger for GithubSlugger {
     fn slug(&mut self, text: &str) -> String {
-        let base = github_slug(text);
-        let mut slug = base.clone();
+        self.taken.claim(&github_slug(text))
+    }
+
+    fn reset(&mut self) {
+        self.taken.clear();
+    }
+}
+
+/// Obsidian's heading anchors: see [`obsidian_anchor`].
+///
+/// Obsidian links to a heading by its text (`[[Note#My Heading]]`, compared
+/// case-insensitively) rather than by a slug, so the anchor is the heading text itself,
+/// lightly normalized. Obsidian has no anchor for a repeated heading (links go to the
+/// first one); to keep anchors unique this slugger suffixes repeats like
+/// [`GithubSlugger`] does: `My Heading`, `My Heading-1`, …
+#[derive(Debug, Clone, Default)]
+pub struct ObsidianSlugger {
+    taken: Taken,
+}
+
+impl ObsidianSlugger {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Slugger for ObsidianSlugger {
+    fn slug(&mut self, text: &str) -> String {
+        self.taken.claim(&obsidian_anchor(text))
+    }
+
+    fn reset(&mut self) {
+        self.taken.clear();
+    }
+}
+
+/// The Obsidian anchor of a heading with plain text `text`, without duplicate tracking.
+///
+/// The characters Obsidian does not allow in a link target (`#`, `|`, `^`, `:`, `%`,
+/// `[`, `]` and `\`) become spaces, then runs of whitespace collapse to one space and
+/// the ends are trimmed. Case and everything else are kept, so `Setup: Linux` gives
+/// `Setup Linux`, as in `[[Note#Setup Linux]]`.
+pub fn obsidian_anchor(text: &str) -> String {
+    let cleaned: String = text
+        .chars()
+        .map(|c| match c {
+            '#' | '|' | '^' | ':' | '%' | '[' | ']' | '\\' => ' ',
+            c => c,
+        })
+        .collect();
+    cleaned.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// The anchors a slugger has returned, for duplicate suffixes.
+#[derive(Debug, Clone, Default)]
+struct Taken {
+    /// Every anchor returned so far → how many times it has been suffixed as a base.
+    occurrences: HashMap<String, usize>,
+}
+
+impl Taken {
+    /// `base`, or its first free suffixed form `base-1`, `base-2`, …; marks it taken.
+    fn claim(&mut self, base: &str) -> String {
+        let mut slug = base.to_owned();
         while self.occurrences.contains_key(&slug) {
             let count = self
                 .occurrences
-                .get_mut(&base)
+                .get_mut(base)
                 .expect("the base slug is taken before any suffix is tried");
             *count += 1;
             slug = format!("{base}-{count}");
@@ -51,7 +112,7 @@ impl Slugger for GithubSlugger {
         slug
     }
 
-    fn reset(&mut self) {
+    fn clear(&mut self) {
         self.occurrences.clear();
     }
 }
@@ -109,6 +170,13 @@ mod tests {
         assert_eq!(github_slug("a\tb\nc"), "abc");
         assert_eq!(github_slug("ⓐ ½ ²"), "ⓐ--");
         assert_eq!(github_slug("snake_case – done"), "snake_case--done");
+    }
+
+    #[test]
+    fn obsidian_anchor_rules() {
+        assert_eq!(obsidian_anchor("  Setup:\tLinux  "), "Setup Linux");
+        assert_eq!(obsidian_anchor("a#b|c^d%e[f]g\\h"), "a b c d e f g h");
+        assert_eq!(obsidian_anchor("Ünïcödé — “q”!"), "Ünïcödé — “q”!");
     }
 
     #[test]

@@ -32,10 +32,12 @@
 //!
 //! # Built-in flavors
 //!
-//! [`Registry::builtin`] holds `commonmark` ([`Commonmark`]) and `gfm` ([`Gfm`], the
-//! [`DEFAULT_FLAVOR`]); `obsidian` and `mkdocs` join them in later milestones. Until then
-//! resolving them is an [`FlavorError::Unknown`], like any other unregistered name. Both
-//! built-ins slug with [`GithubSlugger`] and have no passes.
+//! [`Registry::builtin`] holds `commonmark` ([`Commonmark`]), `gfm` ([`Gfm`], the
+//! [`DEFAULT_FLAVOR`]) and `obsidian` ([`Obsidian`]); `mkdocs` joins them in a later
+//! milestone. Until then resolving it is an [`FlavorError::Unknown`], like any other
+//! unregistered name. `commonmark` and `gfm` slug with [`GithubSlugger`] and have no
+//! passes; `obsidian` slugs with [`ObsidianSlugger`] and recognizes wikilinks, embeds,
+//! callouts, tags and `%%` comments with passes.
 //!
 //! # Resolution
 //!
@@ -44,6 +46,7 @@
 //! detected independently of the flavor, so it can be extracted first.
 
 mod builtin;
+mod obsidian;
 mod pass;
 mod registry;
 mod slug;
@@ -52,11 +55,12 @@ use std::fmt;
 use std::path::Path;
 
 pub use builtin::{Commonmark, Gfm};
+pub use obsidian::Obsidian;
 pub use pass::{Pass, PassContext};
 pub use registry::{
     FLAVOR_ERROR_CODE, FRONTMATTER_KEY, FlavorError, FlavorOrigin, Registry, Resolved,
 };
-pub use slug::{GithubSlugger, Slugger, github_slug};
+pub use slug::{GithubSlugger, ObsidianSlugger, Slugger, github_slug, obsidian_anchor};
 
 use crate::ast::Ast;
 use crate::diag::Diagnostic;
