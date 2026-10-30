@@ -1,0 +1,35 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT OR Apache-2.0"
+authors = ["Max Trense"]
+repository = "https://github.com/mtrense/marquee"
+
+[workspace.dependencies]
+mrq-core = { path = "crates/mrq-core", version = "0.1.0" }
+mrq-render = { path = "crates/mrq-render" }
+mrq-tui = { path = "crates/mrq-tui" }
+mrq-lsp = { path = "crates/mrq-lsp" }
+clap = { version = "4", features = ["derive"] }
+assert_cmd = "2"
+predicates = "3"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

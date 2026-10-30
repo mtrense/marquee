@@ -1,0 +1,27 @@
+[package]
+name = "mrq-cli"
+description = "mrq: a Swiss-army knife for Markdown"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "mrq"
+path = "src/main.rs"
+
+[dependencies]
+mrq-core.workspace = true
+mrq-render.workspace = true
+mrq-tui.workspace = true
+mrq-lsp.workspace = true
+clap.workspace = true
+
+[dev-dependencies]
+assert_cmd.workspace = true
+predicates.workspace = true
+
+[lints]
+workspace = true

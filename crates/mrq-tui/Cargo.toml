@@ -1,0 +1,17 @@
+[package]
+name = "mrq-tui"
+description = "Terminal UI for mrq"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+mrq-core.workspace = true
+mrq-render.workspace = true
+
+[lints]
+workspace = true
