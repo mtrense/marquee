@@ -238,7 +238,7 @@ flowchart LR
 
 - [x] **M5.1 Rule framework.** `Rule` trait (id, aliases, default enabled, options type, `check(&Document, &Options) -> Vec<Diagnostic>` with optional `Fix` as TextEdits), registry, config mapping (`MD013: { … }`, `off`, `extends`), and `.markdownlint.{json,jsonc,yaml}` fallback. **AC:** the config schema includes every rule's options.
 - [x] **M5.2 Suppression comments.** `mrq-disable`/`enable`/`disable-line`/`disable-next-line`/`disable-file`, with `markdownlint-*` equivalents. **AC:** tests mirror markdownlint semantics.
-- [ ] **M5.3 Rules MD001–MD020** *(heading, list and whitespace rules)*, with fixes where markdownlint has them. **AC:** each rule has pass/fail/fix fixtures. Where possible, results are compared with markdownlint-cli2 output on the same fixtures (fixture generation script in `xtask`).
+- [x] **M5.3 Rules MD001–MD020** *(heading, list and whitespace rules)*, with fixes where markdownlint has them. **AC:** each rule has pass/fail/fix fixtures. Where possible, results are compared with markdownlint-cli2 output on the same fixtures (fixture generation script in `xtask`).
 - [ ] **M5.4 Rules MD021–MD040.** Same AC.
 - [ ] **M5.5 Rules MD041–MD059.** Same AC.
 - [ ] **M5.6 MRQ rules.** Initial set: `MRQ001` (link to a missing anchor, as a lint mirror of validate), `MRQ002` (heading text ends with punctuation; configurable), `MRQ003` (frontmatter key order), `MRQ004` (stale include region), `MRQ005` (bare URL in an obsidian/wikilink context). **AC:** documented in `docs/rules/`.

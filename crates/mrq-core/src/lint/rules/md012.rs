@@ -60,10 +60,19 @@ impl Rule for Md012 {
             if count <= options.maximum {
                 continue;
             }
-            // The line with its line ending; the last line takes the one before it.
-            let deletion = match source.line_range(line + 1) {
-                Some(next) => ByteRange::new(range.start, next.start),
-                None => ByteRange::new(range.start - line_ending_len(text, range.start), range.end),
+            // The line with the line ending before it, so deleting the last lines of a
+            // file never touches the same line ending twice.
+            let deletion = match line
+                .checked_sub(1)
+                .and_then(|previous| source.line_range(previous))
+            {
+                Some(previous) => ByteRange::new(previous.end, range.end),
+                None => ByteRange::new(
+                    range.start,
+                    source
+                        .line_range(line + 1)
+                        .map_or(range.end, |next| next.start),
+                ),
             };
             let fix = Fix::new(
                 "Delete the blank line",
@@ -80,15 +89,5 @@ impl Rule for Md012 {
             diagnostics.push(Self::META.diagnostic(doc, range, message).with_fix(fix));
         }
         diagnostics
-    }
-}
-
-/// Length of the line ending that ends right before `offset` (0, 1 or 2 bytes).
-fn line_ending_len(text: &str, offset: usize) -> usize {
-    let before = &text[..offset];
-    if before.ends_with("\r\n") {
-        2
-    } else {
-        usize::from(before.ends_with('\n'))
     }
 }

@@ -1,0 +1,16 @@
+```Make
+all:
+	cc main.c
+```
+
+```text
+a    tab in text code
+```
+
+```
+a	tab in code without a language
+```
+
+Text    with a tab and `code    span`
+
+<!-- markdownlint-configure-file { "MD010": { "ignore_code_languages": ["make"], "spaces_per_tab": 4 } } -->

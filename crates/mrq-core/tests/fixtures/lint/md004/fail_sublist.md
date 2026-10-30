@@ -1,0 +1,11 @@
+- Item 1
+  - Same marker as the parent
+    + Item 3
+- Item 4
+
+Text between lists.
+
+* Top level differs from the first list
+  * Nested
+
+<!-- markdownlint-configure-file { "MD004": { "style": "sublist" } } -->

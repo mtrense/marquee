@@ -1,0 +1,21 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:36 MD009 Trailing spaces [Expected: 0 or 2; Actual: 1]
+6:16 MD009 Trailing spaces [Expected: 0 or 2; Actual: 1]
+13:34 MD009 Trailing spaces [Expected: 0 or 2; Actual: 1]
+--- fixed ---
+> Quoted text with a trailing space
+>  
+> Hard break in a quote  
+> end
+
+| Table | row |
+| --- | --- |
+
+<div>  
+html  
+</div>
+
+Unicode no-break space at the end

@@ -1,0 +1,16 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:5 MD010 Hard tabs [Column: 5]
+--- fixed ---
+Text with a tab and `code	span` and a tab right after `code`	here
+
+```make
+all:
+	cc main.c
+```
+
+	indented code with a tab
+
+<!-- markdownlint-configure-file { "MD010": { "code_blocks": false } } -->

@@ -1,0 +1,10 @@
+Code after: `x` (text)[https://example.com/] here.
+
+Math $x$ (math)[https://example.com/] and $(a)[b]$.
+
+| Table | (cell)[https://example.com/] |
+| --- | --- |
+
+Not escaped at the end (text\)[https://example.com/] or (text)[https://example.com/\].
+
+# (Heading)[https://example.com/]

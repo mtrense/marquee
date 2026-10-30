@@ -1,0 +1,3 @@
+3 MD003 Heading style [Expected: atx; Actual: atx_closed]
+5 MD003 Heading style [Expected: atx; Actual: setext]
+14 MD003 Heading style [Expected: atx; Actual: atx_closed]

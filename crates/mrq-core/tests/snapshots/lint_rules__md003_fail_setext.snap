@@ -1,0 +1,6 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+7:1 MD003 Heading style [Expected: setext; Actual: atx]
+9:1 MD003 Heading style [Expected: setext; Actual: atx_closed]

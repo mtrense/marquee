@@ -1,0 +1,23 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:3 MD004 Unordered list style [Expected: asterisk; Actual: plus]
+4:3 MD004 Unordered list style [Expected: asterisk; Actual: plus]
+8:1 MD004 Unordered list style [Expected: asterisk; Actual: dash]
+10:3 MD004 Unordered list style [Expected: asterisk; Actual: plus]
+13:4 MD004 Unordered list style [Expected: asterisk; Actual: dash]
+--- fixed ---
+* Item 1
+* Item 2
+  * Nested plus
+  * Nested plus
+
+Text between lists.
+
+* Dash list
+
+> * Plus list in a quote
+
+1. Ordered
+   * Dash list in an ordered list

@@ -1,0 +1,4 @@
+2:1 MD005 Inconsistent indentation for list items at the same level [Expected: 2; Actual: 3]
+6:1 MD005 Inconsistent indentation for list items at the same level [Expected: 2; Actual: 3]
+9:1 MD005 Inconsistent indentation for list items at the same level [Expected: 1; Actual: 0]
+10:1 MD005 Inconsistent indentation for list items at the same level [Expected: 1; Actual: 2]

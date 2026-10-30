@@ -1,0 +1,5 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+5:1 MD001 Heading levels should only increment by one level at a time [Expected: h2; Actual: h3]

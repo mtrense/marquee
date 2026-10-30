@@ -1,0 +1,14 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:1 MD004 Unordered list style [Expected: plus; Actual: asterisk]
+3:1 MD004 Unordered list style [Expected: plus; Actual: dash]
+4:3 MD004 Unordered list style [Expected: plus; Actual: asterisk]
+--- fixed ---
++ Plus item
++ Asterisk item starts a new list
++ Dash item starts a new list
+  + Nested asterisk
+
+<!-- markdownlint-configure-file { "MD004": { "style": "plus" } } -->

@@ -138,6 +138,182 @@ expression: "mrq_core::config::schema_json()"
       "description": "Per-rule settings keyed by rule id, alias or tag: `true`/`on`, `false`/`off`, or the rule's options.",
       "type": "object",
       "properties": {
+        "MD001": {
+          "description": "MD001: Heading levels should only increment by one level at a time",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md001Options"
+            }
+          ]
+        },
+        "heading-increment": {
+          "description": "MD001: Heading levels should only increment by one level at a time",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md001Options"
+            }
+          ]
+        },
+        "MD003": {
+          "description": "MD003: Heading style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md003Options"
+            }
+          ]
+        },
+        "heading-style": {
+          "description": "MD003: Heading style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md003Options"
+            }
+          ]
+        },
+        "MD004": {
+          "description": "MD004: Unordered list style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md004Options"
+            }
+          ]
+        },
+        "ul-style": {
+          "description": "MD004: Unordered list style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md004Options"
+            }
+          ]
+        },
+        "MD005": {
+          "description": "MD005: Inconsistent indentation for list items at the same level",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "list-indent": {
+          "description": "MD005: Inconsistent indentation for list items at the same level",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD007": {
+          "description": "MD007: Unordered list indentation",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md007Options"
+            }
+          ]
+        },
+        "ul-indent": {
+          "description": "MD007: Unordered list indentation",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md007Options"
+            }
+          ]
+        },
+        "MD009": {
+          "description": "MD009: Trailing spaces",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md009Options"
+            }
+          ]
+        },
+        "no-trailing-spaces": {
+          "description": "MD009: Trailing spaces",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md009Options"
+            }
+          ]
+        },
+        "MD010": {
+          "description": "MD010: Hard tabs",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md010Options"
+            }
+          ]
+        },
+        "no-hard-tabs": {
+          "description": "MD010: Hard tabs",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md010Options"
+            }
+          ]
+        },
+        "MD011": {
+          "description": "MD011: Reversed link syntax",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-reversed-links": {
+          "description": "MD011: Reversed link syntax",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
         "MD012": {
           "description": "MD012: Multiple consecutive blank lines",
           "anyOf": [
@@ -157,6 +333,116 @@ expression: "mrq_core::config::schema_json()"
             },
             {
               "$ref": "#/$defs/Md012Options"
+            }
+          ]
+        },
+        "MD013": {
+          "description": "MD013: Line length",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md013Options"
+            }
+          ]
+        },
+        "line-length": {
+          "description": "MD013: Line length",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md013Options"
+            }
+          ]
+        },
+        "MD014": {
+          "description": "MD014: Dollar signs used before commands without showing output",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "commands-show-output": {
+          "description": "MD014: Dollar signs used before commands without showing output",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD018": {
+          "description": "MD018: No space after hash on atx style heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-missing-space-atx": {
+          "description": "MD018: No space after hash on atx style heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD019": {
+          "description": "MD019: Multiple spaces after hash on atx style heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-multiple-space-atx": {
+          "description": "MD019: Multiple spaces after hash on atx style heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD020": {
+          "description": "MD020: No space inside hashes on closed atx style heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-missing-space-closed-atx": {
+          "description": "MD020: No space inside hashes on closed atx style heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
             }
           ]
         },
@@ -182,8 +468,96 @@ expression: "mrq_core::config::schema_json()"
             }
           ]
         },
+        "atx": {
+          "description": "Every rule tagged `atx`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "atx_closed": {
+          "description": "Every rule tagged `atx_closed`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
         "blank_lines": {
           "description": "Every rule tagged `blank_lines`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "bullet": {
+          "description": "Every rule tagged `bullet`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "code": {
+          "description": "Every rule tagged `code`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "hard_tab": {
+          "description": "Every rule tagged `hard_tab`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "headings": {
+          "description": "Every rule tagged `headings`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "indentation": {
+          "description": "Every rule tagged `indentation`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "line_length": {
+          "description": "Every rule tagged `line_length`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "links": {
+          "description": "Every rule tagged `links`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "spaces": {
+          "description": "Every rule tagged `spaces`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "ul": {
+          "description": "Every rule tagged `ul`",
           "allOf": [
             {
               "$ref": "#/$defs/RuleSwitch"
@@ -216,6 +590,197 @@ expression: "mrq_core::config::schema_json()"
         }
       ]
     },
+    "Md001Options": {
+      "description": "Options of MD001 `heading-increment`.",
+      "type": "object",
+      "properties": {
+        "front_matter_title": {
+          "description": "Regular expression (case-insensitive) for a frontmatter line that holds the\ntitle; `\"\"` ignores the frontmatter. An invalid expression matches nothing.",
+          "type": "string",
+          "default": "^\\s*\"?title\"?\\s*[:=]"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md003Options": {
+      "description": "Options of MD003 `heading-style`.",
+      "type": "object",
+      "properties": {
+        "style": {
+          "description": "Heading style.",
+          "$ref": "#/$defs/HeadingStyle",
+          "default": "consistent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "HeadingStyle": {
+      "description": "A heading style of MD003.",
+      "oneOf": [
+        {
+          "description": "Like the first heading.",
+          "type": "string",
+          "const": "consistent"
+        },
+        {
+          "description": "`# Heading`",
+          "type": "string",
+          "const": "atx"
+        },
+        {
+          "description": "`# Heading #`",
+          "type": "string",
+          "const": "atx_closed"
+        },
+        {
+          "description": "Underlined with `===` or `---`.",
+          "type": "string",
+          "const": "setext"
+        },
+        {
+          "description": "Setext for levels 1 and 2, `atx` below.",
+          "type": "string",
+          "const": "setext_with_atx"
+        },
+        {
+          "description": "Setext for levels 1 and 2, `atx_closed` below.",
+          "type": "string",
+          "const": "setext_with_atx_closed"
+        }
+      ]
+    },
+    "Md004Options": {
+      "description": "Options of MD004 `ul-style`.",
+      "type": "object",
+      "properties": {
+        "style": {
+          "description": "List style.",
+          "$ref": "#/$defs/ListStyle",
+          "default": "consistent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ListStyle": {
+      "description": "A bullet list style of MD004.",
+      "oneOf": [
+        {
+          "description": "Like the first marker.",
+          "type": "string",
+          "const": "consistent"
+        },
+        {
+          "description": "`*`",
+          "type": "string",
+          "const": "asterisk"
+        },
+        {
+          "description": "`+`",
+          "type": "string",
+          "const": "plus"
+        },
+        {
+          "description": "`-`",
+          "type": "string",
+          "const": "dash"
+        },
+        {
+          "description": "Each nesting level differs from its parent.",
+          "type": "string",
+          "const": "sublist"
+        }
+      ]
+    },
+    "NoOptions": {
+      "description": "Options of a rule that has none: only `{}` is accepted.",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "Md007Options": {
+      "description": "Options of MD007 `ul-indent`.",
+      "type": "object",
+      "properties": {
+        "indent": {
+          "description": "Spaces for indent.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 1,
+          "default": 2
+        },
+        "start_indented": {
+          "description": "Whether to indent the first level of the list.",
+          "type": "boolean",
+          "default": false
+        },
+        "start_indent": {
+          "description": "Spaces for first level indent (when `start_indented` is set); defaults to\n`indent`.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 1,
+          "default": null
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md009Options": {
+      "description": "Options of MD009 `no-trailing-spaces`.",
+      "type": "object",
+      "properties": {
+        "br_spaces": {
+          "description": "Spaces for line break (values below 2 allow none).",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0,
+          "default": 2
+        },
+        "code_blocks": {
+          "description": "Include code blocks.",
+          "type": "boolean",
+          "default": false
+        },
+        "list_item_empty_lines": {
+          "description": "Allow spaces for empty lines in list items.",
+          "type": "boolean",
+          "default": false
+        },
+        "strict": {
+          "description": "Include unnecessary breaks.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md010Options": {
+      "description": "Options of MD010 `no-hard-tabs`.",
+      "type": "object",
+      "properties": {
+        "code_blocks": {
+          "description": "Include code blocks.",
+          "type": "boolean",
+          "default": true
+        },
+        "ignore_code_languages": {
+          "description": "Fenced code languages to ignore (ignoring case). Like markdownlint, a non-empty\nlist also skips fenced blocks without a language.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "spaces_per_tab": {
+          "description": "Number of spaces for each hard tab.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0,
+          "default": 1
+        }
+      },
+      "additionalProperties": false
+    },
     "Md012Options": {
       "description": "Options of MD012 `no-multiple-blanks`.",
       "type": "object",
@@ -230,9 +795,63 @@ expression: "mrq_core::config::schema_json()"
       },
       "additionalProperties": false
     },
-    "NoOptions": {
-      "description": "Options of a rule that has none: only `{}` is accepted.",
+    "Md013Options": {
+      "description": "Options of MD013 `line-length`.",
       "type": "object",
+      "properties": {
+        "line_length": {
+          "description": "Number of characters.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0,
+          "default": 80
+        },
+        "heading_line_length": {
+          "description": "Number of characters for headings; defaults to `line_length`.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0,
+          "default": null
+        },
+        "code_block_line_length": {
+          "description": "Number of characters for code blocks; defaults to `line_length`.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0,
+          "default": null
+        },
+        "code_blocks": {
+          "description": "Include code blocks.",
+          "type": "boolean",
+          "default": true
+        },
+        "tables": {
+          "description": "Include tables.",
+          "type": "boolean",
+          "default": true
+        },
+        "headings": {
+          "description": "Include headings.",
+          "type": "boolean",
+          "default": true
+        },
+        "strict": {
+          "description": "Strict length checking.",
+          "type": "boolean",
+          "default": false
+        },
+        "stern": {
+          "description": "Stern length checking.",
+          "type": "boolean",
+          "default": false
+        }
+      },
       "additionalProperties": false
     },
     "FmtConfig": {

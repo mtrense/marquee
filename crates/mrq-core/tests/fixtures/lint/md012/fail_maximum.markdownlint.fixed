@@ -1,0 +1,9 @@
+Two blank lines are fine
+
+
+Three are not
+
+
+End
+
+<!-- markdownlint-configure-file { "MD012": { "maximum": 2 } } -->

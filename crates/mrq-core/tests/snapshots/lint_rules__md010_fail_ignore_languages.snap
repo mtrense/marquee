@@ -1,0 +1,24 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+7:2 MD010 Hard tabs [Column: 2]
+14:5 MD010 Hard tabs [Column: 5]
+14:26 MD010 Hard tabs [Column: 26]
+--- fixed ---
+```Make
+all:
+	cc main.c
+```
+
+```text
+a    tab in text code
+```
+
+```
+a	tab in code without a language
+```
+
+Text    with a tab and `code    span`
+
+<!-- markdownlint-configure-file { "MD010": { "ignore_code_languages": ["make"], "spaces_per_tab": 4 } } -->

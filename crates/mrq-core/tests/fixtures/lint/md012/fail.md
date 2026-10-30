@@ -1,0 +1,22 @@
+---
+front: matter
+
+
+keeps blank lines
+---
+
+Some text here
+
+
+Some more text here
+   
+
+    indented code
+
+
+    keeps blank lines
+
+End
+
+
+

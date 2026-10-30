@@ -1,0 +1,5 @@
+3 MD001 Heading levels should only increment by one level at a time [Expected: h2; Actual: h3]
+7 MD001 Heading levels should only increment by one level at a time [Expected: h3; Actual: h4]
+9 MD001 Heading levels should only increment by one level at a time [Expected: h5; Actual: h6]
+13 MD001 Heading levels should only increment by one level at a time [Expected: h3; Actual: h4]
+22 MD001 Heading levels should only increment by one level at a time [Expected: h2; Actual: h3]

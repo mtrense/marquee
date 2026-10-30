@@ -1,0 +1,30 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+4:1 MD005 Inconsistent indentation for list items at the same level [Expected: 2; Actual: 3]
+9:1 MD005 Inconsistent indentation for list items at the same level [Expected: 0; Actual: 1]
+16:1 MD005 Inconsistent indentation for list items at the same level [Expected: (3); Actual: (5)]
+21:1 MD005 Inconsistent indentation for list items at the same level [Expected: 1; Actual: 0]
+--- fixed ---
+* Item 1
+  * Nested item 1
+  * Nested item 2
+   * A misaligned item
+
+Text between lists.
+
+1. Item
+2. Misaligned item
+3. Item
+
+Text between lists.
+
+ 9. Right-aligned
+10. Right-aligned
+11. Misaligned item
+
+Text between lists.
+
+ - Indented first item
+- Less indented item

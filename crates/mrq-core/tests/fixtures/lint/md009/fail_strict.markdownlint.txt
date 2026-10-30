@@ -1,0 +1,3 @@
+2:43 MD009 Trailing spaces [Expected: 0 or 2; Actual: 2]
+4:19 MD009 Trailing spaces [Expected: 0 or 2; Actual: 2]
+6:15 MD009 Trailing spaces [Expected: 0 or 2; Actual: 2]

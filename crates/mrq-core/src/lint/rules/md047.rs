@@ -40,9 +40,11 @@ impl Rule for Md047 {
                 replacement: line_ending(doc).to_owned(),
             }],
         );
+        // The last character, as markdownlint reports it.
+        let last = ByteRange::new(text.floor_char_boundary(text.len() - 1), text.len());
         vec![
             Self::META
-                .diagnostic(doc, end, Self::META.description)
+                .diagnostic(doc, last, Self::META.description)
                 .with_fix(fix),
         ]
     }

@@ -1,0 +1,16 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+4:34 MD009 Trailing spaces [Expected: 0 or 3; Actual: 1]
+7:40 MD009 Trailing spaces [Expected: 0 or 3; Actual: 1]
+--- fixed ---
+Text with three trailing spaces   
+
+```text
+fenced code with a trailing space
+```
+
+    indented code with a trailing space
+
+<!-- markdownlint-configure-file { "MD009": { "code_blocks": true, "br_spaces": 3 } } -->

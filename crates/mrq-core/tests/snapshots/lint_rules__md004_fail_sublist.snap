@@ -1,0 +1,20 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:3 MD004 Unordered list style [Expected: plus; Actual: dash]
+3:5 MD004 Unordered list style [Expected: asterisk; Actual: plus]
+8:1 MD004 Unordered list style [Expected: dash; Actual: asterisk]
+9:3 MD004 Unordered list style [Expected: plus; Actual: asterisk]
+--- fixed ---
+- Item 1
+  + Same marker as the parent
+    * Item 3
+- Item 4
+
+Text between lists.
+
+- Top level differs from the first list
+  + Nested
+
+<!-- markdownlint-configure-file { "MD004": { "style": "sublist" } } -->

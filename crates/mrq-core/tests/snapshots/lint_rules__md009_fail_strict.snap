@@ -1,0 +1,17 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:43 MD009 Trailing spaces [Expected: 0 or 2; Actual: 2]
+4:19 MD009 Trailing spaces [Expected: 0 or 2; Actual: 2]
+6:15 MD009 Trailing spaces [Expected: 0 or 2; Actual: 2]
+--- fixed ---
+A hard break  
+is fine, but not at the end of a paragraph
+
+# Nor in a heading
+
+Nor `in a code
+span` across lines
+
+<!-- markdownlint-configure-file { "MD009": { "strict": true } } -->

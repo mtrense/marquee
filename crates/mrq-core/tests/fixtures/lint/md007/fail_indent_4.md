@@ -1,0 +1,7 @@
+- Item
+  - Nested by 2
+    - Nested by 4
+- Item
+    - Nested by 4
+
+<!-- markdownlint-configure-file { "MD007": { "indent": 4 } } -->

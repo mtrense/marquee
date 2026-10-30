@@ -1,0 +1,19 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 2]
+13:1 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 2]
+--- fixed ---
+- List item
+
+  continued after two blank lines
+
+> Quote
+>
+>
+> Blank quote lines are not blank
+
+<div>
+
+</div>

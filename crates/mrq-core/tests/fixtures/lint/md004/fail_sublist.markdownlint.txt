@@ -1,0 +1,4 @@
+2:3 MD004 Unordered list style [Expected: plus; Actual: dash]
+3:5 MD004 Unordered list style [Expected: asterisk; Actual: plus]
+8:1 MD004 Unordered list style [Expected: dash; Actual: asterisk]
+9:3 MD004 Unordered list style [Expected: plus; Actual: asterisk]

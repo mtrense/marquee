@@ -1,0 +1,4 @@
+3:1 MD018 No space after hash on atx style heading [Context: "#Heading with trailing spaces"]
+7:1 MD018 No space after hash on atx style heading [Context: "#!shebang-like line"]
+9:1 MD018 No space after hash on atx style heading [Context: "#\# escaped"]
+12:1 MD018 No space after hash on atx style heading [Context: "#After a comment"]

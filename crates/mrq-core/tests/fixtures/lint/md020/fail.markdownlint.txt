@@ -1,0 +1,5 @@
+1:1 MD020 No space inside hashes on closed atx style heading [Context: "#Heading 1#"]
+3:12 MD020 No space inside hashes on closed atx style heading [Context: "## Heading 2##"]
+5:1 MD020 No space inside hashes on closed atx style heading [Context: "###Heading 3 ###"]
+9:21 MD020 No space inside hashes on closed atx style heading [Context: "##### Escaped hash \#####"]
+11:1 MD020 No space inside hashes on closed atx style heading [Context: "######Heading 6...e context######"]

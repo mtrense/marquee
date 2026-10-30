@@ -1,0 +1,27 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+10:1 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 2]
+13:1 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 2]
+21:1 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 2]
+22:1 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 3]
+23:1 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 4]
+--- fixed ---
+---
+front: matter
+
+
+keeps blank lines
+---
+
+Some text here
+
+Some more text here
+   
+    indented code
+
+
+    keeps blank lines
+
+End

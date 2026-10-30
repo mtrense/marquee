@@ -1,0 +1,18 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+5:1 MD009 Trailing spaces [Expected: 0 or 2; Actual: 3]
+7:1 MD009 Trailing spaces [Expected: 0 or 2; Actual: 3]
+8:10 MD009 Trailing spaces [Expected: 0 or 2; Actual: 1]
+--- fixed ---
+- List item text
+   
+  list item text
+- Next item
+
+- Last item
+
+Paragraph
+
+<!-- markdownlint-configure-file { "MD009": { "list_item_empty_lines": true } } -->

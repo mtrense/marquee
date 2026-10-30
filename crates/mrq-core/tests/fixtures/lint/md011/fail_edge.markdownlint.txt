@@ -1,0 +1,4 @@
+1:17 MD011 Reversed link syntax [(text)[https://example.com/]]
+3:10 MD011 Reversed link syntax [(math)[https://example.com/]]
+5:11 MD011 Reversed link syntax [(cell)[https://example.com/]]
+10:3 MD011 Reversed link syntax [(Heading)[https://example.com/]]

@@ -1,0 +1,15 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+7:1 MD012 Multiple consecutive blank lines [Expected: 2; Actual: 3]
+--- fixed ---
+Two blank lines are fine
+
+
+Three are not
+
+
+End
+
+<!-- markdownlint-configure-file { "MD012": { "maximum": 2 } } -->

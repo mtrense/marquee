@@ -1,0 +1,20 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD010 Hard tabs [Column: 1]
+5:5 MD010 Hard tabs [Column: 5]
+5:10 MD010 Hard tabs [Column: 10]
+5:26 MD010 Hard tabs [Column: 26]
+9:1 MD010 Hard tabs [Column: 1]
+--- fixed ---
+Some text
+
+ * hard tab indents the item
+
+Text with  tabs and `code span`
+
+```make
+all:
+ cc main.c
+```

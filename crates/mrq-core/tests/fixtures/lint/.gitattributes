@@ -1,0 +1,2 @@
+# Lint fixtures are byte-exact (trailing spaces, tabs, line endings, missing final newline).
+* -text

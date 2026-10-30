@@ -1,0 +1,20 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:1 MD007 Unordered list indentation [Expected: 2; Actual: 3]
+5:1 MD007 Unordered list indentation [Expected: 2; Actual: 3]
+--- fixed ---
+- [ ] Task item
+  - [x] Nested task by 3
+
+> > - Nested quotes
+> >   - Nested by 3
+
+- Item
+
+      - Indented code, not a list
+
+* Item
+  1. Ordered
+     * Nested in ordered, not checked

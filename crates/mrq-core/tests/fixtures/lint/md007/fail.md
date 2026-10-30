@@ -1,0 +1,12 @@
+* List item
+   * Nested by 3 spaces
+      * Nested by 6 spaces
+* List item
+    * Nested by 4 spaces
+
+Text between lists.
+
+ - Top level indented by 1
+
+> - In a quote
+>    - Nested by 3 in a quote

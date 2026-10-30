@@ -13,8 +13,6 @@ publish = false
 mrq-cli.workspace = true
 clap.workspace = true
 clap_mangen.workspace = true
-
-[dev-dependencies]
 tempfile.workspace = true
 
 [lints]

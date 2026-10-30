@@ -1,0 +1,12 @@
+#Heading with a trailing hash #
+
+#Heading with trailing spaces   
+
+  #Indented is not checked
+
+#!shebang-like line
+
+#\# escaped
+
+<!-- comment -->
+#After a comment

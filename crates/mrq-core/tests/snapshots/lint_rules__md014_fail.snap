@@ -1,0 +1,26 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:1 MD014 Dollar signs used before commands without showing output [Context: "$ ls"]
+3:1 MD014 Dollar signs used before commands without showing output [Context: "$ cat foo"]
+5:3 MD014 Dollar signs used before commands without showing output [Context: "  $  less bar"]
+8:5 MD014 Dollar signs used before commands without showing output [Context: "$ indented code"]
+9:5 MD014 Dollar signs used before commands without showing output [Context: "$ also checked"]
+14:3 MD014 Dollar signs used before commands without showing output [Context: "$ make install-with-a-rather-l..."]
+--- fixed ---
+```sh
+ls
+cat foo
+
+  less bar
+```
+
+    indented code
+    also checked
+
+- In a list:
+
+  ```sh
+  make install-with-a-rather-long-command-line
+  ```

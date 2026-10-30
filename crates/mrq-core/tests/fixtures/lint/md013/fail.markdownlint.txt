@@ -1,0 +1,7 @@
+1:81 MD013 Line length [Expected: 80; Actual: 93]
+3:81 MD013 Line length [Expected: 80; Actual: 92]
+5:81 MD013 Line length [Expected: 80; Actual: 94]
+8:81 MD013 Line length [Expected: 80; Actual: 93]
+11:81 MD013 Line length [Expected: 80; Actual: 97]
+14:81 MD013 Line length [Expected: 80; Actual: 90]
+16:81 MD013 Line length [Expected: 80; Actual: 85]

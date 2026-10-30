@@ -221,7 +221,7 @@ fn md047_requires_a_single_trailing_newline() {
     assert_eq!(linter.check(&Document::parse("")), []);
     let diags = linter.check(&Document::parse("# A\ntext"));
     assert_eq!(diags.len(), 1);
-    assert_eq!(diags[0].range, ByteRange::new(8, 8));
+    assert_eq!(diags[0].range, ByteRange::new(7, 8));
     assert_eq!(fixed(&linter, "# A\ntext"), "# A\ntext\n");
     assert_eq!(fixed(&linter, "a\r\nb"), "a\r\nb\r\n");
 }

@@ -1,0 +1,2 @@
+13:3 MD014 Dollar signs used before commands without showing output [Context: "$ in a quote"]
+17:1 MD014 Dollar signs used before commands without showing output [Context: "$	tab after the prompt"]

@@ -1,0 +1,5 @@
+3:1 MD011 Reversed link syntax [(Incorrect link syntax)[https://www.example.com/]]
+5:16 MD011 Reversed link syntax [(one)[https://one.example/]]
+5:48 MD011 Reversed link syntax [(two)[https://two.example/]]
+7:14 MD011 Reversed link syntax [(item)[https://www.example.com/]]
+9:15 MD011 Reversed link syntax [(quoted)[https://www.example.com/]]

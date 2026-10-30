@@ -1,0 +1,7 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:81 MD013 Line length [Expected: 80; Actual: 99]
+3:81 MD013 Line length [Expected: 80; Actual: 87]
+5:81 MD013 Line length [Expected: 80; Actual: 88]

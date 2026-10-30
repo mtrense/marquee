@@ -1,0 +1,21 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD018 No space after hash on atx style heading [Context: "#Heading with trailing spaces"]
+7:1 MD018 No space after hash on atx style heading [Context: "#!shebang-like line"]
+9:1 MD018 No space after hash on atx style heading [Context: "#\# escaped"]
+12:1 MD018 No space after hash on atx style heading [Context: "#After a comment"]
+--- fixed ---
+#Heading with a trailing hash #
+
+# Heading with trailing spaces   
+
+  #Indented is not checked
+
+# !shebang-like line
+
+# \# escaped
+
+<!-- comment -->
+# After a comment

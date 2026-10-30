@@ -2,6 +2,12 @@
 
 `just check` runs formatting, clippy and every test with all features on. Most behaviour is covered by unit tests, snapshot tests (`insta`) and CLI tests (`assert_cmd`) under `crates/*/tests/`. A few things can only be checked by hand; they are listed here.
 
+## Lint parity with markdownlint
+
+Each markdownlint rule has fixtures in `crates/mrq-core/tests/fixtures/lint/<rule>/`: `pass*.md` must be clean, `fail*.md` must report something, and rule options come from `<!-- markdownlint-configure-file … -->` comments, which both tools read. Next to each fixture, `<name>.markdownlint.txt` records what markdownlint-cli2 reports with only that rule on (`line[:column] RULE message`) and `<name>.markdownlint.fixed` what its `--fix` writes (absent when nothing changes). `crates/mrq-core/tests/lint_rules.rs` compares mrq with these recordings offline, and snapshots mrq's findings and fixed text.
+
+`just lint-parity` (`cargo xtask lint-parity`) re-records them with `npx --yes markdownlint-cli2@0.24.0`, then runs that test; it needs Node.js and network access for npx. `--check` only reports stale recordings, and `--command` runs another markdownlint-cli2 (e.g. a local `node_modules/.bin/markdownlint-cli2`). Inside a sandbox where `~/.npm` is read-only, set `npm_config_cache` to a writable directory.
+
 ## Manual checks
 
 ### SARIF from `mrq validate` is accepted by GitHub code scanning

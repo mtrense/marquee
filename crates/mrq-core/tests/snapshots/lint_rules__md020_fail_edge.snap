@@ -1,0 +1,24 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:1 MD020 No space inside hashes on closed atx style heading [Context: "#é#"]
+9:1 MD020 No space inside hashes on closed atx style heading [Context: "#a#"]
+--- fixed ---
+# é #
+
+- ##In a list##
+
+#Text with a # in it#
+
+  ##Indented##
+
+# a #
+
+<!-- comment
+#Heading in a comment#
+-->
+
+$$
+#In math#
+$$

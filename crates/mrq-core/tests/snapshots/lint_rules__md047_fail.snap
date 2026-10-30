@@ -1,0 +1,9 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:9 MD047 Files should end with a single newline character
+--- fixed ---
+# No newline at the end
+
+Last line

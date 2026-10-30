@@ -1,0 +1,14 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:1 MD007 Unordered list indentation [Expected: 4; Actual: 2]
+3:1 MD007 Unordered list indentation [Expected: 8; Actual: 4]
+--- fixed ---
+- Item
+    - Nested by 2
+        - Nested by 4
+- Item
+    - Nested by 4
+
+<!-- markdownlint-configure-file { "MD007": { "indent": 4 } } -->

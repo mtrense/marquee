@@ -1,0 +1,10 @@
+- List item text
+   
+  list item text
+- Next item
+
+- Last item
+
+Paragraph
+
+<!-- markdownlint-configure-file { "MD009": { "list_item_empty_lines": true } } -->

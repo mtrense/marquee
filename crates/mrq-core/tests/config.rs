@@ -518,7 +518,7 @@ fn markdownlint_json_is_the_lint_fallback() {
     let tree = Tree::new();
     let file = tree.write(
         "a/.markdownlint.json",
-        "{\n  \"$schema\": \"https://example.com/schema.json\",\n  \"default\": false,\n  \"MD012\": { \"maximum\": 2 },\n  \"line-length\": false,\n  \"single-trailing-newline\": true\n}\n",
+        "{\n  \"$schema\": \"https://example.com/schema.json\",\n  \"default\": false,\n  \"MD012\": { \"maximum\": 2 },\n  \"MD002\": false,\n  \"single-trailing-newline\": true\n}\n",
     );
     let loaded = tree.loader().load().unwrap();
     let config = loaded.config();
@@ -531,8 +531,8 @@ fn markdownlint_json_is_the_lint_fallback() {
         rule(config, "single-trailing-newline"),
         Some(RuleSetting::Enabled(true))
     );
-    // Rules mrq does not know (yet, or markdownlint plugins) are skipped.
-    assert_eq!(rule(config, "line-length"), None);
+    // Rules mrq does not know (deprecated ones, markdownlint plugins) are skipped.
+    assert_eq!(rule(config, "MD002"), None);
     assert_eq!(loaded.files(), std::slice::from_ref(&file));
     assert_eq!(
         loaded.origin(&["lint", "rules", "MD012", "maximum"]),

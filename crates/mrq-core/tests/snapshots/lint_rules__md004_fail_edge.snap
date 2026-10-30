@@ -1,0 +1,16 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD004 Unordered list style [Expected: plus; Actual: dash]
+4:1 MD004 Unordered list style [Expected: plus; Actual: asterisk]
+8:6 MD004 Unordered list style [Expected: plus; Actual: dash]
+--- fixed ---
+> + Quoted list sets the style
+
++ [ ] Task
++ [x] Task with another marker
+
+1. Ordered
+   + Bullet in ordered
+     + Nested bullet

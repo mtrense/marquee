@@ -1,0 +1,17 @@
+#é#
+
+- ##In a list##
+
+#Text with a # in it#
+
+  ##Indented##
+
+#a#
+
+<!-- comment
+#Heading in a comment#
+-->
+
+$$
+#In math#
+$$

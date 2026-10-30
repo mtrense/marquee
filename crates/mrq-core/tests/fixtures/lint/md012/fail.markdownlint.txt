@@ -1,0 +1,5 @@
+10 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 2]
+13 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 2]
+21 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 2]
+22 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 3]
+23 MD012 Multiple consecutive blank lines [Expected: 1; Actual: 4]

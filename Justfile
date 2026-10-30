@@ -53,6 +53,10 @@ schema:
 man out="target/man":
     cargo xtask man --out {{out}}
 
+# Record markdownlint-cli2's findings on the lint fixtures, then compare mrq with them; needs Node.js (npx) and network.
+lint-parity *args:
+    cargo xtask lint-parity {{args}}
+
 # Coverage via tarpaulin: HTML report + lcov.info in target/tarpaulin/, fails below 80% line coverage.
 coverage:
     cargo tarpaulin --workspace --out Html --out Lcov --output-dir target/tarpaulin --fail-under 80

@@ -1,0 +1,2 @@
+1 MD003 Heading style [Expected: setext; Actual: atx]
+6 MD003 Heading style [Expected: atx; Actual: atx_closed]
