@@ -138,7 +138,7 @@ fn flavor_is_registered_with_its_options() {
     let registry = Registry::builtin();
     assert_eq!(
         registry.names().collect::<Vec<_>>(),
-        ["commonmark", "gfm", "obsidian"]
+        ["commonmark", "gfm", "obsidian", "mkdocs"]
     );
     assert_eq!(registry.get("obsidian").unwrap().name(), "obsidian");
     let options = Obsidian.parse_options();

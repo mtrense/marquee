@@ -169,6 +169,23 @@ impl NodeKind {
         }
     }
 
+    /// Applies `map` to every span in the payload: a heading's
+    /// [`HeadingAttrs::span`] and each [`DirectiveAttribute::span`]. The node's own span
+    /// lives in the [`Ast`](super::Ast); [`Ast::import`](super::Ast::import) maps both.
+    pub fn map_spans(&mut self, mut map: impl FnMut(Span) -> Span) {
+        match self {
+            Self::Heading(Heading {
+                attrs: Some(attrs), ..
+            }) => attrs.span = map(attrs.span),
+            Self::IncludeDirective(directive) | Self::TocDirective(directive) => {
+                for attr in &mut directive.attributes {
+                    attr.span = map(attr.span);
+                }
+            }
+            _ => {}
+        }
+    }
+
     /// Shorthand for `self.node_type().is_block()`.
     pub const fn is_block(&self) -> bool {
         self.node_type().is_block()
@@ -714,6 +731,39 @@ mod tests {
         assert!(text.is_inline());
         assert!(NodeType::Callout.is_block());
         assert!(NodeType::WikiLink.is_inline());
+    }
+
+    #[test]
+    fn payload_spans_are_mapped() {
+        let shift = |s: Span| Span::new(s.start + 10, s.end + 10);
+        let mut heading = NodeKind::Heading(Heading {
+            attrs: Some(HeadingAttrs {
+                span: Span::new(1, 2),
+                ..HeadingAttrs::default()
+            }),
+            ..Heading::atx(1)
+        });
+        heading.map_spans(shift);
+        let NodeKind::Heading(Heading {
+            attrs: Some(attrs), ..
+        }) = &heading
+        else {
+            unreachable!()
+        };
+        assert_eq!(attrs.span, Span::new(11, 12));
+        let attribute = DirectiveAttribute {
+            name: "a".into(),
+            value: "b".into(),
+            span: Span::new(3, 4),
+        };
+        let mut toc = NodeKind::TocDirective(Directive {
+            attributes: vec![attribute],
+        });
+        toc.map_spans(shift);
+        let NodeKind::TocDirective(directive) = &toc else {
+            unreachable!()
+        };
+        assert_eq!(directive.attributes[0].span, Span::new(13, 14));
     }
 
     #[test]

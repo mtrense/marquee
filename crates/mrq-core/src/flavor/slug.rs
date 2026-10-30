@@ -1,9 +1,10 @@
-//! Heading slugs: [`Slugger`] with the GitHub and Obsidian implementations.
+//! Heading slugs: [`Slugger`] with the GitHub, Obsidian and mkdocs implementations.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 use unicode_general_category::{GeneralCategory, get_general_category};
+use unicode_normalization::UnicodeNormalization as _;
 
 /// Turns heading text into anchor ids, unique within one document.
 ///
@@ -16,6 +17,14 @@ pub trait Slugger: fmt::Debug + Send {
 
     /// Forgets every slug returned so far.
     fn reset(&mut self);
+
+    /// Marks `id` as taken without returning it, so later slugs avoid it: an explicit
+    /// heading id (`{#id}`), which wins over the slug. The default does nothing; every
+    /// built-in slugger implements it. [`heading_anchors`](super::heading_anchors)
+    /// reserves all explicit ids before slugging, as Python-Markdown does.
+    fn reserve(&mut self, id: &str) {
+        let _ = id;
+    }
 }
 
 /// GitHub's heading anchors, as implemented by
@@ -41,6 +50,10 @@ impl Slugger for GithubSlugger {
 
     fn reset(&mut self) {
         self.taken.clear();
+    }
+
+    fn reserve(&mut self, id: &str) {
+        self.taken.reserve(id);
     }
 }
 
@@ -70,6 +83,107 @@ impl Slugger for ObsidianSlugger {
     fn reset(&mut self) {
         self.taken.clear();
     }
+
+    fn reserve(&mut self, id: &str) {
+        self.taken.reserve(id);
+    }
+}
+
+/// mkdocs heading ids: Python-Markdown's `toc` extension with its default `slugify`
+/// (see [`mkdocs_slug`]) and `unique`.
+///
+/// A slug that is taken, or empty, gets a `_1` suffix; a taken slug that already ends in
+/// `_<n>` has the number increased instead. So `a`, `a`, `a_1` give `a`, `a_1`, `a_2`,
+/// and two headings without ASCII letters give `_1`, `_2`.
+#[derive(Debug, Clone, Default)]
+pub struct MkdocsSlugger {
+    taken: HashSet<String>,
+}
+
+impl MkdocsSlugger {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Slugger for MkdocsSlugger {
+    fn slug(&mut self, text: &str) -> String {
+        let mut id = mkdocs_slug(text);
+        while id.is_empty() || self.taken.contains(&id) {
+            id = match id.rsplit_once('_') {
+                Some((base, n)) if !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()) => {
+                    format!("{base}_{}", increment(n))
+                }
+                _ => format!("{id}_1"),
+            };
+        }
+        self.taken.insert(id.clone());
+        id
+    }
+
+    fn reset(&mut self) {
+        self.taken.clear();
+    }
+
+    fn reserve(&mut self, id: &str) {
+        self.taken.insert(id.to_owned());
+    }
+}
+
+/// The decimal `digits` plus one, without leading zeros (as Python's `int(n) + 1`).
+fn increment(digits: &str) -> String {
+    let mut out: Vec<u8> = digits.trim_start_matches('0').bytes().collect();
+    let mut i = out.len();
+    loop {
+        if i == 0 {
+            out.insert(0, b'1');
+            break;
+        }
+        i -= 1;
+        if out[i] == b'9' {
+            out[i] = b'0';
+        } else {
+            out[i] += 1;
+            break;
+        }
+    }
+    String::from_utf8(out).expect("ASCII digits")
+}
+
+/// The mkdocs (Python-Markdown `toc.slugify`) slug of a heading with plain text `text`,
+/// without duplicate tracking.
+///
+/// The text is NFKD-normalized and every non-ASCII character dropped (so accents go
+/// and `ﬁ` becomes `fi`, but `ß` and CJK vanish), then everything but ASCII letters,
+/// digits, `_`, `-` and whitespace is removed. The rest is trimmed, lowercased, and
+/// each run of `-` and whitespace becomes one `-`.
+pub fn mkdocs_slug(text: &str) -> String {
+    let kept: String = text
+        .nfkd()
+        .filter(|&c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || python_space(c))
+        .collect();
+    let mut slug = String::with_capacity(kept.len());
+    let mut in_run = false;
+    for c in kept.trim_matches(python_space).chars() {
+        if c == '-' || python_space(c) {
+            if !in_run {
+                slug.push('-');
+            }
+            in_run = true;
+        } else {
+            slug.push(c.to_ascii_lowercase());
+            in_run = false;
+        }
+    }
+    slug
+}
+
+/// Python's `\s` and `str.strip()` whitespace, restricted to ASCII.
+const fn python_space(c: char) -> bool {
+    matches!(
+        c,
+        ' ' | '\t' | '\n' | '\r' | '\x0b' | '\x0c' | '\x1c'..='\x1f'
+    )
 }
 
 /// The Obsidian anchor of a heading with plain text `text`, without duplicate tracking.
@@ -110,6 +224,11 @@ impl Taken {
         }
         self.occurrences.insert(slug.clone(), 0);
         slug
+    }
+
+    /// Marks `id` as taken, so `claim` suffixes it.
+    fn reserve(&mut self, id: &str) {
+        self.occurrences.entry(id.to_owned()).or_insert(0);
     }
 
     fn clear(&mut self) {
@@ -177,6 +296,33 @@ mod tests {
         assert_eq!(obsidian_anchor("  Setup:\tLinux  "), "Setup Linux");
         assert_eq!(obsidian_anchor("a#b|c^d%e[f]g\\h"), "a b c d e f g h");
         assert_eq!(obsidian_anchor("Ünïcödé — “q”!"), "Ünïcödé — “q”!");
+    }
+
+    #[test]
+    fn reserved_ids_are_avoided() {
+        let mut slugger = GithubSlugger::new();
+        slugger.reserve("a");
+        assert_eq!(slugger.slug("A"), "a-1");
+        let mut slugger = ObsidianSlugger::new();
+        slugger.reserve("A");
+        assert_eq!(slugger.slug("A"), "A-1");
+        let mut slugger = MkdocsSlugger::new();
+        slugger.reserve("a");
+        assert_eq!(slugger.slug("A"), "a_1");
+    }
+
+    #[test]
+    fn mkdocs_suffixes_count_like_python_ints() {
+        let mut slugger = MkdocsSlugger::new();
+        let huge = format!("a_{}", "9".repeat(40));
+        assert_eq!(slugger.slug(&huge), huge);
+        assert_eq!(slugger.slug(&huge), format!("a_1{}", "0".repeat(40)));
+        assert_eq!(slugger.slug("b_007"), "b_007");
+        assert_eq!(slugger.slug("b_007"), "b_8");
+        assert_eq!(slugger.slug("c_0"), "c_0");
+        assert_eq!(slugger.slug("c_0"), "c_1");
+        assert_eq!(increment("0"), "1");
+        assert_eq!(increment("199"), "200");
     }
 
     #[test]

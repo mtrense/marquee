@@ -30,6 +30,7 @@ serde-saphyr.workspace = true
 comrak.workspace = true
 toml_edit.workspace = true
 unicode-general-category.workspace = true
+unicode-normalization.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

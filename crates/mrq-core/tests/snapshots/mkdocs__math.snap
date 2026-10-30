@@ -1,0 +1,23 @@
+---
+source: crates/mrq-core/tests/mkdocs.rs
+expression: "dump_with_source(&parsed.ast, &src)"
+---
+document 0..142  @ "Inline $a + b$ and display $$c$$.\n\n$$\nE = mc^2\n$$\n\nGeneric \\(x^2\\) and \\[y\\] forms.\n\n\\[\n\\int_0^1 f(x)\\,dx\n\\]\n\nEscaped \\\\(not math\\\\) and \\$5.\n"
+  paragraph 0..33  @ "Inline $a + b$ and display $$c$$."
+    text 0..7 "Inline "  @ "Inline "
+    math 7..14 { display: false, literal: "a + b" }  @ "$a + b$"
+    text 14..27 " and display "  @ " and display "
+    math 27..32 { display: true, literal: "c" }  @ "$$c$$"
+    text 32..33 "."  @ "."
+  paragraph 35..49  @ "$$\nE = mc^2\n$$"
+    math 35..49 { display: true, literal: "\nE = mc^2\n" }  @ "$$\nE = mc^2\n$$"
+  paragraph 51..83  @ "Generic \\(x^2\\) and \\[y\\] forms."
+    text 51..59 "Generic "  @ "Generic "
+    math 59..66 { display: false, literal: "x^2" }  @ "\\(x^2\\)"
+    text 66..71 " and "  @ " and "
+    math 71..76 { display: true, literal: "y" }  @ "\\[y\\]"
+    text 76..83 " forms."  @ " forms."
+  paragraph 85..108  @ "\\[\n\\int_0^1 f(x)\\,dx\n\\]"
+    math 85..108 { display: true, literal: "\n\\int_0^1 f(x)\\,dx\n" }  @ "\\[\n\\int_0^1 f(x)\\,dx\n\\]"
+  paragraph 110..141  @ "Escaped \\\\(not math\\\\) and \\$5."
+    text 110..141 "Escaped \\(not math\\) and $5."  @ "Escaped \\\\(not math\\\\) and \\$5."

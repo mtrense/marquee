@@ -953,6 +953,7 @@ dependencies = [
  "thiserror",
  "toml_edit",
  "unicode-general-category",
+ "unicode-normalization",
 ]
 
 [[package]]

@@ -34,5 +34,5 @@ document 0..388  @ "> [!note]\n> A plain callout with a [[link]].\n\n> [!tip]- F
       text 291..330 "Just a quote, [!note] not at the start."  @ "Just a quote, [!note] not at the start."
   block_quote 332..350  @ "> \\[!note] escaped"
     paragraph 334..350  @ "\\[!note] escaped"
-      text 335..350 "[!note] escaped"  @ "[!note] escaped"
+      text 334..350 "[!note] escaped"  @ "\\[!note] escaped"
   callout 352..387 { kind: "quote", title: Some("No space after the marker"), fold: None }  @ ">[!quote] No space after the marker"

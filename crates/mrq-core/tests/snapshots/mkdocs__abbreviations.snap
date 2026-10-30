@@ -1,0 +1,16 @@
+---
+source: crates/mrq-core/tests/mkdocs.rs
+expression: "dump_with_source(&parsed.ast, &src)"
+---
+document 0..200  @ "The HTML spec is maintained by the W3C.\n\n*[HTML]: Hyper Text Markup Language\n*[W3C]:  World Wide Web Consortium\n\nSome text\n*[ABBR]: In the middle\nmore text.\n\n*[Not one] stays text, there is no colon.\n"
+  paragraph 0..39  @ "The HTML spec is maintained by the W3C."
+    text 0..39 "The HTML spec is maintained by the W3C."  @ "The HTML spec is maintained by the W3C."
+  abbreviation_definition 41..76 { abbr: "HTML", expansion: "Hyper Text Markup Language" }  @ "*[HTML]: Hyper Text Markup Language"
+  abbreviation_definition 77..111 { abbr: "W3C", expansion: "World Wide Web Consortium" }  @ "*[W3C]:  World Wide Web Consortium"
+  paragraph 113..122  @ "Some text"
+    text 113..122 "Some text"  @ "Some text"
+  abbreviation_definition 123..145 { abbr: "ABBR", expansion: "In the middle" }  @ "*[ABBR]: In the middle"
+  paragraph 146..156  @ "more text."
+    text 146..156 "more text."  @ "more text."
+  paragraph 158..199  @ "*[Not one] stays text, there is no colon."
+    text 158..199 "*[Not one] stays text, there is no colon."  @ "*[Not one] stays text, there is no colon."

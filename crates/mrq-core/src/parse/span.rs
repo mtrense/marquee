@@ -149,7 +149,7 @@ pub(super) fn repair(ast: &mut Ast, src: &str, reported: &[Option<Span>]) {
                 let reported = spans[child.index()];
                 fit(ast.kind(child), src, reported, Span::new(cursor, gap_end))
             });
-            let span = snap(src, span);
+            let span = with_leading_escape(ast.kind(child), src, cursor, snap(src, span));
             ast.set_span(child, span);
             cursor = span.end;
         }
@@ -241,6 +241,29 @@ fn fit(kind: &NodeKind, src: &str, reported: Option<Span>, gap: Span) -> Span {
         }
     }
     gap
+}
+
+/// For text whose span starts right after the backslash escaping its first character
+/// (comrak reports text after an inline from behind the backslash, as in `*a*\)`),
+/// the span with the backslash, if no earlier sibling claimed it (it lies after
+/// `cursor`). Other spans are returned as they are.
+fn with_leading_escape(kind: &NodeKind, src: &str, cursor: usize, span: Span) -> Span {
+    let NodeKind::Text(literal) = kind else {
+        return span;
+    };
+    let escapes = src[..span.start]
+        .bytes()
+        .rev()
+        .take_while(|&b| b == b'\\')
+        .count()
+        .min(span.start - cursor.min(span.start));
+    let first = src[span.start..span.end].chars().next();
+    if escapes % 2 == 1 && first.is_some_and(|c| c.is_ascii_punctuation() && literal.starts_with(c))
+    {
+        Span::new(span.start - 1, span.end)
+    } else {
+        span
+    }
 }
 
 /// Widens `span` to the nearest `char` boundaries.
@@ -408,6 +431,42 @@ mod tests {
         ]);
         repair(&mut ast, SRC, &reported);
         assert_eq!(spans(&ast)[4].1, span(5, 7));
+    }
+
+    #[test]
+    fn text_after_an_inline_keeps_its_leading_escape() {
+        let src = "*a*\\) b";
+        let mut ast = Ast::new(span(0, 7));
+        let para = ast.create(NodeKind::Paragraph, Span::default());
+        let emph = ast.create(NodeKind::Emphasis, Span::default());
+        let a = ast.create(NodeKind::Text("a".into()), Span::default());
+        let rest = ast.create(NodeKind::Text(") b".into()), Span::default());
+        ast.append_child(ast.root(), para).unwrap();
+        ast.append_child(para, emph).unwrap();
+        ast.append_child(emph, a).unwrap();
+        ast.append_child(para, rest).unwrap();
+        let reported = vec![
+            Some(span(0, 7)),
+            Some(span(0, 7)),
+            Some(span(0, 3)),
+            Some(span(1, 2)),
+            Some(span(4, 7)),
+        ];
+        repair(&mut ast, src, &reported);
+        assert_eq!(ast.span(rest), span(3, 7));
+        // An escaped backslash before the text is not an escape of it.
+        let src = "*a*\\\\) b";
+        let mut ast2 = ast.clone();
+        let reported = vec![
+            Some(span(0, 8)),
+            Some(span(0, 8)),
+            Some(span(0, 3)),
+            Some(span(1, 2)),
+            Some(span(5, 8)),
+        ];
+        ast2.set_span(ast2.root(), span(0, 8));
+        repair(&mut ast2, src, &reported);
+        assert_eq!(ast2.span(rest), span(5, 8));
     }
 
     #[test]

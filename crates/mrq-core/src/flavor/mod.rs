@@ -33,11 +33,18 @@
 //! # Built-in flavors
 //!
 //! [`Registry::builtin`] holds `commonmark` ([`Commonmark`]), `gfm` ([`Gfm`], the
-//! [`DEFAULT_FLAVOR`]) and `obsidian` ([`Obsidian`]); `mkdocs` joins them in a later
-//! milestone. Until then resolving it is an [`FlavorError::Unknown`], like any other
-//! unregistered name. `commonmark` and `gfm` slug with [`GithubSlugger`] and have no
-//! passes; `obsidian` slugs with [`ObsidianSlugger`] and recognizes wikilinks, embeds,
-//! callouts, tags and `%%` comments with passes.
+//! [`DEFAULT_FLAVOR`]), `obsidian` ([`Obsidian`]) and `mkdocs` ([`Mkdocs`]).
+//! `commonmark` and `gfm` slug with [`GithubSlugger`] and have no passes; `obsidian`
+//! slugs with [`ObsidianSlugger`] and recognizes wikilinks, embeds, callouts, tags and
+//! `%%` comments with passes; `mkdocs` slugs with [`MkdocsSlugger`] and recognizes
+//! admonitions, heading attributes, abbreviations and `\(…\)` math with passes.
+//!
+//! # Heading anchors
+//!
+//! [`heading_anchors`] gives every heading its anchor: the explicit id of its
+//! [`HeadingAttrs`](crate::ast::HeadingAttrs) (mkdocs `{#id}`) if it has one, else the
+//! flavor's slug of its text. Use it rather than slugging headings one by one, so
+//! explicit ids are honoured and reserved.
 //!
 //! # Resolution
 //!
@@ -46,23 +53,29 @@
 //! detected independently of the flavor, so it can be extracted first.
 
 mod builtin;
+mod mkdocs;
 mod obsidian;
 mod pass;
 mod registry;
 mod slug;
+mod text;
 
 use std::fmt;
 use std::path::Path;
 
 pub use builtin::{Commonmark, Gfm};
+pub use mkdocs::Mkdocs;
 pub use obsidian::Obsidian;
 pub use pass::{Pass, PassContext};
 pub use registry::{
     FLAVOR_ERROR_CODE, FRONTMATTER_KEY, FlavorError, FlavorOrigin, Registry, Resolved,
 };
-pub use slug::{GithubSlugger, ObsidianSlugger, Slugger, github_slug, obsidian_anchor};
+pub use slug::{
+    GithubSlugger, MkdocsSlugger, ObsidianSlugger, Slugger, github_slug, mkdocs_slug,
+    obsidian_anchor,
+};
 
-use crate::ast::Ast;
+use crate::ast::{Ast, NodeId, NodeKind};
 use crate::diag::Diagnostic;
 use crate::frontmatter::{self, Frontmatter};
 use crate::parse::{ComrakParser, ParseOptions};
@@ -133,4 +146,37 @@ pub fn parse(flavor: &dyn Flavor, src: &str, file: &Path) -> Parsed {
         frontmatter,
         diagnostics: cx.into_diagnostics(),
     }
+}
+
+/// The anchor of every heading in `ast`, in document order: the explicit id of its
+/// [`HeadingAttrs`](crate::ast::HeadingAttrs) if it has one, else
+/// `slugger.slug(&ast.text(heading))`.
+///
+/// All explicit ids are [reserved](Slugger::reserve) first, so a slug never repeats one,
+/// even one further down (as in Python-Markdown's `toc`). Explicit ids themselves are
+/// kept as written, duplicates included. Pass a fresh (or [reset](Slugger::reset))
+/// slugger from the document's flavor.
+pub fn heading_anchors(ast: &Ast, slugger: &mut dyn Slugger) -> Vec<(NodeId, String)> {
+    let explicit = |id: NodeId| match ast.kind(id) {
+        NodeKind::Heading(heading) => {
+            Some(heading.attrs.as_ref().and_then(|attrs| attrs.id.as_deref()))
+        }
+        _ => None,
+    };
+    let headings: Vec<(NodeId, Option<&str>)> = ast
+        .descendants(ast.root())
+        .filter_map(|id| explicit(id).map(|anchor| (id, anchor)))
+        .collect();
+    for &(_, anchor) in &headings {
+        if let Some(anchor) = anchor {
+            slugger.reserve(anchor);
+        }
+    }
+    headings
+        .into_iter()
+        .map(|(id, anchor)| {
+            let anchor = anchor.map_or_else(|| slugger.slug(&ast.text(id)), str::to_owned);
+            (id, anchor)
+        })
+        .collect()
 }

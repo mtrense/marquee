@@ -280,20 +280,28 @@ impl Ast {
 
     /// Deep-copies the subtree of `other` rooted at `node` into this arena, detached, and
     /// returns the id of the copy. `map_span` translates each span into this tree's source,
-    /// e.g. from a re-parsed admonition body back to the enclosing document.
+    /// e.g. from a re-parsed admonition body back to the enclosing document: node spans
+    /// and the spans in payloads ([`NodeKind::map_spans`]).
     pub fn import(
         &mut self,
         other: &Ast,
         node: NodeId,
         mut map_span: impl FnMut(Span) -> Span,
     ) -> NodeId {
-        let copy = self.create(other.kind(node).clone(), map_span(other.span(node)));
+        // The kind (with its payload spans mapped) and span of a node of `other`.
+        let mut copy_of = |id: NodeId| {
+            let mut kind = other.kind(id).clone();
+            kind.map_spans(&mut map_span);
+            (kind, map_span(other.span(id)))
+        };
+        let (kind, span) = copy_of(node);
+        let copy = self.create(kind, span);
         // Explicit stack of (source node, copy) pairs whose children still need copying.
         let mut pending = vec![(node, copy)];
         while let Some((source, target)) = pending.pop() {
             for &child in other.children(source) {
-                let child_copy =
-                    self.create(other.kind(child).clone(), map_span(other.span(child)));
+                let (kind, span) = copy_of(child);
+                let child_copy = self.create(kind, span);
                 self.data_mut(child_copy).parent = Some(target);
                 self.data_mut(target).children.push(child_copy);
                 pending.push((child, child_copy));
