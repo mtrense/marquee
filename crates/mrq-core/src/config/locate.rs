@@ -48,6 +48,16 @@ impl KeyIndex {
         Self { entries }
     }
 
+    /// Moves every entry to the path `map` gives it, dropping those it maps to `None`.
+    pub(crate) fn remap(self, map: impl Fn(&[String]) -> Option<Vec<String>>) -> Self {
+        let entries = self
+            .entries
+            .into_iter()
+            .filter_map(|(path, pos)| Some((map(&path)?, pos)))
+            .collect();
+        Self { entries }
+    }
+
     /// Position of the key or item at `path`.
     pub(crate) fn get<S: AsRef<str>>(&self, path: &[S]) -> Option<Pos> {
         let key: Vec<String> = path.iter().map(|s| s.as_ref().to_owned()).collect();

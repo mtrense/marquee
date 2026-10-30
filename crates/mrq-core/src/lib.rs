@@ -11,6 +11,7 @@ pub mod document;
 pub mod flavor;
 pub mod frontmatter;
 pub mod input;
+pub mod lint;
 pub mod parse;
 pub mod query;
 pub mod source;

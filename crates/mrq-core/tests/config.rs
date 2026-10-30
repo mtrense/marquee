@@ -6,8 +6,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use mrq_core::config::{
-    Config, ConfigError, ConfigLoader, FlavorName, LintExtends, OrderedList, Origin, Wrap,
-    user_cache_dir, user_config_path,
+    Config, ConfigError, ConfigLoader, FlavorName, LintExtends, OrderedList, Origin, RuleSetting,
+    Wrap, user_cache_dir, user_config_path,
 };
 
 /// A temp tree: `<root>/user/config.yaml`, `<root>/a/.mrq.yaml`, `<root>/a/b/.mrq.yaml`
@@ -79,9 +79,9 @@ ignore: ["vendor/**", "CHANGELOG.md"]
 lint:
   extends: none
   rules:
-    MD013: { line_length: 120, code_blocks: false }
-    MD033: { allowed_elements: [details, summary, kbd] }
-    MD041: off
+    MD012: { maximum: 2 }
+    no-multiple-blanks: { maximum: 3 }
+    MD047: off
 fmt:
   wrap: width
   width: 100
@@ -113,7 +113,19 @@ render:
     assert_eq!(config.ignore, ["vendor/**", "CHANGELOG.md"]);
     assert_eq!(config.lint.extends, LintExtends::None);
     assert_eq!(config.lint.rules.len(), 3);
-    assert_eq!(config.lint.rules["MD013"]["line_length"], 120);
+    assert_eq!(
+        config.lint.rules.get("MD012"),
+        Some(&RuleSetting::Options(
+            serde_json::json!({ "maximum": 2 })
+                .as_object()
+                .unwrap()
+                .clone()
+        ))
+    );
+    assert_eq!(
+        config.lint.rules.get("MD047"),
+        Some(&RuleSetting::Enabled(false))
+    );
     assert_eq!(config.fmt.wrap, Wrap::Width);
     assert_eq!(config.fmt.width, 100);
     assert_eq!(config.fmt.emphasis.as_str(), "_");
@@ -432,11 +444,214 @@ fn schema_rejects_unknown_keys_and_accepts_the_readme_example() {
     let validator = jsonschema::validator_for(&schema).unwrap();
     let good = serde_json::json!({
         "flavor": "gfm",
-        "lint": { "rules": { "MD013": { "line_length": 120 }, "MD041": "off" } },
+        "lint": { "rules": { "MD012": { "maximum": 2 }, "MD047": "off" } },
         "fmt": { "wrap": "width", "width": 100, "emphasis": "_" },
         "render": { "diagrams": { "kroki": { "enabled": true } } }
     });
     assert!(validator.is_valid(&good));
     assert!(!validator.is_valid(&serde_json::json!({ "fmt": { "wrapp": "never" } })));
     assert!(!validator.is_valid(&serde_json::json!({ "flavor": "markdown-it" })));
+}
+
+#[test]
+fn unknown_lint_rule_names_file_and_line() {
+    let tree = Tree::new();
+    let near = tree.write(
+        "a/b/.mrq.yaml",
+        "lint:\n  rules:\n    MD012: true\n    MD31: off\n",
+    );
+    let err = tree.loader().load().unwrap_err();
+    let location = err.location().expect("location");
+    assert_eq!(
+        (location.path.as_path(), location.line),
+        (near.as_path(), 4)
+    );
+    assert!(
+        err.to_string().contains("unknown lint rule `MD31`"),
+        "{err}"
+    );
+}
+
+#[test]
+fn invalid_lint_rule_options_name_file_and_line() {
+    let tree = Tree::new();
+    let near = tree.write(
+        "a/b/.mrq.yaml",
+        "lint:\n  rules:\n    MD012:\n      maximun: 2\n",
+    );
+    let err = tree.loader().load().unwrap_err();
+    let location = err.location().expect("location");
+    assert_eq!(location.path, near);
+    assert!(location.line >= 3, "{location:?}");
+    assert!(err.to_string().contains("maximun"), "{err}");
+}
+
+#[test]
+fn lint_rule_options_merge_across_layers() {
+    let tree = Tree::new();
+    tree.write("user/config.yaml", "lint:\n  rules:\n    MD047: off\n");
+    tree.write(
+        "a/.mrq.yaml",
+        "lint:\n  rules:\n    MD012: { maximum: 2 }\n",
+    );
+    let config = tree.loader().load().unwrap().config().clone();
+    assert_eq!(
+        config.lint.rules.get("MD047"),
+        Some(&RuleSetting::Enabled(false))
+    );
+    assert!(matches!(
+        config.lint.rules.get("MD012"),
+        Some(RuleSetting::Options(_))
+    ));
+}
+
+fn rule(config: &Config, key: &str) -> Option<RuleSetting> {
+    config.lint.rules.get(key).cloned()
+}
+
+fn options(json: &serde_json::Value) -> RuleSetting {
+    RuleSetting::Options(json.as_object().unwrap().clone())
+}
+
+#[test]
+fn markdownlint_json_is_the_lint_fallback() {
+    let tree = Tree::new();
+    let file = tree.write(
+        "a/.markdownlint.json",
+        "{\n  \"$schema\": \"https://example.com/schema.json\",\n  \"default\": false,\n  \"MD012\": { \"maximum\": 2 },\n  \"line-length\": false,\n  \"single-trailing-newline\": true\n}\n",
+    );
+    let loaded = tree.loader().load().unwrap();
+    let config = loaded.config();
+    assert_eq!(config.lint.extends, LintExtends::None);
+    assert_eq!(
+        rule(config, "MD012"),
+        Some(options(&serde_json::json!({ "maximum": 2 })))
+    );
+    assert_eq!(
+        rule(config, "single-trailing-newline"),
+        Some(RuleSetting::Enabled(true))
+    );
+    // Rules mrq does not know (yet, or markdownlint plugins) are skipped.
+    assert_eq!(rule(config, "line-length"), None);
+    assert_eq!(loaded.files(), std::slice::from_ref(&file));
+    assert_eq!(
+        loaded.origin(&["lint", "rules", "MD012", "maximum"]),
+        Some(Origin::File {
+            path: file,
+            line: 4
+        })
+    );
+}
+
+#[test]
+fn markdownlint_jsonc_allows_comments_and_trailing_commas() {
+    let tree = Tree::new();
+    tree.write(
+        "a/b/.markdownlint.jsonc",
+        "// base\n{\n  /* no blanks */ \"MD012\": { \"maximum\": 3, }, // trailing\n  \"MD047\": false,\n}\n",
+    );
+    let config = tree.loader().load().unwrap().config().clone();
+    assert_eq!(config.lint.extends, LintExtends::Default);
+    assert_eq!(
+        rule(&config, "MD012"),
+        Some(options(&serde_json::json!({ "maximum": 3 })))
+    );
+    assert_eq!(rule(&config, "MD047"), Some(RuleSetting::Enabled(false)));
+}
+
+#[test]
+fn markdownlint_yaml_and_closest_file_wins() {
+    let tree = Tree::new();
+    tree.write("a/.markdownlint.json", "{ \"MD047\": false }");
+    tree.write("a/b/.markdownlint.yaml", "MD012:\n  maximum: 4\n");
+    tree.write("a/b/.markdownlint.yml", "MD047: false\n");
+    let config = tree.loader().load().unwrap().config().clone();
+    assert_eq!(
+        rule(&config, "MD012"),
+        Some(options(&serde_json::json!({ "maximum": 4 })))
+    );
+    assert_eq!(rule(&config, "MD047"), None);
+}
+
+#[test]
+fn markdownlint_extends_merges_shallowly_and_the_extending_file_wins() {
+    let tree = Tree::new();
+    tree.write(
+        "base.yaml",
+        "default: false\nMD012: { maximum: 5 }\nMD047: true\n",
+    );
+    tree.write(
+        "a/.markdownlint.json",
+        "{ \"extends\": \"../base.yaml\", \"MD047\": false }",
+    );
+    let config = tree.loader().load().unwrap().config().clone();
+    assert_eq!(config.lint.extends, LintExtends::None);
+    assert_eq!(
+        rule(&config, "MD012"),
+        Some(options(&serde_json::json!({ "maximum": 5 })))
+    );
+    assert_eq!(rule(&config, "MD047"), Some(RuleSetting::Enabled(false)));
+}
+
+#[test]
+fn markdownlint_extends_cycle_is_an_error() {
+    let tree = Tree::new();
+    tree.write("a/x.json", "{ \"extends\": \".markdownlint.json\" }");
+    let file = tree.write("a/.markdownlint.json", "{ \"extends\": \"x.json\" }");
+    let err = tree.loader().load().unwrap_err();
+    assert!(err.to_string().contains("extends"), "{err}");
+    assert!(
+        err.location()
+            .is_some_and(|l| l.path == file || l.path.ends_with("x.json"))
+    );
+}
+
+#[test]
+fn invalid_markdownlint_options_name_the_markdownlint_file() {
+    let tree = Tree::new();
+    let file = tree.write(
+        "a/.markdownlint.json",
+        "{\n  \"MD012\": { \"maximum\": \"two\" }\n}\n",
+    );
+    let err = tree.loader().load().unwrap_err();
+    let location = err.location().expect("location");
+    assert_eq!(
+        (location.path.as_path(), location.line),
+        (file.as_path(), 2)
+    );
+}
+
+#[test]
+fn markdownlint_is_ignored_when_an_mrq_config_sets_lint() {
+    let tree = Tree::new();
+    tree.write("a/.markdownlint.json", "{ \"MD012\": false }");
+    tree.write("a/b/.mrq.yaml", "lint:\n  rules:\n    MD047: off\n");
+    let loaded = tree.loader().load().unwrap();
+    assert_eq!(rule(loaded.config(), "MD012"), None);
+    assert_eq!(loaded.files(), [tree.path("a/b/.mrq.yaml")]);
+
+    // An `.mrq.yaml` without `lint` keeps the fallback.
+    tree.write("a/b/.mrq.yaml", "flavor: obsidian\n");
+    let loaded = tree.loader().load().unwrap();
+    assert_eq!(
+        rule(loaded.config(), "MD012"),
+        Some(RuleSetting::Enabled(false))
+    );
+    assert_eq!(loaded.config().flavor, FlavorName::Obsidian);
+}
+
+#[test]
+fn markdownlint_sits_above_the_user_config() {
+    let tree = Tree::new();
+    tree.write(
+        "user/config.yaml",
+        "lint:\n  extends: none\n  rules:\n    MD012: off\n",
+    );
+    tree.write("a/.markdownlint.yaml", "MD012: true\n");
+    let loaded = tree.loader().load().unwrap();
+    assert_eq!(loaded.config().lint.extends, LintExtends::Default);
+    assert_eq!(
+        rule(loaded.config(), "MD012"),
+        Some(RuleSetting::Enabled(true))
+    );
 }

@@ -75,7 +75,7 @@ fn layered() -> Tree {
     );
     tree.write(
         "proj/.mrq.yaml",
-        "flavor: obsidian\nignore: [\"vendor/**\", CHANGELOG.md]\nlint:\n  rules:\n    MD013: { line_length: 120 }\n    MD041: off\nvalidate:\n  frontmatter:\n    - files: \"blog/**/*.md\"\n      schema: ./post.schema.json\n",
+        "flavor: obsidian\nignore: [\"vendor/**\", CHANGELOG.md]\nlint:\n  rules:\n    MD012: { maximum: 2 }\n    MD047: off\nvalidate:\n  frontmatter:\n    - files: \"blog/**/*.md\"\n      schema: ./post.schema.json\n",
     );
     tree.write("proj/docs/.mrq.yaml", "fmt:\n  wrap: sentence\n");
     tree

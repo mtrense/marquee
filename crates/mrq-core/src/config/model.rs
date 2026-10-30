@@ -9,6 +9,8 @@ use std::path::PathBuf;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use super::rules::RuleSettings;
+
 /// The effective configuration of mrq (`.mrq.yaml`).
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(default, deny_unknown_fields)]
@@ -64,12 +66,10 @@ impl FlavorName {
 pub struct LintConfig {
     /// Base rule set: `default` enables every rule that is on by default, `none` starts empty.
     pub extends: LintExtends,
-    /// Per-rule settings keyed by rule id (`MD013`, `MRQ001`, …): an options object,
-    /// `off`/`false` to disable, or `on`/`true` to enable with defaults.
-    ///
-    /// Open for now: rule ids and their option types are validated once the rule
-    /// registry exists (M5), which will also extend this schema.
-    pub rules: BTreeMap<String, serde_json::Value>,
+    /// Per-rule settings keyed by rule id (`MD013`, `MRQ001`, …), markdownlint alias
+    /// (`line-length`) or tag (`whitespace`): an options object, `off`/`false` to
+    /// disable, or `on`/`true` to enable with defaults.
+    pub rules: RuleSettings,
 }
 
 /// Base rule set of `lint.extends`.

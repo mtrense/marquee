@@ -185,7 +185,7 @@ validate:
 
 ### `mrq lint`
 
-Applies style rules. The rule set is compatible with markdownlint (`MD001`–`MD059`, same IDs and semantics), extended with mrq-specific rules (`MRQ001`…). Existing `.markdownlint.{json,jsonc,yaml}` files are honored when there is no `.mrq.yaml`.
+Applies style rules. The rule set is compatible with markdownlint (`MD001`–`MD059`, same IDs and semantics), extended with mrq-specific rules (`MRQ001`…). Existing `.markdownlint.{json,jsonc,yaml}` files are honored when no `.mrq.yaml` has a `lint` section. Rules are configured under `lint.rules` by ID, markdownlint alias (`line-length`) or tag (`whitespace`), with `true`/`on`, `false`/`off` or an options object.
 
 ```sh
 mrq lint docs/

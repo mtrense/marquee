@@ -112,9 +112,8 @@ expression: "mrq_core::config::schema_json()"
           "default": "default"
         },
         "rules": {
-          "description": "Per-rule settings keyed by rule id (`MD013`, `MRQ001`, …): an options object,\n`off`/`false` to disable, or `on`/`true` to enable with defaults.\n\nOpen for now: rule ids and their option types are validated once the rule\nregistry exists (M5), which will also extend this schema.",
-          "type": "object",
-          "additionalProperties": true,
+          "description": "Per-rule settings keyed by rule id (`MD013`, `MRQ001`, …), markdownlint alias\n(`line-length`) or tag (`whitespace`): an options object, `off`/`false` to\ndisable, or `on`/`true` to enable with defaults.",
+          "$ref": "#/$defs/RuleSettings",
           "default": {}
         }
       },
@@ -134,6 +133,107 @@ expression: "mrq_core::config::schema_json()"
           "const": "none"
         }
       ]
+    },
+    "RuleSettings": {
+      "description": "Per-rule settings keyed by rule id, alias or tag: `true`/`on`, `false`/`off`, or the rule's options.",
+      "type": "object",
+      "properties": {
+        "MD012": {
+          "description": "MD012: Multiple consecutive blank lines",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md012Options"
+            }
+          ]
+        },
+        "no-multiple-blanks": {
+          "description": "MD012: Multiple consecutive blank lines",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md012Options"
+            }
+          ]
+        },
+        "MD047": {
+          "description": "MD047: Files should end with a single newline character",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "single-trailing-newline": {
+          "description": "MD047: Files should end with a single newline character",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "blank_lines": {
+          "description": "Every rule tagged `blank_lines`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "whitespace": {
+          "description": "Every rule tagged `whitespace`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "RuleSwitch": {
+      "description": "`true`/`on` enables, `false`/`off` disables.",
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "string",
+          "enum": [
+            "on",
+            "off"
+          ]
+        }
+      ]
+    },
+    "Md012Options": {
+      "description": "Options of MD012 `no-multiple-blanks`.",
+      "type": "object",
+      "properties": {
+        "maximum": {
+          "description": "Consecutive blank lines allowed.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0,
+          "default": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "NoOptions": {
+      "description": "Options of a rule that has none: only `{}` is accepted.",
+      "type": "object",
+      "additionalProperties": false
     },
     "FmtConfig": {
       "description": "`fmt` section.",

@@ -22,25 +22,40 @@
 //! # Schema
 //!
 //! Every struct derives [`schemars::JsonSchema`]; [`schema_json`] is the published
-//! JSON Schema (`mrq config schema`). `lint.rules` is an open map until the lint rule
-//! registry (M5) contributes per-rule option schemas. The `.markdownlint.*` fallback for
-//! lint settings arrives with the rule framework as well.
+//! JSON Schema (`mrq config schema`). `lint.rules` ([`RuleSettings`]) lists every
+//! built-in lint rule with the schema of its options.
+//!
+//! # markdownlint fallback
+//!
+//! When no `.mrq.yaml` (discovered or `--config`) has a `lint` key, the closest
+//! `.markdownlint.jsonc`, `.markdownlint.json`, `.markdownlint.yaml` or
+//! `.markdownlint.yml` (in that order of preference within a directory) from the start
+//! directory upward is read as a layer right above the user config: `default` becomes
+//! `lint.extends` (`true` when missing), `extends` names a base file (relative to the
+//! extending one) whose keys the extending file overrides one by one, `$schema` is
+//! ignored, and every other key that names a built-in rule, alias or tag becomes a
+//! `lint.rules` entry. Other keys (rules mrq does not have, markdownlint plugins) are
+//! skipped. JSONC comments and trailing commas are allowed.
 
 mod error;
 mod load;
 mod locate;
+mod markdownlint;
 mod model;
+mod rules;
 mod show;
 
 pub use error::{CONFIG_ERROR_CODE, ConfigError, Location};
 pub use load::{
     CONFIG_FILE_NAMES, ConfigLoader, LoadedConfig, Origin, user_cache_dir, user_config_path,
 };
+pub use markdownlint::MARKDOWNLINT_FILE_NAMES;
 pub use model::{
     CodeFence, Config, DiagramsConfig, Emphasis, FlavorName, FmtConfig, FrontmatterFormat,
     FrontmatterSchema, IncludeConfig, KrokiConfig, LintConfig, LintExtends, ListMarker,
     OrderedList, RenderConfig, Strong, ValidateConfig, Wrap,
 };
+pub use rules::{RuleSetting, RuleSettingError, RuleSettings};
 
 /// The JSON Schema of `.mrq.yaml`.
 pub fn schema() -> schemars::Schema {

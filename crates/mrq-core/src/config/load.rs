@@ -9,7 +9,10 @@ use figment::{Figment, Metadata, Profile, Provider, Source};
 
 use super::error::{ConfigError, Location};
 use super::locate::{KeyIndex, Pos};
+use super::markdownlint;
 use super::model::{Config, FlavorName};
+use super::rules::RuleSettingError;
+use crate::lint::Registry;
 use crate::source::ByteRange;
 
 /// File names of the per-directory config, in order of preference within one directory.
@@ -121,14 +124,11 @@ impl ConfigLoader {
         self
     }
 
-    /// The config files that apply, lowest priority first.
-    fn files(&self) -> Vec<PathBuf> {
+    /// The user config file if it exists, and the `.mrq.yaml` files that apply, lowest
+    /// priority first.
+    fn files(&self) -> (Option<PathBuf>, Vec<PathBuf>) {
+        let user = self.user_config.clone().filter(|user| user.is_file());
         let mut files = Vec::new();
-        if let Some(user) = &self.user_config
-            && user.is_file()
-        {
-            files.push(user.clone());
-        }
         if let Some(explicit) = &self.explicit {
             files.push(explicit.clone());
         } else {
@@ -145,15 +145,24 @@ impl ConfigLoader {
             discovered.reverse();
             files.extend(discovered);
         }
-        files
+        (user, files)
     }
 
     /// Reads, parses and merges every layer.
     pub fn load(&self) -> Result<LoadedConfig, ConfigError> {
+        let (user, files) = self.files();
         let mut layers = Vec::new();
-        for path in self.files() {
-            layers.push(Layer::read(path)?);
+        if let Some(user) = user {
+            layers.push(Layer::read(user)?);
         }
+        let mut project = Vec::new();
+        for path in files {
+            project.push(Layer::read(path)?);
+        }
+        if !project.iter().any(|layer| layer.has("lint")) {
+            layers.extend(markdownlint::layers(&self.start_dir)?);
+        }
+        layers.extend(project);
 
         let defaults = Value::serialize(Config::default()).map_err(|err| internal(&err))?;
         let mut figment = Figment::new().merge(DictProvider {
@@ -179,6 +188,11 @@ impl ConfigLoader {
         }
 
         let config: Config = figment.extract().map_err(|err| invalid(&err, &layers))?;
+        config
+            .lint
+            .rules
+            .validate(Registry::builtin_ref())
+            .map_err(|err| invalid_rule(&err, &layers))?;
         let root = figment.find_value("").map_err(|err| internal(&err))?;
         Ok(LoadedConfig {
             config,
@@ -244,41 +258,17 @@ impl LoadedConfig {
 
 /// One parsed config file.
 #[derive(Debug, Clone)]
-struct Layer {
-    path: PathBuf,
-    text: String,
-    dict: Dict,
-    index: KeyIndex,
+pub(super) struct Layer {
+    pub(super) path: PathBuf,
+    pub(super) text: String,
+    pub(super) dict: Dict,
+    pub(super) index: KeyIndex,
 }
 
 impl Layer {
     fn read(path: PathBuf) -> Result<Self, ConfigError> {
-        let text = match fs::read_to_string(&path) {
-            Ok(text) => text,
-            Err(source) => return Err(ConfigError::Io { path, source }),
-        };
-        let value: Option<Value> = match serde_saphyr::from_str(&text) {
-            Ok(value) => value,
-            Err(err) => {
-                let (line, column) = err
-                    .location()
-                    .map_or((1, 1), |loc| (to_usize(loc.line()), to_usize(loc.column())));
-                let message = first_line(&err.to_string());
-                let location = location_at(&path, &text, line.max(1), column.max(1));
-                return Err(ConfigError::Syntax { location, message });
-            }
-        };
-        let dict = match value {
-            None | Some(Value::Empty(..)) => Dict::new(),
-            Some(Value::Dict(_, dict)) => dict,
-            Some(_) => {
-                let location = location_at(&path, &text, 1, 1);
-                return Err(ConfigError::Syntax {
-                    location,
-                    message: "the top level must be a mapping of keys to values".to_owned(),
-                });
-            }
-        };
+        let text = read_text(&path)?;
+        let dict = parse_yaml(&path, &text)?;
         let index = KeyIndex::build(&text);
         Ok(Self {
             path,
@@ -286,6 +276,47 @@ impl Layer {
             dict,
             index,
         })
+    }
+
+    /// Whether the file sets key `key` at the top level.
+    fn has(&self, key: &str) -> bool {
+        self.dict.contains_key(key)
+    }
+}
+
+/// The text of a config file.
+pub(super) fn read_text(path: &Path) -> Result<String, ConfigError> {
+    fs::read_to_string(path).map_err(|source| ConfigError::Io {
+        path: path.to_owned(),
+        source,
+    })
+}
+
+/// Parses YAML text whose top level must be a mapping (or empty).
+pub(super) fn parse_yaml(path: &Path, text: &str) -> Result<Dict, ConfigError> {
+    let value: Option<Value> = match serde_saphyr::from_str(text) {
+        Ok(value) => value,
+        Err(err) => {
+            let (line, column) = err
+                .location()
+                .map_or((1, 1), |loc| (to_usize(loc.line()), to_usize(loc.column())));
+            let message = first_line(&err.to_string());
+            let location = location_at(path, text, line.max(1), column.max(1));
+            return Err(ConfigError::Syntax { location, message });
+        }
+    };
+    match value {
+        None | Some(Value::Empty(..)) => Ok(Dict::new()),
+        Some(Value::Dict(_, dict)) => Ok(dict),
+        Some(_) => Err(not_a_mapping(path, text)),
+    }
+}
+
+/// The error for a config file whose top level is not a mapping.
+pub(super) fn not_a_mapping(path: &Path, text: &str) -> ConfigError {
+    ConfigError::Syntax {
+        location: location_at(path, text, 1, 1),
+        message: "the top level must be a mapping of keys to values".to_owned(),
     }
 }
 
@@ -317,7 +348,7 @@ fn first_line(message: &str) -> String {
 }
 
 /// A [`Location`] for a 1-based line and character column of `text`.
-fn location_at(path: &Path, text: &str, line: usize, column: usize) -> Location {
+pub(super) fn location_at(path: &Path, text: &str, line: usize, column: usize) -> Location {
     let line_start: usize = text
         .split_inclusive('\n')
         .take(line - 1)
@@ -342,7 +373,7 @@ fn location_at(path: &Path, text: &str, line: usize, column: usize) -> Location 
     }
 }
 
-fn location_of(path: &Path, pos: Pos) -> Location {
+pub(super) fn location_of(path: &Path, pos: Pos) -> Location {
     Location {
         path: path.to_owned(),
         line: pos.line,
@@ -357,6 +388,22 @@ fn internal(err: &figment::Error) -> ConfigError {
         location: None,
         key: String::new(),
         message: format!("internal configuration error: {err}"),
+    }
+}
+
+/// Maps an invalid `lint.rules` entry to the file and line that set it.
+fn invalid_rule(err: &RuleSettingError, layers: &[Layer]) -> ConfigError {
+    let path = ["lint", "rules", err.key.as_str()];
+    let location = layers.iter().rev().find_map(|layer| {
+        layer
+            .index
+            .get(&path)
+            .map(|pos| location_of(&layer.path, pos))
+    });
+    ConfigError::Invalid {
+        location,
+        key: path.join("."),
+        message: err.message.clone(),
     }
 }
 

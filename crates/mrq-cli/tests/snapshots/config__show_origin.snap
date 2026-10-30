@@ -21,9 +21,9 @@ include:
 lint:
   extends: default  # default
   rules:
-    MD013:
-      line_length: 120  # [TMP]/proj/.mrq.yaml:5
-    MD041: false  # [TMP]/proj/.mrq.yaml:6
+    MD012:
+      maximum: 2  # [TMP]/proj/.mrq.yaml:5
+    MD047: false  # [TMP]/proj/.mrq.yaml:6
 render:
   diagrams:
     commands: {}  # default
