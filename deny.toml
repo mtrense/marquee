@@ -1,0 +1,48 @@
+# cargo-deny configuration (v2 config schema, cargo-deny >= 0.18).
+#
+# Note for future editors: the v1 keys `vulnerability`, `unsoundness`, `notice`,
+# `copyleft`, `allow-osi-fsf-free` and `default` no longer exist. Security
+# advisories are unconditionally errors in the v2 schema, and licenses are
+# strictly allow-listed. Do not re-add those keys — cargo-deny hard-errors on
+# unknown fields.
+
+[graph]
+# Resolve with every feature enabled, so optional dependencies are checked too.
+all-features = true
+
+[advisories]
+unmaintained = "all"
+yanked = "deny"
+ignore = []
+
+[licenses]
+# Only licenses that actually appear in the resolved graph (verify with
+# `cargo deny list`); keep this list tight.
+allow = [
+  "MIT",
+  "Apache-2.0",
+  # unicode-ident is "(MIT OR Apache-2.0) AND Unicode-3.0".
+  "Unicode-3.0",
+]
+unused-allowed-license = "warn"
+confidence-threshold = 0.93
+exceptions = []
+
+[licenses.private]
+# Internal crates (`publish = false`) are not license-checked.
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+# Release binaries use rustls; no target may need a system TLS library.
+deny = [
+  { crate = "openssl-sys", reason = "use rustls; release binaries must not link OpenSSL" },
+  { crate = "openssl", reason = "use rustls; release binaries must not link OpenSSL" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
