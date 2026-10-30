@@ -503,7 +503,7 @@ fn document_select_evaluates_plan_queries() {
 #[test]
 fn text_queries_are_not_compiled_yet() {
     let doc = Document::parse(GUIDE);
-    let query = Query::selector("# Install").unwrap();
+    let query = Query::css("section").unwrap();
     assert!(query.plan().is_none());
     assert!(matches!(
         doc.select(&query).unwrap_err(),

@@ -40,6 +40,7 @@ unicode-general-category = "1.1.0"
 unicode-normalization = "0.1.26"
 unicode-segmentation = "1.13.3"
 regex = "1.13.1"
+winnow = "1.0.4"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

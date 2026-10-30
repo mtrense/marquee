@@ -324,15 +324,25 @@ fn toc_lists_headings_with_level_text_and_slug() {
     assert_eq!(doc.toc()[0].node, doc.anchors().get("guide").unwrap());
 }
 
-// --- Query (text front-ends stubbed until M3.2–M3.4) ------------------------------------
+// --- Query (CSS and jq front-ends stubbed until M3.3–M3.4) -----------------------------
 
 #[test]
-fn text_queries_are_not_implemented_yet() {
+fn selector_queries_select_nodes() {
     let doc = Document::parse("# Install\n\n```sh\nmake\n```\n");
     let query = Query::selector("# Install | ```sh").unwrap();
     assert_eq!(query.source(), "# Install | ```sh");
-    let err = doc.select(&query).unwrap_err();
-    assert!(matches!(err, QueryError::NotImplemented), "{err:?}");
+    let found = doc.select(&query).unwrap();
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].text(), "make");
+}
+
+#[test]
+fn css_and_jq_queries_are_not_implemented_yet() {
+    let doc = Document::parse("# Install\n");
+    for query in [Query::css("section").unwrap(), Query::jq(".").unwrap()] {
+        let err = doc.select(&query).unwrap_err();
+        assert!(matches!(err, QueryError::NotImplemented), "{err:?}");
+    }
 }
 
 // --- Workspace -------------------------------------------------------------------------

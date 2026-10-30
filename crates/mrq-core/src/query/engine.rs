@@ -5,7 +5,7 @@ use std::fmt;
 use super::plan::{Attribute, Predicate, QueryPlan, Selector};
 use super::section::{Section, SectionIndex};
 use crate::Document;
-use crate::ast::{Ast, ListItem, ListKind, Node, NodeId, NodeKind, Span};
+use crate::ast::{Ast, FrontMatterFormat, ListItem, ListKind, Node, NodeId, NodeKind, Span};
 
 /// One result of a query: a node or a [`Section`].
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -329,6 +329,13 @@ fn attribute_values(attr: Attribute, kind: &NodeKind) -> Vec<String> {
             .map(|attrs| attrs.classes.clone())
             .unwrap_or_default(),
         (Attribute::Class, NodeKind::Admonition(admonition)) => admonition.classes.clone(),
+        (Attribute::Format, NodeKind::FrontMatter(fm)) => one(match fm.format {
+            FrontMatterFormat::Yaml => "yaml",
+            FrontMatterFormat::Toml => "toml",
+        }),
+        (Attribute::Raw, NodeKind::HtmlBlock(html) | NodeKind::HtmlInline(html)) => one(html),
+        (Attribute::Raw, NodeKind::Comment(comment)) => one(&comment.literal),
+        (Attribute::Raw, NodeKind::FrontMatter(fm)) => one(&fm.literal),
         _ => Vec::new(),
     }
 }

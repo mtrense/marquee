@@ -19,7 +19,7 @@
 //! let plan = QueryPlan::section(TextMatcher::substring("install").ignore_case()).pipe(
 //!     QueryPlan::select(
 //!         Selector::new(NodeType::CodeBlock)
-//!             .with(Predicate::Attr(Attribute::Lang, TextMatcher::exact("sh"))),
+//!             .with(Predicate::Attr(Attribute::Lang, TextMatcher::exact("sh").ignore_case())),
 //!     ),
 //! );
 //! let found = plan.evaluate(&doc);
@@ -27,16 +27,54 @@
 //! assert_eq!(found[0].text(), "make");
 //! ```
 //!
-//! [`Query`] holds a query in one of the front-end syntaxes. Until the front-ends exist
-//! (M3.2–M3.4) only [`Query::from_plan`] queries can be evaluated by
-//! [`Document::select`](crate::Document::select); text queries fail with
+//! [`Query`] holds a query in one of the front-end syntaxes, compiled to its plan when it
+//! is created; [`Document::select`](crate::Document::select) evaluates it. Until the CSS
+//! and jq front-ends exist (M3.3–M3.4) those queries fail with
 //! [`QueryError::NotImplemented`].
+//!
+//! # Selector DSL
+//!
+//! [`Query::selector`] parses mrq's Markdown-native selectors (mdq-style). Each selector
+//! is a marker optionally followed by a text matcher; `a | b` selects `b` within each
+//! result of `a`, the result itself included ([`Pipe`](QueryPlan::Pipe)).
+//!
+//! | Selector | Matches |
+//! | --- | --- |
+//! | `# text` | sections whose heading text matches |
+//! | `- text` / `1. text` | bullet / ordered list items |
+//! | `- [ ] text` / `- [x]` / `- [?]` | open / done / any tasks (`1. [ ]` in ordered lists) |
+//! | `[text](url)` / `![alt](url)` | links / images |
+//! | `> text` | block quotes |
+//! | ```` ```lang text ```` | code blocks; `lang` follows the backticks directly |
+//! | `:-: text` | tables |
+//! | `</> text` | raw HTML (blocks and inline), comments and `mrq:` directives |
+//! | `+++format text` | frontmatter (`+++yaml`, `+++toml`), matching its raw content |
+//! | `P: text` | paragraphs |
+//!
+//! Text matchers: bare `words` (a case-insensitive substring, up to the next `|`),
+//! `"exact"` (case-sensitive, with `\"` and `\\` escapes), `/regex/`, `^anchored$` (on
+//! bare or quoted text), `*` or nothing (anything). A bare language or frontmatter
+//! format is matched exactly, ignoring case, so ```` ```sh ```` does not match `bash`.
+//! Errors are [`QueryError::Syntax`] with the byte offset of the problem:
+//!
+//! ```
+//! use mrq_core::query::{Query, QueryError};
+//!
+//! let Err(QueryError::Syntax(err)) = Query::selector("# Install | [text](url") else {
+//!     panic!("expected a syntax error");
+//! };
+//! assert_eq!(err.offset(), 22);
+//! assert_eq!(err.render(), "# Install | [text](url\n                      ^ expected `)`");
+//! ```
 
 mod engine;
+mod error;
 mod plan;
 mod section;
+mod selector;
 
 pub use engine::Match;
+pub use error::{QueryError, SyntaxError};
 pub use plan::{Attribute, Literal, Pattern, Predicate, QueryPlan, Selector, TextMatcher};
 pub use section::{Section, sections};
 
@@ -63,9 +101,19 @@ pub struct Query {
 }
 
 impl Query {
-    /// A Markdown-native selector query.
+    /// A Markdown-native selector query, compiled to a plan; see the [module
+    /// docs](self#selector-dsl) for the syntax.
+    ///
+    /// # Errors
+    ///
+    /// [`QueryError::Syntax`] if `source` does not parse (an invalid `/regex/`
+    /// included).
     pub fn selector(source: &str) -> Result<Self, QueryError> {
-        Ok(Self::new(Syntax::Selector, source))
+        let plan = selector::parse(source)?;
+        Ok(Self {
+            plan: Some(plan),
+            ..Self::new(Syntax::Selector, source)
+        })
     }
 
     /// A CSS-style selector query.
@@ -109,21 +157,4 @@ impl Query {
     pub const fn plan(&self) -> Option<&QueryPlan> {
         self.plan.as_ref()
     }
-}
-
-/// Why a query could not be parsed or evaluated.
-#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[non_exhaustive]
-pub enum QueryError {
-    /// The query's front-end does not exist yet (M3.2–M3.4).
-    #[error("queries are not implemented yet")]
-    NotImplemented,
-    /// A `/regex/` matcher does not compile.
-    #[error("invalid regex `{pattern}`: {message}")]
-    Regex {
-        /// The pattern as written.
-        pattern: String,
-        /// What is wrong with it.
-        message: String,
-    },
 }

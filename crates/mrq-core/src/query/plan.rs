@@ -189,6 +189,11 @@ pub enum Attribute {
     Id,
     /// Heading `{.class}`es and admonition classes (multi-valued).
     Class,
+    /// Frontmatter format, `yaml` or `toml`.
+    Format,
+    /// The verbatim content of raw HTML (block or inline), a comment (between its
+    /// delimiters) or frontmatter (between its fences).
+    Raw,
 }
 
 impl Attribute {
@@ -207,6 +212,8 @@ impl Attribute {
         Self::Name,
         Self::Id,
         Self::Class,
+        Self::Format,
+        Self::Raw,
     ];
 
     /// Stable lowercase name, as used in CSS attribute selectors.
@@ -225,6 +232,8 @@ impl Attribute {
             Self::Name => "name",
             Self::Id => "id",
             Self::Class => "class",
+            Self::Format => "format",
+            Self::Raw => "raw",
         }
     }
 
