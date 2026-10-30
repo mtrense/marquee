@@ -360,8 +360,9 @@ fn wikilinks_are_looked_up_by_name_across_the_vault() {
 }
 
 /// Every check over `tests/fixtures/validate`, a small repository with a gfm README, a
-/// mkdocs page, an Obsidian vault and blog posts with a frontmatter schema (from its
-/// `.mrq.yaml`), rendered by the plain emitter with paths relative to the fixture.
+/// mkdocs page, an Obsidian vault, blog posts with a frontmatter schema (from its
+/// `.mrq.yaml`) and a book whose `mrq:` directives are stale, missing or cyclic, rendered
+/// by the plain emitter with paths relative to the fixture.
 #[cfg(feature = "frontmatter-schema")]
 #[test]
 fn fixture_repository_diagnostics() {
@@ -413,4 +414,101 @@ fn check_workspace_covers_every_document_in_order() {
             ("site/a.md", codes::MISSING_FILE)
         ]
     );
+}
+
+#[test]
+fn stale_toc_regions_are_reported_at_the_start_marker() {
+    let doc = doc_at(
+        "# Title\n\n<!-- mrq:toc -->\n- [Title](#title)\n<!-- mrq:end -->\n\n\
+         <!-- mrq:toc depth=1 -->\n\n- [Title](#title)\n\n<!-- mrq:end -->\n\n\
+         <!-- mrq:toc depth=9 -->\n<!-- mrq:end -->\n\n<!-- mrq:toc depth=2 -->\n\n## Install\n",
+    );
+    assert_eq!(
+        check(&doc, vec![]),
+        [
+            found(codes::STALE_TOC, Severity::Warning, "<!-- mrq:toc -->"),
+            found("directive", Severity::Error, "depth=9"),
+            found(
+                codes::STALE_TOC,
+                Severity::Warning,
+                "<!-- mrq:toc depth=2 -->"
+            ),
+        ]
+    );
+}
+
+#[test]
+fn include_targets_must_exist() {
+    let doc = doc_at(
+        "<!-- mrq:include -->\n\n<!-- mrq:include path=b.md -->\n<!-- mrq:end -->\n\n\
+         <!-- mrq:include path=\"../gone.md\" shift=1 -->\n\n\
+         <!-- mrq:include path=https://x.org/remote.md -->\n\n\
+         <!-- mrq:include path=/docs/b.md -->\n",
+    );
+    let b = doc_at_path("site/docs/b.md", "# B\n");
+    assert_eq!(
+        check(&doc, vec![b]),
+        [
+            found(
+                codes::MISSING_INCLUDE,
+                Severity::Error,
+                "<!-- mrq:include -->"
+            ),
+            found(
+                codes::MISSING_INCLUDE,
+                Severity::Error,
+                "path=\"../gone.md\""
+            ),
+        ]
+    );
+}
+
+#[test]
+fn include_cycles_are_reported_with_the_chain() {
+    let a = doc_at_path(
+        "site/a.md",
+        "<!-- mrq:include path=sub/b.md -->\n<!-- mrq:end -->\n\n<!-- mrq:include path=c.md -->\n",
+    );
+    let b = doc_at_path("site/sub/b.md", "<!-- mrq:include path=../a.md -->\n");
+    let c = doc_at_path("site/c.md", "<!-- mrq:include path=./c.md -->\n");
+    let d = doc_at_path("site/d.md", "<!-- mrq:include path=sub/b.md -->\n");
+    let mut ws = Workspace::new("site");
+    for doc in [a.clone(), b, c, d.clone()] {
+        ws.insert(doc);
+    }
+    let mut checker = Checker::new(&ws);
+    let diags = checker.check(&a);
+    let summary: Vec<_> = diags
+        .iter()
+        .map(|diag| {
+            (
+                diag.code.as_str(),
+                &a.text()[diag.range.start..diag.range.end],
+                diag.help.as_deref().unwrap_or_default(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        summary,
+        [(
+            codes::INCLUDE_CYCLE,
+            "path=sub/b.md",
+            "site/a.md includes site/sub/b.md, which includes site/a.md"
+        )]
+    );
+    assert_eq!(diags[0].severity, Severity::Error);
+    assert_eq!(
+        diags[0].message,
+        "`mrq:include` cycle: `sub/b.md` includes this file again"
+    );
+    let c_diags = checker.check(ws.get("site/c.md").unwrap());
+    assert_eq!(
+        c_diags
+            .iter()
+            .map(|d| d.help.as_deref().unwrap_or_default())
+            .collect::<Vec<_>>(),
+        ["site/c.md includes itself"]
+    );
+    // d includes the a/b cycle but is not part of it: a and b report it.
+    assert_eq!(checker.check(&d), vec![]);
 }

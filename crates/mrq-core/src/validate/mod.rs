@@ -40,6 +40,9 @@
 //! | `unused-reference` | warning | the definition | a link reference definition is never used |
 //! | `unresolved-wikilink` | warning | the wikilink or embed | no file in the vault has the name |
 //! | `frontmatter-schema` | error | the offending value; a missing key at its parent's key (the opening `---`/`+++` for top-level keys, the start of a document without frontmatter); an unexpected key at the key | the frontmatter does not match a JSON Schema configured for the file (`validate.frontmatter`); types, enums, consts and required keys name what was expected |
+//! | `missing-include` | error | the `path=…` attribute; the start marker if there is none | an `mrq:include` has no `path`, or its file does not exist |
+//! | `include-cycle` | error | the `path=…` attribute, with the chain of files in the help | following `mrq:include` paths from the directive leads back to its own file |
+//! | `stale-toc` | warning | the start marker | an `mrq:toc` region differs from what `mrq toc --insert` writes (also a bare start marker), as [`toc::refresh_edits`](crate::toc::refresh_edits) finds; an invalid `depth` is a `directive` error |
 //!
 //! How targets are found:
 //!
@@ -60,6 +63,15 @@
 //!   by [`reference_definitions`]. Labels match as in `CommonMark` (case and whitespace
 //!   folded). Footnotes are only checked for flavors that have them.
 //! - External URLs and `mailto:` addresses are not checked here.
+//! - **Includes** resolve like file links (relative to the including file, a leading
+//!   `/` from the root, no percent-decoding) and exist if they are in the workspace or a
+//!   file on disk. Cycles are found by following the `mrq:include`s of Markdown files
+//!   (from the workspace, else loaded from disk), comparing canonicalized paths; each
+//!   file on a cycle reports it, a file that merely includes one does not. `http(s)://`
+//!   paths are skipped until remote includes exist (M7.7). The `section` and `select`
+//!   attributes are not checked. Whether an include region's content matches its
+//!   expansion is not checked either: that needs the include resolver (M7.4), so
+//!   nothing is reported until then (see the TODO in `directives.rs`).
 //!
 //! # Frontmatter schemas
 //!
@@ -75,6 +87,7 @@
 
 mod brackets;
 mod check;
+mod directives;
 mod links;
 mod refdefs;
 #[cfg(feature = "frontmatter-schema")]

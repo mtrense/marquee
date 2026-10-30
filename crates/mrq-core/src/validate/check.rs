@@ -9,6 +9,7 @@ use ignore::WalkBuilder;
 #[cfg(feature = "frontmatter-schema")]
 use super::FrontmatterSchemas;
 use super::brackets::{Unresolved, unresolved};
+use super::directives::check_toc;
 use super::{DocumentLink, Target, links, reference_definitions};
 use crate::ast::{NodeKind, NodeType, Span};
 use crate::diag::{Diagnostic, Label, Severity};
@@ -39,6 +40,12 @@ pub mod codes {
     pub const UNRESOLVED_WIKILINK: &str = "unresolved-wikilink";
     /// Frontmatter that its JSON Schema (`validate.frontmatter`) rejects.
     pub const FRONTMATTER_SCHEMA: &str = "frontmatter-schema";
+    /// An `mrq:toc` region whose list differs from what `mrq toc --insert` writes.
+    pub const STALE_TOC: &str = "stale-toc";
+    /// An `mrq:include` without a `path`, or whose file does not exist.
+    pub const MISSING_INCLUDE: &str = "missing-include";
+    /// An `mrq:include` that, through the files it includes, includes its own file.
+    pub const INCLUDE_CYCLE: &str = "include-cycle";
 }
 
 /// Runs the internal checks over the documents of a [`Workspace`].
@@ -61,7 +68,7 @@ pub mod codes {
 /// ```
 #[derive(Debug)]
 pub struct Checker<'w> {
-    workspace: &'w Workspace,
+    pub(super) workspace: &'w Workspace,
     /// Markdown files outside the workspace by path; `None` if unreadable.
     loaded: HashMap<PathBuf, Option<Document>>,
     /// The vault's files, listed on first use.
@@ -105,6 +112,8 @@ impl<'w> Checker<'w> {
         check_duplicate_anchors(document, &mut out);
         check_footnotes(document, &mut out);
         check_references(document, &self.links_of(document), &mut out);
+        check_toc(document, &mut out);
+        self.check_includes(document, &mut out);
         #[cfg(feature = "frontmatter-schema")]
         if let Some(schemas) = self.schemas {
             out.extend(schemas.check(document));
@@ -195,7 +204,7 @@ impl<'w> Checker<'w> {
     }
 
     /// The Markdown document at `path`: from the workspace, else loaded from disk.
-    fn markdown(&mut self, path: &Path) -> Option<&Document> {
+    pub(super) fn markdown(&mut self, path: &Path) -> Option<&Document> {
         if let Some(document) = self.workspace.get(path) {
             return Some(document);
         }

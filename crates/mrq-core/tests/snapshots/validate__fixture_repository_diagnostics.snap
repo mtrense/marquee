@@ -26,6 +26,16 @@ blog/2024/broken.md:5:1: error[frontmatter-schema]: `author`: missing required k
   help: schema `schemas/post.schema.json`
 blog/2024/broken.md:7:1: error[frontmatter-schema]: unexpected key `summary`
   help: schema `schemas/post.schema.json`
+docs/book.md:3:1: warning[stale-toc]: table of contents is out of date
+  help: run `mrq toc --insert` to regenerate it
+docs/book.md:9:18: error[include-cycle]: `mrq:include` cycle: `chapters/one.md` includes this file again
+  help: docs/book.md includes docs/chapters/one.md, which includes docs/book.md
+docs/book.md:12:18: error[missing-include]: included file `chapters/missing.md` does not exist
+  help: resolved to `docs/chapters/missing.md`
+docs/book.md:18:1: error[missing-include]: `mrq:include` has no `path`
+  help: write e.g. `<!-- mrq:include path="chapter.md" -->`
+docs/chapters/one.md:12:18: error[include-cycle]: `mrq:include` cycle: `../book.md` includes this file again
+  help: docs/chapters/one.md includes docs/book.md, which includes docs/chapters/one.md
 docs/guide.md:6:1: error[missing-anchor]: no anchor `#gone` in `../README.md`
   help: resolved to `README.md`
 docs/guide.md:10:43: error[missing-anchor]: no anchor `#setup-2` in this document
