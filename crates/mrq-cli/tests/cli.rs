@@ -76,7 +76,6 @@ fn no_subcommand_is_a_usage_error() {
 #[test]
 fn stubbed_subcommands_report_not_implemented_and_exit_2() {
     let invocations: &[&[&str]] = &[
-        &["toc", "--insert", "README.md"],
         &["render", "-o", "html", "README.md"],
         &["validate"],
         &["lint", "--fix", "docs/"],
@@ -104,18 +103,8 @@ fn stubbed_subcommands_report_not_implemented_and_exit_2() {
 fn global_flags_are_accepted_anywhere() {
     mrq()
         .args([
-            "--config",
-            "x.yaml",
-            "--flavor",
-            "obsidian",
-            "--color",
-            "never",
-            "--format",
-            "json",
-            "-vv",
-            "toc",
-            "--insert",
-            "README.md",
+            "--config", "x.yaml", "--flavor", "obsidian", "--color", "never", "--format", "json",
+            "-vv", "diff", "old.md", "new.md",
         ])
         .assert()
         .code(2)

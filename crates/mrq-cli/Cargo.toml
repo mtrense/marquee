@@ -23,12 +23,12 @@ mrq-lsp.workspace = true
 clap.workspace = true
 clap_complete.workspace = true
 serde_json.workspace = true
+tempfile.workspace = true
 
 [dev-dependencies]
 assert_cmd.workspace = true
 predicates.workspace = true
 insta.workspace = true
-tempfile.workspace = true
 
 [lints]
 workspace = true

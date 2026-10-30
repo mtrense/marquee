@@ -1,13 +1,18 @@
-//! `mrq toc`: print the heading outline of each input.
+//! `mrq toc`: print the heading outline of each input, or refresh its `mrq:toc`
+//! regions (`--insert`).
 
 use std::io::{self, Write};
 use std::process::ExitCode;
 
 use mrq_core::document::{Document, DocumentOptions};
 use mrq_core::input::Input;
+use mrq_core::source::{SourceFile, apply_edits};
 use mrq_core::toc::{self, JsonToc, TocEntry};
 
-use crate::cli::TocArgs;
+use crate::cli::{GlobalArgs, TocArgs};
+
+/// Exit code of `--check` when a table of contents is out of date.
+const EXIT_STALE: u8 = 1;
 
 /// Prints the outline of every input: indented text, a `--links` list or `--json`.
 ///
@@ -58,6 +63,69 @@ pub fn run(args: &TocArgs, inputs: &[Input], options: &DocumentOptions) -> ExitC
     }
     if failed {
         ExitCode::from(crate::EXIT_USAGE)
+    } else {
+        ExitCode::SUCCESS
+    }
+}
+
+/// `--insert`: refreshes the `<!-- mrq:toc -->` regions of every input
+/// ([`toc::refresh_edits`]).
+///
+/// Changed files are rewritten atomically; files that are up to date or have no region
+/// are not touched. Stdin is never written back: its refreshed text (unchanged if there
+/// is nothing to refresh) goes to stdout. With `--check` nothing is written or printed
+/// except a `<name>: table of contents is out of date` line per stale input, and the
+/// exit code is 1 if there is one. Regions with an invalid `depth` attribute are
+/// reported on stderr and skipped; they, unreadable inputs and failed writes make the
+/// exit code 2.
+pub fn insert(
+    args: &TocArgs,
+    inputs: &[Input],
+    options: &DocumentOptions,
+    global: &GlobalArgs,
+) -> ExitCode {
+    let (mut failed, mut stale) = (false, false);
+    let stdout = io::stdout();
+    for input in inputs {
+        let doc = match options.read(input) {
+            Ok(doc) => doc,
+            Err(err) => {
+                let _ = writeln!(io::stderr().lock(), "mrq: {err}");
+                failed = true;
+                continue;
+            }
+        };
+        let refresh = toc::refresh_edits(&doc, args.depth);
+        if !refresh.diagnostics.is_empty() {
+            let file = SourceFile::new(Some(doc.name().to_path_buf()), doc.text());
+            crate::emit_diagnostics(&refresh.diagnostics, &[file], global);
+            failed = true;
+        }
+        let text = apply_edits(doc.text(), &refresh.edits)
+            .expect("refresh edits target disjoint regions of the document");
+        let changed = text != doc.text();
+        if args.check {
+            if changed {
+                stale = true;
+                let _ = writeln!(
+                    stdout.lock(),
+                    "{}: table of contents is out of date",
+                    doc.name().display()
+                );
+            }
+        } else if let Some(path) = doc.path().filter(|_| input.is_writable()) {
+            if changed && let Err(err) = crate::write_atomic(path, &text) {
+                let _ = writeln!(io::stderr().lock(), "mrq: {}: {err}", path.display());
+                failed = true;
+            }
+        } else {
+            let _ = stdout.lock().write_all(text.as_bytes());
+        }
+    }
+    if failed {
+        ExitCode::from(crate::EXIT_USAGE)
+    } else if stale {
+        ExitCode::from(EXIT_STALE)
     } else {
         ExitCode::SUCCESS
     }

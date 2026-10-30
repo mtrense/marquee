@@ -78,9 +78,12 @@ mrq toc README.md
 mrq toc --json docs/ | jq '.[].headings[].slug'
 mrq toc --depth 3 --links README.md        # nested Markdown list with anchor links
 mrq toc --insert README.md                 # refresh a <!-- mrq:toc --> … <!-- mrq:end --> block in place
+mrq toc --insert --check docs/             # CI: exit 1 if a table of contents is out of date
 ```
 
 Anchor slugs follow the active flavor's rules (GitHub-style for `gfm`). `--json` emits level, text, slug and source position for each heading, as an array with one `{file, flavor, headings}` object per input. With several inputs, the text and `--links` output puts a `==> file <==` header before each file.
+
+`--insert` replaces the content between `<!-- mrq:toc -->` and `<!-- mrq:end -->` with the `--links` list of the document's headings, framed by blank lines, and leaves every other byte of the file as it was. A start marker without an `mrq:end` gets one inserted after the list. `depth=N` on the marker (`<!-- mrq:toc depth=2 -->`) limits the levels for that region and takes precedence over `--depth`. Headings inside the region itself are not listed, so running `--insert` again changes nothing. Files without an `mrq:toc` marker are left untouched, and stdin input is printed to stdout instead. `--check` writes nothing, prints `<file>: table of contents is out of date` for each stale input and exits 1 if there is one.
 
 ### `mrq render`
 

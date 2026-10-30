@@ -214,13 +214,3 @@ fn config_errors_exit_2() {
             "cannot read config file nope.yaml",
         ));
 }
-
-#[test]
-fn insert_is_not_implemented_yet() {
-    Mrq::new()
-        .cmd()
-        .args(["toc", "--insert", "README.md"])
-        .assert()
-        .code(2)
-        .stderr(predicate::str::contains("not implemented"));
-}

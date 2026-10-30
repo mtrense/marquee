@@ -23,6 +23,9 @@ Options:
       --insert
           Refresh a `<!-- mrq:toc -->` … `<!-- mrq:end -->` block in place
 
+      --check
+          With --insert: write nothing, list out-of-date files and exit 1 if there are any
+
   -h, --help
           Print help (see a summary with '-h')
 

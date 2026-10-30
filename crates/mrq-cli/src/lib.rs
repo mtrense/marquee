@@ -6,12 +6,13 @@
 use std::env;
 use std::fs;
 use std::io::{self, IsTerminal, Write};
+use std::path::Path;
 use std::process::ExitCode;
 
 use mrq_core::config::{
     ConfigError, ConfigLoader, FlavorName, LoadedConfig, Origin, user_config_path,
 };
-use mrq_core::diag::{self, EmitOptions, HumanStyle, OutputFormat};
+use mrq_core::diag::{self, Diagnostic, EmitOptions, HumanStyle, OutputFormat};
 use mrq_core::document::DocumentOptions;
 use mrq_core::input::{Input, InputResolver};
 use mrq_core::source::SourceFile;
@@ -46,11 +47,15 @@ pub fn run(cli: Cli) -> ExitCode {
                 ExitCode::from(EXIT_USAGE)
             }
         },
-        Command::Toc(args) if !args.insert => {
+        Command::Toc(args) => {
             let Some((options, inputs)) = prepare(&cli.global, &args.inputs) else {
                 return ExitCode::from(EXIT_USAGE);
             };
-            toc::run(&args, &inputs, &options)
+            if args.insert {
+                toc::insert(&args, &inputs, &options, &cli.global)
+            } else {
+                toc::run(&args, &inputs, &options)
+            }
         }
         other => {
             let _ = writeln!(
@@ -147,8 +152,6 @@ fn output_format(format: DiagnosticFormat) -> OutputFormat {
 /// Writes a config error to stderr: as a diagnostic in the selected `--format` when it
 /// points into a readable file, else as a plain `mrq: …` line.
 fn report_config_error(err: &ConfigError, global: &GlobalArgs) {
-    let stderr = io::stderr();
-    let mut out = stderr.lock();
     let source = err.to_diagnostic().and_then(|diagnostic| {
         let text = fs::read_to_string(&diagnostic.file).ok()?;
         Some((
@@ -157,9 +160,17 @@ fn report_config_error(err: &ConfigError, global: &GlobalArgs) {
         ))
     });
     let Some((diagnostic, file)) = source else {
-        let _ = writeln!(out, "mrq: {err}");
+        let _ = writeln!(io::stderr().lock(), "mrq: {err}");
         return;
     };
+    emit_diagnostics(&[diagnostic], &[file], global);
+}
+
+/// Writes `diagnostics` about `files` to stderr in the selected `--format` (human unless
+/// set or detected otherwise), honouring `--color`.
+fn emit_diagnostics(diagnostics: &[Diagnostic], files: &[SourceFile], global: &GlobalArgs) {
+    let stderr = io::stderr();
+    let mut out = stderr.lock();
     let format = OutputFormat::select_from_env(global.format.map(output_format));
     let mut human = HumanStyle::detect(stderr.is_terminal(), |key| env::var(key).ok());
     human.color = match global.color {
@@ -171,5 +182,25 @@ fn report_config_error(err: &ConfigError, global: &GlobalArgs) {
         human,
         ..EmitOptions::default()
     };
-    let _ = diag::emit(format, &[diagnostic], &[file], &options, &mut out);
+    let _ = diag::emit(format, diagnostics, files, &options, &mut out);
+}
+
+/// Replaces the file at `path` with `text` atomically: writes a temp file in the same
+/// directory, gives it the original's permissions, then renames it over the original.
+fn write_atomic(path: &Path, text: &str) -> io::Result<()> {
+    let dir = match path.parent() {
+        Some(dir) if !dir.as_os_str().is_empty() => dir,
+        _ => Path::new("."),
+    };
+    let mut temp = tempfile::Builder::new()
+        .prefix(".mrq-")
+        .suffix(".tmp")
+        .tempfile_in(dir)?;
+    temp.write_all(text.as_bytes())?;
+    temp.as_file().sync_all()?;
+    if let Ok(metadata) = fs::metadata(path) {
+        temp.as_file().set_permissions(metadata.permissions())?;
+    }
+    temp.persist(path).map_err(|err| err.error)?;
+    Ok(())
 }

@@ -173,7 +173,17 @@ pub fn parse(flavor: &dyn Flavor, src: &str, file: &Path) -> Parsed {
 /// kept as written, duplicates included. Pass a fresh (or [reset](Slugger::reset))
 /// slugger from the document's flavor.
 pub fn heading_anchors(ast: &Ast, slugger: &mut dyn Slugger) -> Vec<(NodeId, String)> {
+    heading_anchors_where(ast, slugger, |_| true)
+}
+
+/// [`heading_anchors`] for the headings `include` accepts, as if the others were absent.
+pub(crate) fn heading_anchors_where(
+    ast: &Ast,
+    slugger: &mut dyn Slugger,
+    include: impl Fn(NodeId) -> bool,
+) -> Vec<(NodeId, String)> {
     let explicit = |id: NodeId| match ast.kind(id) {
+        NodeKind::Heading(_) if !include(id) => None,
         NodeKind::Heading(heading) => {
             Some(heading.attrs.as_ref().and_then(|attrs| attrs.id.as_deref()))
         }

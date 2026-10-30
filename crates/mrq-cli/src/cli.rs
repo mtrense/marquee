@@ -161,6 +161,7 @@ pub struct Inputs {
 }
 
 #[derive(Debug, Args)]
+#[allow(clippy::struct_excessive_bools, reason = "independent clap flags")]
 pub struct TocArgs {
     /// Emit level, text, slug and source position per heading as JSON.
     #[arg(long)]
@@ -174,6 +175,9 @@ pub struct TocArgs {
     /// Refresh a `<!-- mrq:toc -->` … `<!-- mrq:end -->` block in place.
     #[arg(long, conflicts_with = "json")]
     pub insert: bool,
+    /// With --insert: write nothing, list out-of-date files and exit 1 if there are any.
+    #[arg(long, requires = "insert")]
+    pub check: bool,
     #[command(flatten)]
     pub inputs: Inputs,
 }

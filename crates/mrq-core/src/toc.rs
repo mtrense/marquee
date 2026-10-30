@@ -1,6 +1,7 @@
 //! Document outlines: the headings of [`Document::toc`] rendered as indented text
 //! ([`outline`]), as a nested Markdown list of anchor links ([`link_list`]), or as JSON
-//! ([`JsonToc`]).
+//! ([`JsonToc`]), and the edits that refresh `<!-- mrq:toc -->` regions
+//! ([`refresh_edits`]).
 //!
 //! ```
 //! use mrq_core::{Document, toc};
@@ -27,8 +28,15 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::ast::json::{self, Position};
-use crate::ast::{NodeId, Span};
+use crate::ast::{Ast, Directive, NodeId, NodeKind, Span};
+use crate::diag::{Diagnostic, Severity};
+use crate::directive::{DIRECTIVE_ERROR_CODE, DirectiveKind, DirectiveRegion};
 use crate::document::Document;
+use crate::flavor;
+use crate::source::{ByteRange, TextEdit};
+
+/// What closes a directive region.
+const END_MARKER: &str = "<!-- mrq:end -->";
 
 /// Indentation per nesting step, in both renderings.
 const INDENT: &str = "  ";
@@ -170,4 +178,181 @@ impl JsonToc {
                 .collect(),
         }
     }
+}
+
+/// The edits [`refresh_edits`] computed for a document, and what it could not refresh.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct TocRefresh {
+    /// Edits against [`Document::text`]; empty when every region is up to date. Apply
+    /// them with [`apply_edits`](crate::source::apply_edits).
+    pub edits: Vec<TextEdit>,
+    /// Problems with individual regions (code [`DIRECTIVE_ERROR_CODE`]); those regions
+    /// get no edits.
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+/// Text edits that regenerate the body of every `<!-- mrq:toc -->` region of `doc`, as
+/// `mrq toc --insert` does.
+///
+/// The body becomes the [`link_list`] of the document's headings, framed by blank lines;
+/// no headings give an empty body. A region's `depth=N` attribute (1–6) limits the levels
+/// listed and overrides `depth`; an invalid value is reported and its region left alone.
+/// Headings inside a region's old body are not listed (nor counted when slugs are
+/// deduplicated), so a refresh is idempotent: refreshing the result produces no edits.
+///
+/// Only the bytes between the end of the start marker's line and the start of the end
+/// marker's line are replaced; a bare start marker gets the list and an `<!-- mrq:end
+/// -->` inserted after its line. Inserted lines take the file's line ending and the
+/// start marker's container prefix (`> ` in a blockquote, the item's indentation in a
+/// list). Regions that are already up to date get no edit.
+///
+/// ```
+/// use mrq_core::{Document, source::apply_edits, toc};
+///
+/// let src = "<!-- mrq:toc -->\n<!-- mrq:end -->\n\n# Guide\n";
+/// let doc = Document::parse(src);
+/// let refresh = toc::refresh_edits(&doc, None);
+/// assert_eq!(
+///     apply_edits(src, &refresh.edits).unwrap(),
+///     "<!-- mrq:toc -->\n\n- [Guide](#guide)\n\n<!-- mrq:end -->\n\n# Guide\n"
+/// );
+/// ```
+pub fn refresh_edits(doc: &Document, depth: Option<u8>) -> TocRefresh {
+    let ast = doc.ast();
+    let src = doc.text();
+    let regions: Vec<&DirectiveRegion> = doc
+        .directives()
+        .iter()
+        .filter(|region| region.kind == DirectiveKind::Toc)
+        .collect();
+    let bodies: Vec<Span> = regions.iter().map(|region| region.content).collect();
+    let inside_body = |span: Span| {
+        bodies
+            .iter()
+            .any(|body| !body.is_empty() && body.start <= span.start && span.end <= body.end)
+    };
+    let entries = live_entries(doc, &inside_body);
+    let mut refresh = TocRefresh::default();
+    for region in regions {
+        let marker = ast.span(region.start);
+        // A marker in the old body of another region disappears with that body.
+        if inside_body(marker) {
+            continue;
+        }
+        let depth = match region_depth(region.directive(ast), doc) {
+            Ok(own) => own.or(depth),
+            Err(diagnostic) => {
+                refresh.diagnostics.push(*diagnostic);
+                continue;
+            }
+        };
+        let listed: Vec<TocEntry> = entries
+            .iter()
+            .filter(|entry| depth.is_none_or(|depth| entry.level <= depth))
+            .cloned()
+            .collect();
+        if let Some(edit) = region_edit(src, region, marker, ast, &listed) {
+            refresh.edits.push(edit);
+        }
+    }
+    refresh
+}
+
+/// The document's headings outside old region bodies, slugged as if those were absent.
+fn live_entries(doc: &Document, inside_body: &impl Fn(Span) -> bool) -> Vec<TocEntry> {
+    let ast = doc.ast();
+    let mut slugger = doc.flavor().slugger();
+    flavor::heading_anchors_where(ast, &mut *slugger, |id| !inside_body(ast.span(id)))
+        .into_iter()
+        .filter_map(|(node, slug)| match ast.kind(node) {
+            NodeKind::Heading(heading) => Some(TocEntry {
+                node,
+                level: heading.level,
+                text: ast.text(node),
+                slug,
+                span: ast.span(node),
+            }),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The region's `depth` attribute, if any.
+fn region_depth(directive: &Directive, doc: &Document) -> Result<Option<u8>, Box<Diagnostic>> {
+    let Some(attr) = directive
+        .attributes
+        .iter()
+        .find(|attr| attr.name == "depth")
+    else {
+        return Ok(None);
+    };
+    match attr.value.parse::<u8>() {
+        Ok(depth @ 1..=6) => Ok(Some(depth)),
+        _ => Err(Box::new(
+            Diagnostic::new(
+                DIRECTIVE_ERROR_CODE,
+                Severity::Error,
+                doc.name(),
+                attr.span,
+                format!(
+                    "`depth` must be a heading level from 1 to 6, not `{}`; the table of \
+                     contents is not refreshed",
+                    attr.value
+                ),
+            )
+            .with_help("write e.g. `<!-- mrq:toc depth=3 -->`"),
+        )),
+    }
+}
+
+/// The edit making `region` list `entries`, or `None` if it already does.
+fn region_edit(
+    src: &str,
+    region: &DirectiveRegion,
+    marker: Span,
+    ast: &Ast,
+    entries: &[TocEntry],
+) -> Option<TextEdit> {
+    let line_start = |at: usize| src[..at].rfind('\n').map_or(0, |i| i + 1);
+    let prefix: String = src[line_start(marker.start)..marker.start]
+        .chars()
+        .map(|c| {
+            if matches!(c, '>' | ' ' | '\t') {
+                c
+            } else {
+                ' '
+            }
+        })
+        .collect();
+    let newline = src[marker.end..].find('\n').map(|i| marker.end + i);
+    // The marker line's ending; the file's first one if it is the unterminated last line.
+    let crlf = match newline {
+        Some(i) => src[..i].ends_with('\r'),
+        None => src.contains("\r\n"),
+    };
+    let eol = if crlf { "\r\n" } else { "\n" };
+    let mut body = String::new();
+    if !entries.is_empty() {
+        let blank = format!("{}{eol}", prefix.trim_end());
+        body.push_str(&blank);
+        for line in link_list(entries).lines() {
+            let _ = write!(body, "{prefix}{line}{eol}");
+        }
+        body.push_str(&blank);
+    }
+    let body_start = newline.map_or(src.len(), |i| i + 1);
+    let (range, replacement) = if let Some(end) = region.end {
+        let end_line = line_start(ast.span(end).start);
+        if end_line < body_start {
+            // Both markers on one line: nothing can go between them.
+            return None;
+        }
+        (ByteRange::new(body_start, end_line), body)
+    } else {
+        let lead = if newline.is_none() { eol } else { "" };
+        let replacement = format!("{lead}{body}{prefix}{END_MARKER}{eol}");
+        (ByteRange::empty(body_start), replacement)
+    };
+    (src[range.start..range.end] != replacement).then_some(TextEdit { range, replacement })
 }
