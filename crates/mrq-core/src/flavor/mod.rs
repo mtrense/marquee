@@ -97,6 +97,12 @@ pub trait Flavor: fmt::Debug + Send + Sync {
     /// A fresh slugger for one document's heading anchors.
     fn slugger(&self) -> Box<dyn Slugger>;
 
+    /// Whether links match heading anchors regardless of case (Obsidian's do). `false`
+    /// by default.
+    fn case_insensitive_anchors(&self) -> bool {
+        false
+    }
+
     /// Passes run, in order, over every parsed tree (and over fragments parsed with
     /// [`PassContext::parse_fragment`]). None by default.
     fn passes(&self) -> &[&dyn Pass] {

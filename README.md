@@ -460,21 +460,25 @@ render:
 mrq-core = "1"
 ```
 
-```rust
-use mrq_core::{Document, Flavor, query::Query};
+```rust no_run
+use mrq_core::{Document, query::Query};
 
-let doc = Document::parse(&source, Flavor::Gfm)?;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Flavor from frontmatter `mrq.flavor`, else gfm. `DocumentOptions` adds
+    // `--flavor`, the configured flavor and custom flavor registries.
+    let doc = Document::load("README.md")?;
 
-for heading in doc.toc() {
-    println!("{}{} (#{})", "  ".repeat(heading.level as usize - 1), heading.text, heading.slug);
+    for heading in doc.toc() {
+        println!("{}{} (#{})", "  ".repeat(heading.level as usize - 1), heading.text, heading.slug);
+    }
+
+    let snippets = doc.select(&Query::selector("# Install | ```sh")?)?;
+    for node in snippets {
+        println!("{}", node.text());
+    }
+
+    Ok(())
 }
-
-let snippets = doc.select(&Query::selector("# Install | ```sh")?)?;
-for node in snippets {
-    println!("{}", node.text());
-}
-
-let diagnostics = mrq_core::lint::lint(&doc, &mrq_core::Config::default());
 ```
 
 `mrq-core` covers parsing, the document model, frontmatter, query, validate, lint, fmt and transforms (merge, split, interpolate, diff). Rendering, the TUI and the language server live in separate crates. Heavy or network-bound capabilities are behind cargo features.

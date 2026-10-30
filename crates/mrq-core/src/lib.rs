@@ -1,10 +1,22 @@
 //! Core library of `mrq`: document model, parsing, query, validation, lint and formatting.
+//!
+//! Start with [`Document`] (one parsed file) or [`Workspace`] (several); the README's
+//! library example is compiled as a doctest.
 
 pub mod ast;
 pub mod config;
 pub mod diag;
+pub mod document;
 pub mod flavor;
 pub mod frontmatter;
 pub mod input;
 pub mod parse;
+pub mod query;
 pub mod source;
+
+pub use document::{Document, Workspace};
+
+/// Compiles the Rust examples of `README.md` as doctests.
+#[cfg(doctest)]
+#[doc = include_str!("../../../README.md")]
+pub struct ReadmeDoctests;

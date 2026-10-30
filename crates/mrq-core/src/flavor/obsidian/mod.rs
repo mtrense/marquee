@@ -29,7 +29,8 @@ use crate::parse::ParseOptions;
 /// `%%` comments, math and highlights.
 ///
 /// Parses with [`ParseOptions::gfm`] plus `==highlight==` (math is on in GFM already) and
-/// slugs with [`ObsidianSlugger`] (heading text, not GitHub slugs). Three passes,
+/// slugs with [`ObsidianSlugger`] (heading text, not GitHub slugs), matched regardless of
+/// case ([`Flavor::case_insensitive_anchors`]). Three passes,
 /// `callouts`, `block_comments` and `inlines`, recognize the rest:
 ///
 /// - **Callouts**: a block quote whose first line starts with `[!kind]` becomes a
@@ -81,6 +82,10 @@ impl Flavor for Obsidian {
 
     fn slugger(&self) -> Box<dyn Slugger> {
         Box::new(ObsidianSlugger::new())
+    }
+
+    fn case_insensitive_anchors(&self) -> bool {
+        true
     }
 
     fn passes(&self) -> &[&dyn Pass] {
