@@ -11,7 +11,7 @@ use crate::directive::DirectiveRegion;
 use crate::flavor::{self, Flavor, FlavorError, FlavorOrigin, Registry, Resolved};
 use crate::frontmatter::Frontmatter;
 use crate::input::{Input, InputError};
-use crate::query::{Match, Query, QueryError};
+use crate::query::{JsonOutput, Match, Query, QueryError};
 use crate::source::SourceFile;
 use crate::toc::TocEntry;
 
@@ -302,17 +302,46 @@ impl Document {
         json::project(self)
     }
 
-    /// The nodes and sections `query` matches, in document order; see
-    /// [`QueryPlan::evaluate`](crate::query::QueryPlan::evaluate).
+    /// The nodes and sections `query` matches. For selector, CSS and plan queries these
+    /// are in document order (see
+    /// [`QueryPlan::evaluate`](crate::query::QueryPlan::evaluate)); for jq they are the
+    /// program's outputs in output order, each [mapped back](JsonOutput::to_match) to the
+    /// node or section it is the projection of.
     ///
     /// # Errors
     ///
-    /// [`QueryError::NotImplemented`] for a query without a [plan](Query::plan), i.e.
-    /// one written in a syntax whose front-end does not exist yet (jq).
+    /// For jq: [`QueryError::Runtime`] if the program fails, and
+    /// [`QueryError::NotANode`] for an output that is not a node or section of the
+    /// document (use [`select_json`](Self::select_json) for arbitrary values).
     pub fn select(&self, query: &Query) -> Result<Vec<Match<'_>>, QueryError> {
+        if let Some(plan) = query.plan() {
+            return Ok(plan.evaluate(self));
+        }
         query
-            .plan()
-            .map(|plan| plan.evaluate(self))
-            .ok_or(QueryError::NotImplemented)
+            .run_jq(self)?
+            .into_iter()
+            .map(|output| {
+                output.to_match(self).ok_or_else(|| QueryError::NotANode {
+                    value: output.value().to_string(),
+                })
+            })
+            .collect()
+    }
+
+    /// The JSON results of `query`: a jq program's outputs, or the
+    /// [projections](JsonOutput::from_match) of the matches of any other query.
+    ///
+    /// # Errors
+    ///
+    /// [`QueryError::Runtime`] if a jq program fails.
+    pub fn select_json(&self, query: &Query) -> Result<Vec<JsonOutput>, QueryError> {
+        match query.plan() {
+            Some(plan) => Ok(plan
+                .evaluate(self)
+                .iter()
+                .map(|found| JsonOutput::from_match(self, found))
+                .collect()),
+            None => query.run_jq(self),
+        }
     }
 }

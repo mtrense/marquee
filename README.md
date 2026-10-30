@@ -233,7 +233,7 @@ mrq query --css 'section[heading="Install"] code[lang=rust]' README.md
 mrq query --css 'link[url^="http"]' docs/
 
 # jq over the JSON AST (embedded jaq, no jq install needed)
-mrq query --jq '.. | select(.type == "link") | .url' docs/
+mrq query --jq '.. | select(.type? == "link") | .url' docs/
 ```
 
 Output is Markdown by default (`-o md`). It can also be `json` (nodes with source positions) or `text` (plain text content).

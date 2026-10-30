@@ -1,4 +1,5 @@
-//! Query errors: [`QueryError`] and the positioned [`SyntaxError`] of the front-ends.
+//! Query errors: [`QueryError`], the positioned [`SyntaxError`] of the front-ends and the
+//! [`RuntimeError`] of jq programs.
 
 use std::path::PathBuf;
 
@@ -9,9 +10,6 @@ use crate::source::ByteRange;
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[non_exhaustive]
 pub enum QueryError {
-    /// The query's front-end does not exist yet (jq, M3.4).
-    #[error("queries are not implemented yet")]
-    NotImplemented,
     /// A `/regex/` matcher does not compile.
     #[error("invalid regex `{pattern}`: {message}")]
     Regex {
@@ -23,6 +21,16 @@ pub enum QueryError {
     /// The query text does not parse.
     #[error(transparent)]
     Syntax(#[from] SyntaxError),
+    /// A jq program failed while it ran, e.g. `error("…")` or adding a string to a number.
+    #[error(transparent)]
+    Runtime(#[from] RuntimeError),
+    /// A jq output that [`Document::select`](crate::Document::select) cannot turn into a
+    /// [`Match`](super::Match): it is not an unchanged node or section of the document.
+    #[error("jq output {value} is not a node or section of the document")]
+    NotANode {
+        /// The output as compact JSON.
+        value: String,
+    },
 }
 
 /// A query that does not parse: a message about the byte at [`offset`](Self::offset) of
@@ -109,6 +117,48 @@ impl SyntaxError {
             file,
             ByteRange::new(origin + range.start, origin + range.end),
             format!("invalid query: {}", self.message),
+        )
+    }
+}
+
+/// A jq program that failed while it ran: the [message](Self::message) of the error it
+/// raised, about the whole [query text](Self::query).
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+#[error("jq error: {message}")]
+pub struct RuntimeError {
+    query: String,
+    message: String,
+}
+
+impl RuntimeError {
+    /// An error with `message` raised by the program `query`.
+    pub fn new(query: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            query: query.into(),
+            message: message.into(),
+        }
+    }
+
+    /// The query text as given.
+    pub fn query(&self) -> &str {
+        &self.query
+    }
+
+    /// What went wrong: the value given to `error` (strings as is, other values as
+    /// JSON) or jaq's description, e.g. `cannot use "heading" (string) as number`.
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    /// A [`Diagnostic`] (code `query`, error) covering the whole query, for a query whose
+    /// text starts at byte `origin` of `file`.
+    pub fn to_diagnostic(&self, file: impl Into<PathBuf>, origin: usize) -> Diagnostic {
+        Diagnostic::new(
+            "query",
+            Severity::Error,
+            file,
+            ByteRange::new(origin, origin + self.query.len()),
+            self.to_string(),
         )
     }
 }

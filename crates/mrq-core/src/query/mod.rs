@@ -1,7 +1,7 @@
 //! Queries over a [`Document`](crate::Document): the [`QueryPlan`] IR, its evaluation
 //! into [`Match`]es, and [sections](Section).
 //!
-//! Every front-end (the selector DSL, CSS, jq) compiles to a [`QueryPlan`]: selections
+//! The selector DSL and CSS front-ends compile to a [`QueryPlan`]: selections
 //! ([`Select`](QueryPlan::Select) with a [`Selector`] of a node type and
 //! [`Predicate`]s, [`Section`](QueryPlan::Section) with a [`TextMatcher`] for the
 //! heading) joined by combinators ([`Pipe`](QueryPlan::Pipe),
@@ -27,9 +27,10 @@
 //! assert_eq!(found[0].text(), "make");
 //! ```
 //!
-//! [`Query`] holds a query in one of the front-end syntaxes, compiled to its plan when it
-//! is created; [`Document::select`](crate::Document::select) evaluates it. Until the jq
-//! front-end exists (M3.4) jq queries fail with [`QueryError::NotImplemented`].
+//! [`Query`] holds a query in one of the front-end syntaxes, compiled (to its plan, or to
+//! a jq program) when it is created; [`Document::select`](crate::Document::select)
+//! evaluates it to [`Match`]es and
+//! [`Document::select_json`](crate::Document::select_json) to [`JsonOutput`]s.
 //!
 //! # Selector DSL
 //!
@@ -101,16 +102,56 @@
 //! assert_eq!(found[0].text(), "main()");
 //! # Ok::<(), mrq_core::query::QueryError>(())
 //! ```
+//!
+//! # jq
+//!
+//! [`Query::jq`] compiles a jq program (with [jaq](https://github.com/01mf02/jaq) and
+//! its standard library) that runs on the [JSON projection](crate::ast::json) of the
+//! document. Its outputs are arbitrary JSON values, so jq has no [`QueryPlan`]:
+//! [`Document::select_json`](crate::Document::select_json) returns them as
+//! [`JsonOutput`]s, whose [`span`](JsonOutput::span) and
+//! [`to_match`](JsonOutput::to_match) lead back to the source when an output is a node
+//! or section; [`Document::select`](crate::Document::select) requires every output to be
+//! one. mrq adds these definitions:
+//!
+//! | Definition | Outputs |
+//! | --- | --- |
+//! | `nodes` | the input and every node inside it, in document order (unlike `..`, without frontmatter values and other fields) |
+//! | `links` | the `link` nodes inside the input |
+//! | `code`, `code($lang)` | the `code` blocks inside the input (with language `$lang`, ignoring case) |
+//! | `sections` | the sections inside the input node or section as `section` objects (see [`JsonOutput`]) |
+//! | `text` | the plain text of the input node or section ([`Node::text`](crate::ast::Node::text), [`Section::text`]); a string as is |
+//!
+//! Parse errors and undefined names are [`QueryError::Syntax`] at the offending token;
+//! errors raised while the program runs are [`QueryError::Runtime`]:
+//!
+//! ```
+//! use mrq_core::Document;
+//! use mrq_core::query::{Query, QueryError};
+//!
+//! let doc = Document::parse("# Install\n\nSee [docs](./docs.md).\n\n# Use\n");
+//! let urls = doc.select_json(&Query::jq(r#".. | select(.type? == "link") | .url"#)?)?;
+//! assert_eq!(urls[0].value(), "./docs.md");
+//! let found = doc.select(&Query::jq(r#"sections | select(.heading | text == "Use")"#)?)?;
+//! assert_eq!(found[0].source(doc.text()), "# Use");
+//!
+//! let Err(QueryError::Syntax(err)) = Query::jq("links | txt") else { panic!() };
+//! assert_eq!(err.render(), "links | txt\n        ^ undefined filter `txt/0`");
+//! # Ok::<(), QueryError>(())
+//! ```
 
 mod css;
 mod engine;
 mod error;
+mod jq;
+mod output;
 mod plan;
 mod section;
 mod selector;
 
 pub use engine::Match;
-pub use error::{QueryError, SyntaxError};
+pub use error::{QueryError, RuntimeError, SyntaxError};
+pub use output::JsonOutput;
 pub use plan::{Attribute, Literal, Pattern, Predicate, QueryPlan, Selector, TextMatcher};
 pub use section::{Section, sections};
 
@@ -128,12 +169,14 @@ pub enum Syntax {
     Plan,
 }
 
-/// A query in one of the front-end [`Syntax`]es.
+/// A query in one of the front-end [`Syntax`]es, compiled. Queries are equal when their
+/// syntax and source are.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Query {
     syntax: Syntax,
     source: String,
     plan: Option<QueryPlan>,
+    jq: Option<jq::Program>,
 }
 
 impl Query {
@@ -167,9 +210,18 @@ impl Query {
         })
     }
 
-    /// A jq query.
+    /// A jq program over the JSON projection, compiled; see the [module docs](self#jq).
+    ///
+    /// # Errors
+    ///
+    /// [`QueryError::Syntax`] if `source` does not parse or uses an undefined filter,
+    /// variable or label.
     pub fn jq(source: &str) -> Result<Self, QueryError> {
-        Ok(Self::new(Syntax::Jq, source))
+        let program = jq::compile(source)?;
+        Ok(Self {
+            jq: Some(program),
+            ..Self::new(Syntax::Jq, source)
+        })
     }
 
     /// A query that evaluates `plan`; its [`source`](Self::source) is empty.
@@ -178,6 +230,7 @@ impl Query {
             syntax: Syntax::Plan,
             source: String::new(),
             plan: Some(plan),
+            jq: None,
         }
     }
 
@@ -186,6 +239,7 @@ impl Query {
             syntax,
             source: source.to_owned(),
             plan: None,
+            jq: None,
         }
     }
 
@@ -199,8 +253,17 @@ impl Query {
         &self.source
     }
 
-    /// The compiled plan; `None` while the query's front-end does not exist yet.
+    /// The compiled plan; `None` for jq, which has no plan.
     pub const fn plan(&self) -> Option<&QueryPlan> {
         self.plan.as_ref()
+    }
+
+    /// The outputs of the jq program on `doc`; nothing for other syntaxes.
+    pub(crate) fn run_jq(&self, doc: &crate::Document) -> Result<Vec<JsonOutput>, QueryError> {
+        let Some(program) = &self.jq else {
+            return Ok(Vec::new());
+        };
+        let values = program.run(&self.source, doc)?;
+        Ok(values.into_iter().map(JsonOutput::new).collect())
     }
 }

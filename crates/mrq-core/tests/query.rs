@@ -573,12 +573,10 @@ fn document_select_evaluates_plan_queries() {
 }
 
 #[test]
-fn jq_queries_are_not_compiled_yet() {
+fn jq_queries_are_not_compiled_to_plans() {
     let doc = Document::parse(GUIDE);
-    let query = Query::jq(".").unwrap();
+    let query = Query::jq(r#"code("sh")"#).unwrap();
     assert!(query.plan().is_none());
-    assert!(matches!(
-        doc.select(&query).unwrap_err(),
-        QueryError::NotImplemented
-    ));
+    let found = doc.select(&query).unwrap();
+    assert!(found.iter().all(|m| m.node().is_some()));
 }

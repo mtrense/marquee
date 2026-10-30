@@ -13,35 +13,13 @@ expression: "mrq_core::config::schema_json()"
       "$ref": "#/$defs/FlavorName",
       "default": "gfm"
     },
-    "fmt": {
-      "description": "`mrq fmt` settings.",
-      "$ref": "#/$defs/FmtConfig",
-      "default": {
-        "code_fence": "```",
-        "code_formatters": {},
-        "emphasis": "*",
-        "frontmatter": "preserve",
-        "list_marker": "-",
-        "ordered_list": "ordered",
-        "strong": "**",
-        "width": 80,
-        "wrap": "preserve"
-      }
-    },
     "ignore": {
       "description": "Globs of files and directories to skip when walking directories.",
       "type": "array",
-      "default": [],
       "items": {
         "type": "string"
-      }
-    },
-    "include": {
-      "description": "`mrq:include` settings.",
-      "$ref": "#/$defs/IncludeConfig",
-      "default": {
-        "allow_remote": false
-      }
+      },
+      "default": []
     },
     "lint": {
       "description": "`mrq lint` settings.",
@@ -51,18 +29,19 @@ expression: "mrq_core::config::schema_json()"
         "rules": {}
       }
     },
-    "render": {
-      "description": "`mrq render` settings.",
-      "$ref": "#/$defs/RenderConfig",
+    "fmt": {
+      "description": "`mrq fmt` settings.",
+      "$ref": "#/$defs/FmtConfig",
       "default": {
-        "diagrams": {
-          "commands": {},
-          "kroki": {
-            "enabled": false,
-            "url": "https://kroki.io"
-          }
-        },
-        "style": null
+        "wrap": "preserve",
+        "width": 80,
+        "emphasis": "*",
+        "strong": "**",
+        "list_marker": "-",
+        "ordered_list": "ordered",
+        "code_fence": "```",
+        "frontmatter": "preserve",
+        "code_formatters": {}
       }
     },
     "validate": {
@@ -73,52 +52,31 @@ expression: "mrq_core::config::schema_json()"
         "external_exclude": [],
         "frontmatter": []
       }
+    },
+    "include": {
+      "description": "`mrq:include` settings.",
+      "$ref": "#/$defs/IncludeConfig",
+      "default": {
+        "allow_remote": false
+      }
+    },
+    "render": {
+      "description": "`mrq render` settings.",
+      "$ref": "#/$defs/RenderConfig",
+      "default": {
+        "style": null,
+        "diagrams": {
+          "kroki": {
+            "enabled": false,
+            "url": "https://kroki.io"
+          },
+          "commands": {}
+        }
+      }
     }
   },
   "additionalProperties": false,
   "$defs": {
-    "CodeFence": {
-      "description": "Code fence of `fmt.code_fence`.",
-      "type": "string",
-      "enum": [
-        "```",
-        "~~~"
-      ]
-    },
-    "DiagramsConfig": {
-      "description": "`render.diagrams` section.",
-      "type": "object",
-      "properties": {
-        "commands": {
-          "description": "Custom renderers keyed by fence language: a command and its arguments, reading\nthe diagram source on stdin and writing SVG to stdout.",
-          "type": "object",
-          "additionalProperties": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "default": {}
-        },
-        "kroki": {
-          "description": "The Kroki diagram service, tried after built-in renderers and commands.",
-          "$ref": "#/$defs/KrokiConfig",
-          "default": {
-            "enabled": false,
-            "url": "https://kroki.io"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "Emphasis": {
-      "description": "Emphasis marker of `fmt.emphasis`.",
-      "type": "string",
-      "enum": [
-        "*",
-        "_"
-      ]
-    },
     "FlavorName": {
       "description": "A built-in Markdown flavor.",
       "oneOf": [
@@ -143,130 +101,6 @@ expression: "mrq_core::config::schema_json()"
           "const": "mkdocs"
         }
       ]
-    },
-    "FmtConfig": {
-      "description": "`fmt` section.",
-      "type": "object",
-      "properties": {
-        "code_fence": {
-          "description": "Code fence.",
-          "$ref": "#/$defs/CodeFence",
-          "default": "```"
-        },
-        "code_formatters": {
-          "description": "External formatters for fenced code, keyed by language: a command and its\narguments, reading the code on stdin and writing the result to stdout.",
-          "type": "object",
-          "additionalProperties": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "default": {}
-        },
-        "emphasis": {
-          "description": "Emphasis marker.",
-          "$ref": "#/$defs/Emphasis",
-          "default": "*"
-        },
-        "frontmatter": {
-          "description": "Frontmatter handling.",
-          "$ref": "#/$defs/FrontmatterFormat",
-          "default": "preserve"
-        },
-        "list_marker": {
-          "description": "Bullet list marker.",
-          "$ref": "#/$defs/ListMarker",
-          "default": "-"
-        },
-        "ordered_list": {
-          "description": "Ordered list numbering.",
-          "$ref": "#/$defs/OrderedList",
-          "default": "ordered"
-        },
-        "strong": {
-          "description": "Strong emphasis marker.",
-          "$ref": "#/$defs/Strong",
-          "default": "**"
-        },
-        "width": {
-          "description": "Line width for `wrap: width`.",
-          "type": "integer",
-          "format": "uint16",
-          "default": 80,
-          "maximum": 65535,
-          "minimum": 0
-        },
-        "wrap": {
-          "description": "Prose wrapping mode.",
-          "$ref": "#/$defs/Wrap",
-          "default": "preserve"
-        }
-      },
-      "additionalProperties": false
-    },
-    "FrontmatterFormat": {
-      "description": "Frontmatter handling of `fmt.frontmatter`.",
-      "oneOf": [
-        {
-          "description": "Keep frontmatter bytes verbatim.",
-          "type": "string",
-          "const": "preserve"
-        },
-        {
-          "description": "Re-serialize frontmatter canonically.",
-          "type": "string",
-          "const": "normalize"
-        }
-      ]
-    },
-    "FrontmatterSchema": {
-      "description": "One `validate.frontmatter` entry.",
-      "type": "object",
-      "properties": {
-        "files": {
-          "description": "Glob of the files the schema applies to.",
-          "type": "string"
-        },
-        "schema": {
-          "description": "Path of the JSON Schema, relative to the config file that sets it.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false,
-      "required": [
-        "files",
-        "schema"
-      ]
-    },
-    "IncludeConfig": {
-      "description": "`include` section.",
-      "type": "object",
-      "properties": {
-        "allow_remote": {
-          "description": "Allow `mrq:include` from http(s) URLs (needs the `remote-include` feature).",
-          "type": "boolean",
-          "default": false
-        }
-      },
-      "additionalProperties": false
-    },
-    "KrokiConfig": {
-      "description": "`render.diagrams.kroki` section.",
-      "type": "object",
-      "properties": {
-        "enabled": {
-          "description": "Kroki is never contacted unless this is `true`.",
-          "type": "boolean",
-          "default": false
-        },
-        "url": {
-          "description": "Base URL of the Kroki service.",
-          "type": "string",
-          "default": "https://kroki.io"
-        }
-      },
-      "additionalProperties": false
     },
     "LintConfig": {
       "description": "`lint` section.",
@@ -301,6 +135,108 @@ expression: "mrq_core::config::schema_json()"
         }
       ]
     },
+    "FmtConfig": {
+      "description": "`fmt` section.",
+      "type": "object",
+      "properties": {
+        "wrap": {
+          "description": "Prose wrapping mode.",
+          "$ref": "#/$defs/Wrap",
+          "default": "preserve"
+        },
+        "width": {
+          "description": "Line width for `wrap: width`.",
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0,
+          "maximum": 65535,
+          "default": 80
+        },
+        "emphasis": {
+          "description": "Emphasis marker.",
+          "$ref": "#/$defs/Emphasis",
+          "default": "*"
+        },
+        "strong": {
+          "description": "Strong emphasis marker.",
+          "$ref": "#/$defs/Strong",
+          "default": "**"
+        },
+        "list_marker": {
+          "description": "Bullet list marker.",
+          "$ref": "#/$defs/ListMarker",
+          "default": "-"
+        },
+        "ordered_list": {
+          "description": "Ordered list numbering.",
+          "$ref": "#/$defs/OrderedList",
+          "default": "ordered"
+        },
+        "code_fence": {
+          "description": "Code fence.",
+          "$ref": "#/$defs/CodeFence",
+          "default": "```"
+        },
+        "frontmatter": {
+          "description": "Frontmatter handling.",
+          "$ref": "#/$defs/FrontmatterFormat",
+          "default": "preserve"
+        },
+        "code_formatters": {
+          "description": "External formatters for fenced code, keyed by language: a command and its\narguments, reading the code on stdin and writing the result to stdout.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "Wrap": {
+      "description": "Prose wrapping mode of `fmt.wrap`.",
+      "oneOf": [
+        {
+          "description": "Keep line breaks as written.",
+          "type": "string",
+          "const": "preserve"
+        },
+        {
+          "description": "One line per paragraph.",
+          "type": "string",
+          "const": "never"
+        },
+        {
+          "description": "Wrap at `fmt.width` columns.",
+          "type": "string",
+          "const": "width"
+        },
+        {
+          "description": "One sentence per line.",
+          "type": "string",
+          "const": "sentence"
+        }
+      ]
+    },
+    "Emphasis": {
+      "description": "Emphasis marker of `fmt.emphasis`.",
+      "type": "string",
+      "enum": [
+        "*",
+        "_"
+      ]
+    },
+    "Strong": {
+      "description": "Strong emphasis marker of `fmt.strong`.",
+      "type": "string",
+      "enum": [
+        "**",
+        "__"
+      ]
+    },
     "ListMarker": {
       "description": "Bullet list marker of `fmt.list_marker`.",
       "type": "string",
@@ -330,38 +266,27 @@ expression: "mrq_core::config::schema_json()"
         }
       ]
     },
-    "RenderConfig": {
-      "description": "`render` section.",
-      "type": "object",
-      "properties": {
-        "diagrams": {
-          "description": "Diagram rendering.",
-          "$ref": "#/$defs/DiagramsConfig",
-          "default": {
-            "commands": {},
-            "kroki": {
-              "enabled": false,
-              "url": "https://kroki.io"
-            }
-          }
-        },
-        "style": {
-          "description": "Built-in theme name (`light`, `dark`, `github`, `paper`) or a theme file path.",
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null
-        }
-      },
-      "additionalProperties": false
-    },
-    "Strong": {
-      "description": "Strong emphasis marker of `fmt.strong`.",
+    "CodeFence": {
+      "description": "Code fence of `fmt.code_fence`.",
       "type": "string",
       "enum": [
-        "**",
-        "__"
+        "```",
+        "~~~"
+      ]
+    },
+    "FrontmatterFormat": {
+      "description": "Frontmatter handling of `fmt.frontmatter`.",
+      "oneOf": [
+        {
+          "description": "Keep frontmatter bytes verbatim.",
+          "type": "string",
+          "const": "preserve"
+        },
+        {
+          "description": "Re-serialize frontmatter canonically.",
+          "type": "string",
+          "const": "normalize"
+        }
       ]
     },
     "ValidateConfig": {
@@ -376,46 +301,121 @@ expression: "mrq_core::config::schema_json()"
         "external_exclude": {
           "description": "Regular expressions of external URLs never to check.",
           "type": "array",
-          "default": [],
           "items": {
             "type": "string"
-          }
+          },
+          "default": []
         },
         "frontmatter": {
           "description": "JSON Schemas for frontmatter, per glob.",
           "type": "array",
-          "default": [],
           "items": {
             "$ref": "#/$defs/FrontmatterSchema"
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": false
+    },
+    "FrontmatterSchema": {
+      "description": "One `validate.frontmatter` entry.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "description": "Glob of the files the schema applies to.",
+          "type": "string"
+        },
+        "schema": {
+          "description": "Path of the JSON Schema, relative to the config file that sets it.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "files",
+        "schema"
+      ]
+    },
+    "IncludeConfig": {
+      "description": "`include` section.",
+      "type": "object",
+      "properties": {
+        "allow_remote": {
+          "description": "Allow `mrq:include` from http(s) URLs (needs the `remote-include` feature).",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "RenderConfig": {
+      "description": "`render` section.",
+      "type": "object",
+      "properties": {
+        "style": {
+          "description": "Built-in theme name (`light`, `dark`, `github`, `paper`) or a theme file path.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "diagrams": {
+          "description": "Diagram rendering.",
+          "$ref": "#/$defs/DiagramsConfig",
+          "default": {
+            "kroki": {
+              "enabled": false,
+              "url": "https://kroki.io"
+            },
+            "commands": {}
           }
         }
       },
       "additionalProperties": false
     },
-    "Wrap": {
-      "description": "Prose wrapping mode of `fmt.wrap`.",
-      "oneOf": [
-        {
-          "description": "Keep line breaks as written.",
-          "type": "string",
-          "const": "preserve"
+    "DiagramsConfig": {
+      "description": "`render.diagrams` section.",
+      "type": "object",
+      "properties": {
+        "kroki": {
+          "description": "The Kroki diagram service, tried after built-in renderers and commands.",
+          "$ref": "#/$defs/KrokiConfig",
+          "default": {
+            "enabled": false,
+            "url": "https://kroki.io"
+          }
         },
-        {
-          "description": "One line per paragraph.",
-          "type": "string",
-          "const": "never"
-        },
-        {
-          "description": "Wrap at `fmt.width` columns.",
-          "type": "string",
-          "const": "width"
-        },
-        {
-          "description": "One sentence per line.",
-          "type": "string",
-          "const": "sentence"
+        "commands": {
+          "description": "Custom renderers keyed by fence language: a command and its arguments, reading\nthe diagram source on stdin and writing SVG to stdout.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default": {}
         }
-      ]
+      },
+      "additionalProperties": false
+    },
+    "KrokiConfig": {
+      "description": "`render.diagrams.kroki` section.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Kroki is never contacted unless this is `true`.",
+          "type": "boolean",
+          "default": false
+        },
+        "url": {
+          "description": "Base URL of the Kroki service.",
+          "type": "string",
+          "default": "https://kroki.io"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

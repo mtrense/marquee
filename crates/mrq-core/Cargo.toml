@@ -34,6 +34,9 @@ unicode-normalization.workspace = true
 unicode-segmentation.workspace = true
 regex.workspace = true
 winnow.workspace = true
+jaq-core.workspace = true
+jaq-std.workspace = true
+jaq-json.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

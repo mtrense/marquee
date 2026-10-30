@@ -324,7 +324,7 @@ fn toc_lists_headings_with_level_text_and_slug() {
     assert_eq!(doc.toc()[0].node, doc.anchors().get("guide").unwrap());
 }
 
-// --- Query (CSS and jq front-ends stubbed until M3.3–M3.4) -----------------------------
+// --- Query ---------------------------------------------------------------------------
 
 #[test]
 fn selector_queries_select_nodes() {
@@ -346,10 +346,19 @@ fn css_queries_select_nodes() {
 }
 
 #[test]
-fn jq_queries_are_not_implemented_yet() {
-    let doc = Document::parse("# Install\n");
-    let err = doc.select(&Query::jq(".").unwrap()).unwrap_err();
-    assert!(matches!(err, QueryError::NotImplemented), "{err:?}");
+fn jq_queries_select_nodes_and_values() {
+    let doc = Document::parse("# Install\n\n```sh\nmake\n```\n");
+    let query = Query::jq(r#"code("sh")"#).unwrap();
+    let found = doc.select(&query).unwrap();
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].text(), "make");
+    let values = doc
+        .select_json(&Query::jq("code | .lang").unwrap())
+        .unwrap();
+    assert_eq!(values.len(), 1);
+    assert_eq!(values[0].value(), "sh");
+    let err = doc.select(&Query::jq("1").unwrap()).unwrap_err();
+    assert!(matches!(err, QueryError::NotANode { .. }), "{err:?}");
 }
 
 // --- Workspace -------------------------------------------------------------------------
