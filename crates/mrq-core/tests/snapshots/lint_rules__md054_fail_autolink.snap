@@ -1,0 +1,12 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD054 Link and image style [Context: "<https://example.com>"]
+3:27 MD054 Link and image style [Context: "<user@example.com>"]
+--- fixed ---
+# No autolinks
+
+[https://example.com](https://example.com) and [user@example.com](user@example.com) are reported; https://example.com is not.
+
+<!-- markdownlint-configure-file { "MD054": { "autolink": false } } -->

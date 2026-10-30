@@ -79,9 +79,9 @@ ignore: ["vendor/**", "CHANGELOG.md"]
 lint:
   extends: none
   rules:
-    MD012: { maximum: 2 }
-    no-multiple-blanks: { maximum: 3 }
-    MD047: off
+    MD013: { line_length: 120, code_blocks: false }
+    MD033: { allowed_elements: [details, summary, kbd] }
+    MD041: off
 fmt:
   wrap: width
   width: 100
@@ -114,16 +114,17 @@ render:
     assert_eq!(config.lint.extends, LintExtends::None);
     assert_eq!(config.lint.rules.len(), 3);
     assert_eq!(
-        config.lint.rules.get("MD012"),
+        config.lint.rules.get("MD013"),
         Some(&RuleSetting::Options(
-            serde_json::json!({ "maximum": 2 })
+            serde_json::json!({ "line_length": 120, "code_blocks": false })
                 .as_object()
                 .unwrap()
                 .clone()
         ))
     );
+    // YAML reads a bare `off` as `false`.
     assert_eq!(
-        config.lint.rules.get("MD047"),
+        config.lint.rules.get("MD041"),
         Some(&RuleSetting::Enabled(false))
     );
     assert_eq!(config.fmt.wrap, Wrap::Width);
@@ -444,7 +445,7 @@ fn schema_rejects_unknown_keys_and_accepts_the_readme_example() {
     let validator = jsonschema::validator_for(&schema).unwrap();
     let good = serde_json::json!({
         "flavor": "gfm",
-        "lint": { "rules": { "MD012": { "maximum": 2 }, "MD047": "off" } },
+        "lint": { "rules": { "MD013": { "line_length": 120 }, "MD041": "off" } },
         "fmt": { "wrap": "width", "width": 100, "emphasis": "_" },
         "render": { "diagrams": { "kroki": { "enabled": true } } }
     });

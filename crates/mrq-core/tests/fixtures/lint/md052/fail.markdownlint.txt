@@ -1,0 +1,6 @@
+3:3 MD052 Reference links and images should use a label that is defined [Missing link or image reference definition: "undefined"] [Context: "[full][undefined]"]
+3:29 MD052 Reference links and images should use a label that is defined [Missing link or image reference definition: "collapsed"] [Context: "[collapsed][]"]
+3:55 MD052 Reference links and images should use a label that is defined [Missing link or image reference definition: "missing image"] [Context: "![image][missing image]"]
+5:8 MD052 Reference links and images should use a label that is defined [Missing link or image reference definition: "undefined"] [Context: "[again][Undefined]"]
+5:31 MD052 Reference links and images should use a label that is defined [Missing link or image reference definition: "spaced label"] [Context: "[Spaced   Label][spaced label]"]
+7:10 MD052 Reference links and images should use a label that is defined [Missing link or image reference definition: "quoted"] [Context: "[text][quoted]"]

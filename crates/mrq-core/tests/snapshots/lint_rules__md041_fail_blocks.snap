@@ -1,0 +1,5 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:1 MD041 First line in a file should be a top-level heading [Context: "> A quote first"]

@@ -1,0 +1,5 @@
+# Asterisks required
+
+**Underscore** and **more** but **asterisk**.
+
+<!-- markdownlint-configure-file { "MD050": { "style": "asterisk" } } -->

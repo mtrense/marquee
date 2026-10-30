@@ -1,0 +1,15 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+5:3 MD055 Table pipe style [Expected: leading_and_trailing; Actual: trailing_only; Missing leading pipe]
+6:10 MD055 Table pipe style [Expected: leading_and_trailing; Actual: leading_only; Missing trailing pipe]
+7:1 MD055 Table pipe style [Expected: leading_and_trailing; Actual: no_leading_or_trailing; Missing leading pipe]
+7:10 MD055 Table pipe style [Expected: leading_and_trailing; Actual: no_leading_or_trailing; Missing trailing pipe]
+8:13 MD055 Table pipe style [Expected: leading_and_trailing; Actual: leading_only; Missing trailing pipe]
+10:1 MD055 Table pipe style [Expected: leading_and_trailing; Actual: no_leading_or_trailing; Missing leading pipe]
+10:12 MD055 Table pipe style [Expected: leading_and_trailing; Actual: no_leading_or_trailing; Missing trailing pipe]
+11:1 MD055 Table pipe style [Expected: leading_and_trailing; Actual: no_leading_or_trailing; Missing leading pipe]
+11:12 MD055 Table pipe style [Expected: leading_and_trailing; Actual: no_leading_or_trailing; Missing trailing pipe]
+12:1 MD055 Table pipe style [Expected: leading_and_trailing; Actual: no_leading_or_trailing; Missing leading pipe]
+12:8 MD055 Table pipe style [Expected: leading_and_trailing; Actual: no_leading_or_trailing; Missing trailing pipe]

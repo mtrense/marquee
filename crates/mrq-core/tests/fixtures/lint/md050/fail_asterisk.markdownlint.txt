@@ -1,0 +1,4 @@
+3:1 MD050 Strong style [Expected: asterisk; Actual: underscore]
+3:13 MD050 Strong style [Expected: asterisk; Actual: underscore]
+3:20 MD050 Strong style [Expected: asterisk; Actual: underscore]
+3:26 MD050 Strong style [Expected: asterisk; Actual: underscore]

@@ -1,0 +1,11 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+4:1 MD053 Link and image reference definitions should be needed [Unused link or image reference definition: "//"] [Context: "[//]: # (No longer ignored)"]
+--- fixed ---
+# Ignored definitions
+
+[ignored]: https://example.com/ignored
+
+<!-- markdownlint-configure-file { "MD053": { "ignored_definitions": ["ignored"] } } -->

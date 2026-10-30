@@ -1,0 +1,1 @@
+9:10 MD055 Table pipe style [Expected: leading_and_trailing; Actual: leading_only; Missing trailing pipe]

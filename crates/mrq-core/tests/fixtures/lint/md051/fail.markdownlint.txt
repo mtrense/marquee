@@ -1,0 +1,7 @@
+5:1 MD051 Link fragments should be valid [Context: "[Missing](#missing)"]
+5:25 MD051 Link fragments should be valid [Context: "[another missing](#nope "title")"]
+7:1 MD051 Link fragments should be valid [Expected: #section; Actual: #Section] [Context: "[Wrong case](#Section)"]
+7:28 MD051 Link fragments should be valid [Expected: #broken-fragments; Actual: #Broken-Fragments] [Context: "[title case](#Broken-Fragments)"]
+11 MD051 Link fragments should be valid
+14:1 MD051 Link fragments should be valid [Context: "[def]: #undefined-fragment"]
+15:1 MD051 Link fragments should be valid [Expected: #section; Actual: #SECTION] [Context: "[case-def]: #SECTION"]

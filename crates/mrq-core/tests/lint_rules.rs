@@ -151,7 +151,12 @@ fn rule_fixtures() {
 
         if let Ok(expected) = std::fs::read_to_string(path.with_extension("markdownlint.txt")) {
             let expected = recorded(&expected);
-            // Columns count only where markdownlint reports one (not for whole lines).
+            // Columns count only where markdownlint reports one (not for whole lines), so
+            // findings pair up by line and message first.
+            let mut found = found.clone();
+            found.sort_by(|a, b| (a.0, &a.2, a.1).cmp(&(b.0, &b.2, b.1)));
+            let mut expected = expected;
+            expected.sort_by(|a, b| (a.0, &a.2, a.1).cmp(&(b.0, &b.2, b.1)));
             let actual: Vec<_> = found
                 .iter()
                 .zip(

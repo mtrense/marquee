@@ -1,0 +1,11 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:8 MD059 Link text should be descriptive [Context: "[here]"]
+3:37 MD059 Link text should be descriptive [Context: "[Click Here!]"]
+3:75 MD059 Link text should be descriptive [Context: "[*more*]"]
+5:4 MD059 Link text should be descriptive [Context: "[link]"]
+5:17 MD059 Link text should be descriptive [Context: "[Link]"]
+5:30 MD059 Link text should be descriptive [Context: "[more]"]
+7:2 MD059 Link text should be descriptive [Context: "[click here]"]

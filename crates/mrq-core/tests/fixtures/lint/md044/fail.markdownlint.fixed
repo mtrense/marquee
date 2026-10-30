@@ -1,0 +1,29 @@
+# JavaScript on GitHub
+
+Write JavaScript, JavaScript or JavaScript; push to GitHub.
+
+Emphasis: *JavaScript*, __GitHub__ and _JavaScript_.
+
+A [GitHub link](https://example.com) and an ![image of JavaScript](logo.png).
+
+Code: `JavaScript` in a span.
+
+```javascript
+const GitHub = "GitHub";
+```
+
+    indented JavaScript
+
+<p>html GitHub</p>
+
+Inline <span title="GitHub">GitHub</span> HTML.
+
+| Name       |
+| ---------- |
+| JavaScript |
+
+Node.js and Node.js: names with punctuation.
+
+Underscores split words: GitHub_actions and some_JavaScript.
+
+<!-- markdownlint-configure-file { "MD044": { "names": ["JavaScript", "GitHub", "Node.js"] } } -->

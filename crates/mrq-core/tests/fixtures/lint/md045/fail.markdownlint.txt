@@ -1,0 +1,8 @@
+3:1 MD045 Images should have alternate text (alt text)
+3:19 MD045 Images should have alternate text (alt text)
+3:34 MD045 Images should have alternate text (alt text)
+5:1 MD045 Images should have alternate text (alt text)
+5:26 MD045 Images should have alternate text (alt text)
+8:3 MD045 Images should have alternate text (alt text)
+11 MD045 Images should have alternate text (alt text)
+12:21 MD045 Images should have alternate text (alt text)

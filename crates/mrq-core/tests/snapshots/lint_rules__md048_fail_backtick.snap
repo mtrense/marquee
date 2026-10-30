@@ -1,0 +1,5 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD048 Code fence style [Expected: backtick; Actual: tilde]

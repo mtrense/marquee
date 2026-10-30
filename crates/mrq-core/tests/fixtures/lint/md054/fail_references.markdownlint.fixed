@@ -1,0 +1,12 @@
+# No reference links
+
+[Full](https://example.com), [ref](https://example.com) and [ref](https://example.com), an image ![alt](image.png) and [brackets \\[x\\]](https://example.com/a_\(b\)).
+
+A [Mixed][] case label is not looked up.
+
+[ref]: https://example.com
+[img]: image.png
+[paren]: https://example.com/a_(b)
+[mixed]: https://example.com/mixed
+
+<!-- markdownlint-configure-file { "MD054": { "full": false, "collapsed": false, "shortcut": false } } -->

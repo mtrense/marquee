@@ -1,0 +1,7 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+5:1 MD046 Code block style [Expected: indented; Actual: fenced]
+11:1 MD046 Code block style [Expected: indented; Actual: fenced]
+15:1 MD046 Code block style [Expected: indented; Actual: fenced]

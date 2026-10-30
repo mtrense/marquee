@@ -1,0 +1,8 @@
+# Unused definitions
+
+Only [used] is used.
+
+[used]: https://example.com/used
+[multi-line]:
+  https://example.com/multi-line
+

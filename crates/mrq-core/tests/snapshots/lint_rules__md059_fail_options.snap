@@ -1,0 +1,6 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:47 MD059 Link text should be descriptive [Context: "[read this]"]
+3:84 MD059 Link text should be descriptive [Context: "[Read_This.]"]

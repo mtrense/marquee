@@ -1,0 +1,7 @@
+5:8 MD056 Table column count [Expected: 2; Actual: 1; Too few cells, row will be missing data]
+6:13 MD056 Table column count [Expected: 2; Actual: 3; Too many cells, extra data will be missing]
+7:16 MD056 Table column count [Expected: 2; Actual: 3; Too many cells, extra data will be missing]
+8:16 MD056 Table column count [Expected: 2; Actual: 4; Too many cells, extra data will be missing]
+9:1 MD056 Table column count [Expected: 2; Actual: 1; Too few cells, row will be missing data]
+10:7 MD056 Table column count [Expected: 2; Actual: 3; Too many cells, extra data will be missing]
+14:12 MD056 Table column count [Expected: 2; Actual: 1; Too few cells, row will be missing data]

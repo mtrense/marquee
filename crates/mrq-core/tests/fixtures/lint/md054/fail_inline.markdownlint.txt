@@ -1,0 +1,3 @@
+3:1 MD054 Link and image style [Context: "[Inline](https://example.com)"]
+3:32 MD054 Link and image style [Context: "![image](image.png "Title")"]
+3 MD054 Link and image style [Context: "[multi"]

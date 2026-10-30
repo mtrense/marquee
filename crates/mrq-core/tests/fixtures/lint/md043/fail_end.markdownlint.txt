@@ -1,0 +1,1 @@
+6 MD043 Required heading structure [Expected: +; Actual: [End of file]]

@@ -897,6 +897,149 @@ expression: "mrq_core::config::schema_json()"
             }
           ]
         },
+        "MD041": {
+          "description": "MD041: First line in a file should be a top-level heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md041Options"
+            }
+          ]
+        },
+        "first-line-heading": {
+          "description": "MD041: First line in a file should be a top-level heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md041Options"
+            }
+          ]
+        },
+        "first-line-h1": {
+          "description": "MD041: First line in a file should be a top-level heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md041Options"
+            }
+          ]
+        },
+        "MD042": {
+          "description": "MD042: No empty links",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-empty-links": {
+          "description": "MD042: No empty links",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD043": {
+          "description": "MD043: Required heading structure",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md043Options"
+            }
+          ]
+        },
+        "required-headings": {
+          "description": "MD043: Required heading structure",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md043Options"
+            }
+          ]
+        },
+        "MD044": {
+          "description": "MD044: Proper names should have the correct capitalization",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md044Options"
+            }
+          ]
+        },
+        "proper-names": {
+          "description": "MD044: Proper names should have the correct capitalization",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md044Options"
+            }
+          ]
+        },
+        "MD045": {
+          "description": "MD045: Images should have alternate text (alt text)",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-alt-text": {
+          "description": "MD045: Images should have alternate text (alt text)",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD046": {
+          "description": "MD046: Code block style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md046Options"
+            }
+          ]
+        },
+        "code-block-style": {
+          "description": "MD046: Code block style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md046Options"
+            }
+          ]
+        },
         "MD047": {
           "description": "MD047: Files should end with a single newline character",
           "anyOf": [
@@ -916,6 +1059,256 @@ expression: "mrq_core::config::schema_json()"
             },
             {
               "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD048": {
+          "description": "MD048: Code fence style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md048Options"
+            }
+          ]
+        },
+        "code-fence-style": {
+          "description": "MD048: Code fence style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md048Options"
+            }
+          ]
+        },
+        "MD049": {
+          "description": "MD049: Emphasis style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md049Options"
+            }
+          ]
+        },
+        "emphasis-style": {
+          "description": "MD049: Emphasis style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md049Options"
+            }
+          ]
+        },
+        "MD050": {
+          "description": "MD050: Strong style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md050Options"
+            }
+          ]
+        },
+        "strong-style": {
+          "description": "MD050: Strong style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md050Options"
+            }
+          ]
+        },
+        "MD051": {
+          "description": "MD051: Link fragments should be valid",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md051Options"
+            }
+          ]
+        },
+        "link-fragments": {
+          "description": "MD051: Link fragments should be valid",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md051Options"
+            }
+          ]
+        },
+        "MD052": {
+          "description": "MD052: Reference links and images should use a label that is defined",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md052Options"
+            }
+          ]
+        },
+        "reference-links-images": {
+          "description": "MD052: Reference links and images should use a label that is defined",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md052Options"
+            }
+          ]
+        },
+        "MD053": {
+          "description": "MD053: Link and image reference definitions should be needed",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md053Options"
+            }
+          ]
+        },
+        "link-image-reference-definitions": {
+          "description": "MD053: Link and image reference definitions should be needed",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md053Options"
+            }
+          ]
+        },
+        "MD054": {
+          "description": "MD054: Link and image style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md054Options"
+            }
+          ]
+        },
+        "link-image-style": {
+          "description": "MD054: Link and image style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md054Options"
+            }
+          ]
+        },
+        "MD055": {
+          "description": "MD055: Table pipe style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md055Options"
+            }
+          ]
+        },
+        "table-pipe-style": {
+          "description": "MD055: Table pipe style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md055Options"
+            }
+          ]
+        },
+        "MD056": {
+          "description": "MD056: Table column count",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "table-column-count": {
+          "description": "MD056: Table column count",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD058": {
+          "description": "MD058: Tables should be surrounded by blank lines",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "blanks-around-tables": {
+          "description": "MD058: Tables should be surrounded by blank lines",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD059": {
+          "description": "MD059: Link text should be descriptive",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md059Options"
+            }
+          ]
+        },
+        "descriptive-link-text": {
+          "description": "MD059: Link text should be descriptive",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md059Options"
+            }
+          ]
+        },
+        "accessibility": {
+          "description": "Every rule tagged `accessibility`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
             }
           ]
         },
@@ -1007,6 +1400,14 @@ expression: "mrq_core::config::schema_json()"
             }
           ]
         },
+        "images": {
+          "description": "Every rule tagged `images`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
         "indentation": {
           "description": "Every rule tagged `indentation`",
           "allOf": [
@@ -1049,6 +1450,22 @@ expression: "mrq_core::config::schema_json()"
         },
         "spaces": {
           "description": "Every rule tagged `spaces`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "spelling": {
+          "description": "Every rule tagged `spelling`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "table": {
+          "description": "Every rule tagged `table`",
           "allOf": [
             {
               "$ref": "#/$defs/RuleSwitch"
@@ -1607,6 +2024,347 @@ expression: "mrq_core::config::schema_json()"
           "description": "Require language only.",
           "type": "boolean",
           "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md041Options": {
+      "description": "Options of MD041 `first-line-heading`.",
+      "type": "object",
+      "properties": {
+        "allow_preamble": {
+          "description": "Allow content before first heading.",
+          "type": "boolean",
+          "default": false
+        },
+        "front_matter_title": {
+          "description": "Regular expression (case-insensitive) for a frontmatter line that holds the\ntitle; `\"\"` ignores the frontmatter. An invalid expression matches nothing.",
+          "type": "string",
+          "default": "^\\s*\"?title\"?\\s*[:=]"
+        },
+        "level": {
+          "description": "Heading level.",
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md043Options": {
+      "description": "Options of MD043 `required-headings`.",
+      "type": "object",
+      "properties": {
+        "headings": {
+          "description": "List of headings.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "default": null
+        },
+        "match_case": {
+          "description": "Match case of headings.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md044Options": {
+      "description": "Options of MD044 `proper-names`.",
+      "type": "object",
+      "properties": {
+        "names": {
+          "description": "List of proper names.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "code_blocks": {
+          "description": "Include code blocks.",
+          "type": "boolean",
+          "default": true
+        },
+        "html_elements": {
+          "description": "Include HTML elements.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md046Options": {
+      "description": "Options of MD046 `code-block-style`.",
+      "type": "object",
+      "properties": {
+        "style": {
+          "description": "Block style.",
+          "$ref": "#/$defs/CodeBlockStyle",
+          "default": "consistent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CodeBlockStyle": {
+      "description": "A code block style of MD046.",
+      "oneOf": [
+        {
+          "description": "Like the first code block.",
+          "type": "string",
+          "const": "consistent"
+        },
+        {
+          "description": "Between fences.",
+          "type": "string",
+          "const": "fenced"
+        },
+        {
+          "description": "Indented by four spaces.",
+          "type": "string",
+          "const": "indented"
+        }
+      ]
+    },
+    "Md048Options": {
+      "description": "Options of MD048 `code-fence-style`.",
+      "type": "object",
+      "properties": {
+        "style": {
+          "description": "Code fence style.",
+          "$ref": "#/$defs/FenceStyle",
+          "default": "consistent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FenceStyle": {
+      "description": "A code fence style of MD048.",
+      "oneOf": [
+        {
+          "description": "Like the first fence.",
+          "type": "string",
+          "const": "consistent"
+        },
+        {
+          "description": "`` ``` ``",
+          "type": "string",
+          "const": "backtick"
+        },
+        {
+          "description": "`~~~`",
+          "type": "string",
+          "const": "tilde"
+        }
+      ]
+    },
+    "Md049Options": {
+      "description": "Options of MD049 `emphasis-style`.",
+      "type": "object",
+      "properties": {
+        "style": {
+          "description": "Emphasis style.",
+          "$ref": "#/$defs/EmphasisStyle",
+          "default": "consistent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "EmphasisStyle": {
+      "description": "An emphasis or strong style of MD049 and MD050.",
+      "oneOf": [
+        {
+          "description": "Like the first emphasis.",
+          "type": "string",
+          "const": "consistent"
+        },
+        {
+          "description": "`*` or `**`",
+          "type": "string",
+          "const": "asterisk"
+        },
+        {
+          "description": "`_` or `__`",
+          "type": "string",
+          "const": "underscore"
+        }
+      ]
+    },
+    "Md050Options": {
+      "description": "Options of MD050 `strong-style`.",
+      "type": "object",
+      "properties": {
+        "style": {
+          "description": "Strong style.",
+          "$ref": "#/$defs/EmphasisStyle",
+          "default": "consistent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md051Options": {
+      "description": "Options of MD051 `link-fragments`.",
+      "type": "object",
+      "properties": {
+        "ignore_case": {
+          "description": "Ignore case of fragments.",
+          "type": "boolean",
+          "default": false
+        },
+        "ignored_pattern": {
+          "description": "Pattern for ignoring additional fragments; an invalid one ignores nothing.",
+          "type": "string",
+          "default": ""
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md052Options": {
+      "description": "Options of MD052 `reference-links-images`.",
+      "type": "object",
+      "properties": {
+        "ignored_labels": {
+          "description": "Ignored link labels.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "x"
+          ]
+        },
+        "shortcut_syntax": {
+          "description": "Include shortcut syntax.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md053Options": {
+      "description": "Options of MD053 `link-image-reference-definitions`.",
+      "type": "object",
+      "properties": {
+        "ignored_definitions": {
+          "description": "Ignored definitions.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "//"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md054Options": {
+      "description": "Options of MD054 `link-image-style`.",
+      "type": "object",
+      "properties": {
+        "autolink": {
+          "description": "Allow autolinks.",
+          "type": "boolean",
+          "default": true
+        },
+        "inline": {
+          "description": "Allow inline links and images.",
+          "type": "boolean",
+          "default": true
+        },
+        "full": {
+          "description": "Allow full reference links and images.",
+          "type": "boolean",
+          "default": true
+        },
+        "collapsed": {
+          "description": "Allow collapsed reference links and images.",
+          "type": "boolean",
+          "default": true
+        },
+        "shortcut": {
+          "description": "Allow shortcut reference links and images.",
+          "type": "boolean",
+          "default": true
+        },
+        "url_inline": {
+          "description": "Allow URLs as inline links.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md055Options": {
+      "description": "Options of MD055 `table-pipe-style`.",
+      "type": "object",
+      "properties": {
+        "style": {
+          "description": "Table pipe style.",
+          "$ref": "#/$defs/PipeStyle",
+          "default": "consistent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PipeStyle": {
+      "description": "A table pipe style of MD055.",
+      "oneOf": [
+        {
+          "description": "Like the first row.",
+          "type": "string",
+          "const": "consistent"
+        },
+        {
+          "description": "`| a | b`",
+          "type": "string",
+          "const": "leading_only"
+        },
+        {
+          "description": "`a | b |`",
+          "type": "string",
+          "const": "trailing_only"
+        },
+        {
+          "description": "`| a | b |`",
+          "type": "string",
+          "const": "leading_and_trailing"
+        },
+        {
+          "description": "`a | b`",
+          "type": "string",
+          "const": "no_leading_or_trailing"
+        },
+        {
+          "description": "Like the first row of each table.",
+          "type": "string",
+          "const": "per_table"
+        }
+      ]
+    },
+    "Md059Options": {
+      "description": "Options of MD059 `descriptive-link-text`.",
+      "type": "object",
+      "properties": {
+        "prohibited_texts": {
+          "description": "Prohibited link texts.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "click here",
+            "here",
+            "link",
+            "more"
+          ]
         }
       },
       "additionalProperties": false

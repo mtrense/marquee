@@ -2,8 +2,8 @@
 //!
 //! Rules follow markdownlint 0.42 (ids, aliases, tags, option names and defaults,
 //! messages and fixes). markdownlint has dropped `MD002`, `MD006`, `MD008`, `MD015`,
-//! `MD016` and `MD017` (deprecated or never released), so mrq has no rules with those ids;
-//! every id from `MD018` to `MD040` exists.
+//! `MD016`, `MD017` and `MD057` (deprecated or never released), so mrq has no rules with
+//! those ids; every other id up to `MD059` exists (`MD060` is beyond mrq's range).
 
 mod md001;
 mod md003;
@@ -39,7 +39,23 @@ mod md037;
 mod md038;
 mod md039;
 mod md040;
+mod md041;
+mod md042;
+mod md043;
+mod md044;
+mod md045;
+mod md046;
 mod md047;
+mod md048;
+mod md049;
+mod md051;
+mod md052;
+mod md053;
+mod md054;
+mod md055;
+mod md056;
+mod md058;
+mod md059;
 
 pub use md001::{Md001, Md001Options};
 pub use md003::{HeadingStyle, Md003, Md003Options};
@@ -75,15 +91,32 @@ pub use md037::Md037;
 pub use md038::Md038;
 pub use md039::Md039;
 pub use md040::{Md040, Md040Options};
+pub use md041::{Md041, Md041Options};
+pub use md042::Md042;
+pub use md043::{Md043, Md043Options};
+pub use md044::{Md044, Md044Options};
+pub use md045::Md045;
+pub use md046::{CodeBlockStyle, Md046, Md046Options};
 pub use md047::Md047;
+pub use md048::{FenceStyle, Md048, Md048Options};
+pub use md049::{EmphasisStyle, Md049, Md049Options, Md050, Md050Options};
+pub use md051::{Md051, Md051Options};
+pub use md052::{Md052, Md052Options};
+pub use md053::{Md053, Md053Options};
+pub use md054::{Md054, Md054Options};
+pub use md055::{Md055, Md055Options, PipeStyle};
+pub use md056::Md056;
+pub use md058::Md058;
+pub use md059::{Md059, Md059Options};
 
 use std::sync::LazyLock;
 
 use regex::Regex;
 
 use crate::Document;
-use crate::ast::{Ast, NodeId, NodeKind, Span};
+use crate::ast::{Ast, LinkForm, NodeId, NodeKind, ReferenceStyle, Span};
 use crate::source::{ByteRange, PositionEncoding, TextEdit};
+use crate::validate::reference_definitions;
 
 use super::{Registry, RuleMeta};
 
@@ -123,7 +156,24 @@ pub(super) fn register_builtin(registry: &mut Registry) {
     registry.register(Md038);
     registry.register(Md039);
     registry.register(Md040);
+    registry.register(Md041);
+    registry.register(Md042);
+    registry.register(Md043);
+    registry.register(Md044);
+    registry.register(Md045);
+    registry.register(Md046);
     registry.register(Md047);
+    registry.register(Md048);
+    registry.register(Md049);
+    registry.register(Md050);
+    registry.register(Md051);
+    registry.register(Md052);
+    registry.register(Md053);
+    registry.register(Md054);
+    registry.register(Md055);
+    registry.register(Md056);
+    registry.register(Md058);
+    registry.register(Md059);
 }
 
 /// The line ending the document uses: its first `\r\n` or `\n`, else `\n`.
@@ -161,6 +211,20 @@ pub(crate) fn span_lines(doc: &Document, span: Span) -> (usize, usize) {
         .text()
         .floor_char_boundary(span.end.saturating_sub(1).max(span.start));
     (line_of(doc, span.start), line_of(doc, last))
+}
+
+/// What a finding about `span` covers: all of it if it fits on one line, else up to the
+/// end of its first line (markdownlint then reports only the line).
+pub(crate) fn first_line_span(doc: &Document, span: Span) -> ByteRange {
+    let (first, last) = span_lines(doc, span);
+    let end = if first == last {
+        span.end
+    } else {
+        doc.source()
+            .line_range(first)
+            .map_or(span.end, |line| line.end)
+    };
+    ByteRange::new(span.start, end)
 }
 
 /// Marks in `lines` every line that `span` touches.
@@ -310,6 +374,82 @@ pub(crate) fn ellipsify(text: &str, start: bool, end: bool) -> String {
     } else {
         format!("{}...", take(0..30))
     }
+}
+
+/// The lines of `doc` (without line endings) as markdownlint's rules see them: with the
+/// content of HTML comments replaced by `.` (markdownlint's `clearHtmlCommentText`),
+/// which shows in contexts.
+pub(crate) fn cleared_lines(doc: &Document) -> Vec<String> {
+    clear_html_comments(doc.text())
+        .split('\n')
+        .map(|line| line.strip_suffix('\r').unwrap_or(line).to_owned())
+        .collect()
+}
+
+/// markdownlint's `clearHtmlCommentText`: every character of a comment's content but
+/// spaces and line endings (trailing spaces included) as `.`. Inline comments that
+/// markdownlint does not take for comments (starting with `>` or `->`, ending with `-`,
+/// holding `--`, or spanning table cells) stay as they are, and so does everything from
+/// an unterminated `<!--` on.
+fn clear_html_comments(text: &str) -> String {
+    let mut text = text.to_owned();
+    let mut from = 0;
+    while let Some(found) = text.get(from..).and_then(|rest| rest.find("<!--")) {
+        let start = from + found;
+        let Some(close) = text[start + 2..].find("-->") else {
+            break;
+        };
+        let mut end = start + 2 + close;
+        if end > start + 4 {
+            let content = &text[start + 4..end];
+            let line_start = text[..start].rfind('\n').map_or(0, |newline| newline + 1);
+            let before = &text[line_start..start];
+            let spans_cells =
+                before.trim_start_matches(' ').starts_with('|') && content.contains('\n');
+            let valid = before.trim().is_empty()
+                || !(spans_cells
+                    || content.starts_with('>')
+                    || content.starts_with("->")
+                    || content.ends_with('-')
+                    || content.contains("--"));
+            if valid {
+                let cleared = clear_comment_content(content);
+                text.replace_range(start + 4..end, &cleared);
+                end = start + 4 + cleared.len();
+            }
+        }
+        from = end + 3;
+    }
+    text
+}
+
+/// Comment content with everything but line endings and the spaces before other
+/// characters as `.`.
+fn clear_comment_content(content: &str) -> String {
+    let mut cleared = String::with_capacity(content.len());
+    let mut spaces = 0;
+    for c in content.chars() {
+        match c {
+            ' ' => spaces += 1,
+            '\r' | '\n' => {
+                cleared.extend(std::iter::repeat_n('.', spaces));
+                spaces = 0;
+                cleared.push(c);
+            }
+            _ => {
+                cleared.extend(std::iter::repeat_n(' ', spaces));
+                spaces = 0;
+                cleared.push('.');
+            }
+        }
+    }
+    cleared.extend(std::iter::repeat_n(' ', spaces));
+    cleared
+}
+
+/// `text` with each line ending as a space, as markdownlint-cli2 shows contexts.
+pub(crate) fn one_line(text: &str) -> String {
+    text.replace("\r\n", " ").replace(['\r', '\n'], " ")
 }
 
 /// An edit replacing `range` with `replacement`.
@@ -478,6 +618,82 @@ pub(crate) fn raw_html(text: &str) -> Option<usize> {
     RAW_HTML.find(text).map(|html| html.end())
 }
 
+/// A character reference (`&amp;`, `&#123;`, `&#x1F;`), which markdownlint leaves out
+/// of the text it compares.
+pub(crate) static CHARACTER_REFERENCE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"&(?:#[xX][0-9A-Fa-f]{1,6}|#[0-9]{1,7}|[A-Za-z][A-Za-z0-9]{0,31});")
+        .expect("valid regex")
+});
+
+/// markdownlint's `htmlText` tokens: every inline HTML node, and every piece of raw HTML
+/// in an HTML block (whose text markdownlint parses again as inline content), with the
+/// node it is in.
+pub(crate) fn html_pieces(doc: &Document) -> Vec<(ByteRange, NodeId)> {
+    let ast = doc.ast();
+    let text = doc.text();
+    let mut pieces = Vec::new();
+    for id in ast.descendants(ast.root()) {
+        let span = ast.span(id);
+        match ast.kind(id) {
+            NodeKind::HtmlInline(_) => pieces.push((ByteRange::new(span.start, span.end), id)),
+            NodeKind::HtmlBlock(_) => {
+                let block = &text[span.start..span.end];
+                let mut pos = 0;
+                while let Some(found) = block[pos..].find('<') {
+                    let start = pos + found;
+                    match raw_html(&block[start..]) {
+                        Some(len) => {
+                            let at = span.start + start;
+                            pieces.push((ByteRange::new(at, at + len), id));
+                            pos = start + len;
+                        }
+                        None => pos = start + 1,
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    pieces
+}
+
+/// markdownlint's `getHtmlTagInfo` name pattern.
+static TAG_NAME: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^<([^!>][^/\s>]*)").expect("valid regex"));
+
+/// markdownlint's `getHtmlTagInfo`: the element name of a piece of raw HTML and whether
+/// it is a closing tag, or `None` for comments and the like.
+pub(crate) fn html_tag_name(html: &str) -> Option<(&str, bool)> {
+    let name = TAG_NAME.captures(html)?.get(1)?.as_str();
+    Some(match name.strip_prefix('/') {
+        Some(name) => (name, true),
+        None => (name, false),
+    })
+}
+
+/// markdownlint's `getHtmlAttributeRe`: a pattern for attribute `name` (ignoring case)
+/// whose group 1 is the value, unquoted, up to the first quote, space or `>`; see
+/// [`html_attribute`].
+pub(crate) fn html_attribute_pattern(name: &str) -> Regex {
+    let pattern = format!(r#"(?i)\s{}\s*=\s*['"]?([^'"\s>]*)"#, regex::escape(name));
+    Regex::new(&pattern).expect("valid regex")
+}
+
+/// The value of the attribute `pattern` (from [`html_attribute_pattern`]) is for.
+pub(crate) fn html_attribute<'a>(html: &'a str, pattern: &Regex) -> Option<&'a str> {
+    Some(pattern.captures(html)?.get(1)?.as_str())
+}
+
+/// markdownlint's `isHtmlFlowComment`: whether an HTML block is a single comment.
+pub(crate) fn is_html_comment(html: &str) -> bool {
+    let html = html.trim_end_matches(['\r', '\n']);
+    html.strip_prefix("<!--")
+        .and_then(|rest| rest.strip_suffix("-->"))
+        .is_some_and(|comment| {
+            !comment.starts_with('>') && !comment.starts_with("->") && !comment.ends_with('-')
+        })
+}
+
 /// markdownlint's `getHeadingText`: the source of a heading's content without its
 /// inline HTML (outside other inlines), line endings as spaces, trimmed.
 pub(crate) fn heading_text(doc: &Document, heading: NodeId) -> String {
@@ -505,4 +721,225 @@ pub(crate) fn heading_text(doc: &Document, heading: NodeId) -> String {
         .replace(['\r', '\n'], " ")
         .trim()
         .to_owned()
+}
+
+/// The parts of a link or image as written, as byte offsets into the document.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct LinkSyntax {
+    /// The text between `[` (after `!` for images) and `]`.
+    pub text: ByteRange,
+    /// Whether the link is inline, `[text](…)`.
+    pub inline: bool,
+    /// Inline links: the destination (inside `<…>`), if not empty.
+    pub destination: Option<ByteRange>,
+    /// Inline links: whether a title follows the destination.
+    pub title: bool,
+    /// Full references: the label in the second brackets; collapsed ones: an empty
+    /// range; shortcuts and inline links: `None`.
+    pub reference: Option<ByteRange>,
+}
+
+/// Splits the source of link or image `id` (not an autolink) into its parts.
+pub(crate) fn link_syntax(doc: &Document, id: NodeId) -> Option<LinkSyntax> {
+    let ast = doc.ast();
+    let text = doc.text();
+    let span = ast.span(id);
+    let (NodeKind::Link(link) | NodeKind::Image(link)) = ast.kind(id) else {
+        return None;
+    };
+    let open = span.start + usize::from(matches!(ast.kind(id), NodeKind::Image(_))) + 1;
+    if !text[..open.min(text.len())].ends_with('[') {
+        return None;
+    }
+    // The text ends at the first `]` after the children.
+    let after_children = ast
+        .children(id)
+        .last()
+        .map_or(open, |&last| ast.span(last).end.max(open));
+    let close = after_children + text[after_children..span.end].find(']')?;
+    let mut syntax = LinkSyntax {
+        text: ByteRange::new(open, close),
+        inline: false,
+        destination: None,
+        title: false,
+        reference: None,
+    };
+    let rest = &text[close + 1..span.end];
+    match &link.form {
+        LinkForm::Inline if rest.starts_with('(') => {
+            syntax.inline = true;
+            let inner = &rest[1..];
+            let start = close + 2 + (inner.len() - inner.trim_start().len());
+            let after = &text[start..span.end];
+            let (destination, end) = if let Some(literal) = after.strip_prefix('<') {
+                let len = literal.find('>')?;
+                (ByteRange::new(start + 1, start + 1 + len), start + len + 2)
+            } else {
+                let len = raw_destination_len(after);
+                (ByteRange::new(start, start + len), start + len)
+            };
+            if !destination.is_empty() {
+                syntax.destination = Some(destination);
+            }
+            let tail = text[end..span.end].trim_start();
+            syntax.title = tail.starts_with(['"', '\'', '(']);
+        }
+        LinkForm::Reference { style, .. } if *style != ReferenceStyle::Shortcut => {
+            let inner = rest.strip_prefix('[')?;
+            let len = inner.find(']')?;
+            syntax.reference = Some(ByteRange::new(close + 2, close + 2 + len));
+        }
+        _ => {}
+    }
+    Some(syntax)
+}
+
+/// The length of the raw (not `<…>`) link destination `text` starts with: up to
+/// whitespace or an unbalanced `)`, skipping escapes.
+fn raw_destination_len(text: &str) -> usize {
+    let mut depth = 0usize;
+    let mut chars = text.char_indices();
+    while let Some((at, c)) = chars.next() {
+        match c {
+            '\\' => {
+                chars.next();
+            }
+            '(' => depth += 1,
+            ')' if depth == 0 => return at,
+            ')' => depth -= 1,
+            c if c.is_ascii_whitespace() || c.is_ascii_control() => return at,
+            _ => {}
+        }
+    }
+    text.len()
+}
+
+/// The definitions markdownlint's reference rules know, by normalized label (see
+/// [`normalize_label`]): each label's first link reference definition (with its
+/// destination as written) or footnote definition (`^label`, no destination), in
+/// document order, then the later definitions of a label already defined.
+pub(crate) struct Definitions {
+    /// `(label, line, destination)` of each first definition.
+    pub first: Vec<(String, usize, Option<String>)>,
+    /// `(label, line)` of each later definition.
+    pub duplicates: Vec<(String, usize)>,
+}
+
+impl Definitions {
+    pub(crate) fn of(doc: &Document) -> Self {
+        let ast = doc.ast();
+        let mut all: Vec<(usize, String, Option<String>)> = reference_definitions(doc)
+            .into_iter()
+            .map(|definition| {
+                (
+                    definition.span.start,
+                    normalize_label(&definition.label),
+                    Some(definition.url),
+                )
+            })
+            .collect();
+        for id in ast.descendants(ast.root()) {
+            if let NodeKind::FootnoteDefinition(footnote) = ast.kind(id) {
+                let label = normalize_label(&format!("^{}", footnote.label));
+                all.push((ast.span(id).start, label, None));
+            }
+        }
+        all.sort_by_key(|(start, _, _)| *start);
+        let mut definitions = Self {
+            first: Vec::new(),
+            duplicates: Vec::new(),
+        };
+        for (start, label, destination) in all {
+            let line = line_of(doc, start);
+            if definitions.get(&label).is_some() {
+                definitions.duplicates.push((label, line));
+            } else {
+                definitions.first.push((label, line, destination));
+            }
+        }
+        definitions
+    }
+
+    /// The destination of label `label` (looked up as given, not normalized, like
+    /// markdownlint): `Some("")` for footnotes.
+    pub(crate) fn get(&self, label: &str) -> Option<&str> {
+        self.first
+            .iter()
+            .find(|(first, _, _)| first == label)
+            .map(|(_, _, destination)| destination.as_deref().unwrap_or_default())
+    }
+}
+
+/// One line of a table as written (the delimiter row included).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct TableLine {
+    /// The 0-based line.
+    pub line: usize,
+    /// The row without container prefixes and surrounding whitespace.
+    pub content: ByteRange,
+    /// The offset of every unescaped `|` in it, which all divide cells (in code spans
+    /// too, as in GFM).
+    pub pipes: Vec<usize>,
+}
+
+impl TableLine {
+    /// Whether the row starts with a pipe.
+    pub(crate) fn leading_pipe(&self) -> bool {
+        self.pipes.first() == Some(&self.content.start)
+    }
+
+    /// Whether the row ends with a pipe (not the leading one).
+    pub(crate) fn trailing_pipe(&self) -> bool {
+        self.pipes.last() == Some(&(self.content.end.saturating_sub(1)))
+            && !(self.pipes.len() == 1 && self.leading_pipe())
+    }
+}
+
+/// The lines of table `table`.
+pub(crate) fn table_lines(doc: &Document, table: NodeId) -> Vec<TableLine> {
+    let text = doc.text();
+    let containers = line_containers(doc);
+    let (first, last) = span_lines(doc, doc.ast().span(table));
+    let mut lines = Vec::new();
+    for line in first..=last {
+        let Some(range) = doc.source().line_range(line) else {
+            continue;
+        };
+        let start = if line == first {
+            doc.ast().span(table).start
+        } else {
+            line_prefix(doc, line, containers.get(line).copied().flatten()).end
+        };
+        let row = &text[start..range.end];
+        let content_start = start + (row.len() - row.trim_start().len());
+        let content_end = start + row.trim_end().len();
+        let bytes = text.as_bytes();
+        let pipes = (content_start..content_end)
+            .filter(|&at| {
+                bytes[at] == b'|'
+                    && bytes[content_start..at]
+                        .iter()
+                        .rev()
+                        .take_while(|&&b| b == b'\\')
+                        .count()
+                        % 2
+                        == 0
+            })
+            .collect();
+        lines.push(TableLine {
+            line,
+            content: ByteRange::new(content_start, content_end.max(content_start)),
+            pipes,
+        });
+    }
+    lines
+}
+
+/// markdownlint's label normalization: lowercase, trimmed, whitespace runs as one space.
+pub(crate) fn normalize_label(label: &str) -> String {
+    label
+        .to_lowercase()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
 }

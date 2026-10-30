@@ -14,6 +14,13 @@ use std::process::Command;
 /// The markdownlint-cli2 release the recorded files come from.
 pub const DEFAULT_COMMAND: &str = "npx --yes markdownlint-cli2@0.24.0";
 
+/// Rules that markdownlint marks `parser: "none"` but that read the micromark tokens
+/// (through its reference cache), which markdownlint only parses when an enabled rule
+/// asks for them: alone, they never report anything. They are recorded together with
+/// `MD043`, a micromark rule that does nothing without `headings`, whose findings (if a
+/// fixture configured it) are dropped.
+const NEEDS_MICROMARK: &[&str] = &["MD052", "MD053"];
+
 /// What one fixture produced.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Recorded {
@@ -88,12 +95,17 @@ fn record(fixture: &Path, rule: &str, command: &str) -> io::Result<Recorded> {
     let text = std::fs::read_to_string(fixture)?;
     let copy = dir.path().join(name);
     std::fs::write(&copy, &text)?;
+    let companion = if NEEDS_MICROMARK.contains(&rule) {
+        ", \"MD043\": true"
+    } else {
+        ""
+    };
     std::fs::write(
         dir.path().join(".markdownlint-cli2.jsonc"),
-        format!("{{ \"config\": {{ \"default\": false, \"{rule}\": true }} }}\n"),
+        format!("{{ \"config\": {{ \"default\": false, \"{rule}\": true{companion} }} }}\n"),
     )?;
     let output = cli(command, dir.path(), &[name])?;
-    let findings = normalize(&output, name);
+    let findings = normalize(&output, name, rule);
     cli(command, dir.path(), &["--fix", name])?;
     let fixed = std::fs::read_to_string(&copy)?;
     Ok(Recorded {
@@ -125,8 +137,9 @@ fn cli(command: &str, dir: &Path, args: &[&str]) -> io::Result<String> {
     Ok(text)
 }
 
-/// `name:12:3 error MD004/ul-style Message` → `12:3 MD004 Message`, in output order.
-fn normalize(output: &str, name: &str) -> String {
+/// `name:12:3 error MD004/ul-style Message` → `12:3 MD004 Message`, in output order, for
+/// the findings of `rule` only.
+fn normalize(output: &str, name: &str, rule: &str) -> String {
     let prefix = format!("{name}:");
     let mut findings = String::new();
     for line in output.lines() {
@@ -144,6 +157,9 @@ fn normalize(output: &str, name: &str) -> String {
             continue;
         };
         let id = names.split('/').next().unwrap_or(names);
+        if id != rule {
+            continue;
+        }
         let _ = writeln!(findings, "{position} {id} {message}");
     }
     findings
@@ -157,11 +173,12 @@ mod tests {
     fn normalize_keeps_position_id_and_message() {
         let output = "Linting: 1 file\n\
                       a.md:9:3 error MD004/ul-style Unordered list style [Expected: dash; Actual: plus]\n\
-                      a.md:5 MD003/heading-style Heading style\n\
-                      b.md:1 error MD001/heading-increment x\n";
+                      a.md:5 MD004/ul-style Unordered list style\n\
+                      a.md:7 MD043/required-headings Required heading structure\n\
+                      b.md:1 error MD004/ul-style x\n";
         assert_eq!(
-            normalize(output, "a.md"),
-            "9:3 MD004 Unordered list style [Expected: dash; Actual: plus]\n5 MD003 Heading style\n"
+            normalize(output, "a.md", "MD004"),
+            "9:3 MD004 Unordered list style [Expected: dash; Actual: plus]\n5 MD004 Unordered list style\n"
         );
     }
 }

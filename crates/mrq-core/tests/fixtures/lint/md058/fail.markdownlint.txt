@@ -1,0 +1,6 @@
+2 MD058 Tables should be surrounded by blank lines [Context: "| Name | Value |"]
+4 MD058 Tables should be surrounded by blank lines [Context: "| a    | 1     |"]
+8 MD058 Tables should be surrounded by blank lines [Context: "> | Quoted | Table |"]
+10 MD058 Tables should be surrounded by blank lines [Context: "> | b      | 2     |"]
+14 MD058 Tables should be surrounded by blank lines [Context: "| In  | List |"]
+15 MD058 Tables should be surrounded by blank lines [Context: "| --- | ---- |"]

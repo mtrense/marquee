@@ -1,8 +1,5 @@
 //! MD033 `no-inline-html`.
 
-use std::sync::LazyLock;
-
-use regex::Regex;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +9,7 @@ use crate::diag::Diagnostic;
 use crate::lint::{Rule, RuleMeta};
 use crate::source::ByteRange;
 
-use super::{message, raw_html};
+use super::{html_pieces, html_tag_name, message};
 
 /// Inline HTML.
 ///
@@ -32,10 +29,6 @@ pub struct Md033Options {
     /// Allowed elements in tables; defaults to `allowed_elements`.
     pub table_allowed_elements: Option<Vec<String>>,
 }
-
-/// markdownlint's `getHtmlTagInfo` name pattern.
-static TAG_NAME: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^<([^!>][^/\s>]*)").expect("valid regex"));
 
 impl Rule for Md033 {
     type Options = Md033Options;
@@ -59,47 +52,17 @@ impl Rule for Md033 {
             .map_or_else(|| allowed.clone(), lower);
         let ast = doc.ast();
         let text = doc.text();
-        // Each opening tag as `(range, in a table)`.
-        let mut tags = Vec::new();
-        for id in ast.descendants(ast.root()) {
-            let span = ast.span(id);
-            match ast.kind(id) {
-                NodeKind::HtmlInline(_) => {
-                    let in_table = ast
-                        .ancestors(id)
-                        .any(|id| matches!(ast.kind(id), NodeKind::Table(_)));
-                    tags.push((ByteRange::new(span.start, span.end), in_table));
-                }
-                NodeKind::HtmlBlock(_) => {
-                    let block = &text[span.start..span.end];
-                    let mut pos = 0;
-                    while let Some(found) = block[pos..].find('<') {
-                        let start = pos + found;
-                        match raw_html(&block[start..]) {
-                            Some(len) => {
-                                tags.push((
-                                    ByteRange::new(span.start + start, span.start + start + len),
-                                    false,
-                                ));
-                                pos = start + len;
-                            }
-                            None => pos = start + 1,
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
         let mut diagnostics = Vec::new();
-        for (range, in_table) in tags {
+        for (range, id) in html_pieces(doc) {
+            // HTML blocks cannot be in tables.
+            let in_table = matches!(ast.kind(id), NodeKind::HtmlInline(_))
+                && ast
+                    .ancestors(id)
+                    .any(|id| matches!(ast.kind(id), NodeKind::Table(_)));
             let html = &text[range.start..range.end];
-            let Some(name) = TAG_NAME.captures(html).and_then(|captures| captures.get(1)) else {
+            let Some((name, false)) = html_tag_name(html) else {
                 continue;
             };
-            let name = name.as_str();
-            if name.starts_with('/') {
-                continue;
-            }
             let allowed = if in_table { &table_allowed } else { &allowed };
             if allowed.contains(&name.to_lowercase()) {
                 continue;

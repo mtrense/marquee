@@ -1,0 +1,8 @@
+# Mixed emphasis
+
+*Asterisk* first, then *underscore* and *multi
+line* emphasis.
+
+> A quoted *emphasis* and ***strong emphasis*** and *__both__*.
+
+- *In a list*

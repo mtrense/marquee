@@ -1,0 +1,14 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD054 Link and image style [Context: "[Inline](https://example.com)"]
+3:32 MD054 Link and image style [Context: "![image](image.png "Title")"]
+3:64 MD054 Link and image style [Context: "[multi"]
+--- fixed ---
+# No inline links
+
+<https://example.com>, ![image](image.png "Title") and [multi
+line](https://example.com).
+
+<!-- markdownlint-configure-file { "MD054": { "inline": false } } -->

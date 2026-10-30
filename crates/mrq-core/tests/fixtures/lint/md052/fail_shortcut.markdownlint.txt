@@ -1,0 +1,2 @@
+3:3 MD052 Reference links and images should use a label that is defined [Missing link or image reference definition: "shortcut"] [Context: "[shortcut]"]
+3:21 MD052 Reference links and images should use a label that is defined [Missing link or image reference definition: "image shortcut"] [Context: "![image shortcut]"]

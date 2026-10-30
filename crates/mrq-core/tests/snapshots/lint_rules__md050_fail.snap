@@ -1,0 +1,19 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:28 MD050 Strong style [Expected: underscore; Actual: asterisk]
+3:38 MD050 Strong style [Expected: underscore; Actual: asterisk]
+3:45 MD050 Strong style [Expected: underscore; Actual: asterisk]
+4:5 MD050 Strong style [Expected: underscore; Actual: asterisk]
+6:12 MD050 Strong style [Expected: underscore; Actual: asterisk]
+6:20 MD050 Strong style [Expected: underscore; Actual: asterisk]
+6:28 MD050 Strong style [Expected: underscore; Actual: asterisk]
+6:45 MD050 Strong style [Expected: underscore; Actual: asterisk]
+--- fixed ---
+# Mixed strong
+
+__Underscore__ first, then __asterisk__ and __multi
+line__ strong.
+
+> A quoted __strong__ and *__strong emphasis__* and ___both___.

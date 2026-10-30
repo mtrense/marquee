@@ -1,0 +1,8 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+5:12 MD055 Table pipe style [Expected: leading_only; Actual: leading_and_trailing; Unexpected trailing pipe]
+7:16 MD055 Table pipe style [Expected: leading_only; Actual: leading_and_trailing; Unexpected trailing pipe]
+8:16 MD055 Table pipe style [Expected: leading_only; Actual: leading_and_trailing; Unexpected trailing pipe]
+9:16 MD055 Table pipe style [Expected: leading_only; Actual: leading_and_trailing; Unexpected trailing pipe]

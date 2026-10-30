@@ -1,0 +1,35 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:1 MD058 Tables should be surrounded by blank lines [Context: "| Name | Value |"]
+4:1 MD058 Tables should be surrounded by blank lines [Context: "| a    | 1     |"]
+8:1 MD058 Tables should be surrounded by blank lines [Context: "> | Quoted | Table |"]
+10:1 MD058 Tables should be surrounded by blank lines [Context: "> | b      | 2     |"]
+14:1 MD058 Tables should be surrounded by blank lines [Context: "| In  | List |"]
+15:1 MD058 Tables should be surrounded by blank lines [Context: "| --- | ---- |"]
+--- fixed ---
+# Tables without blank lines
+
+| Name | Value |
+| ---- | ----- |
+| a    | 1     |
+
+# Heading after the table
+
+> Text before.
+>
+> | Quoted | Table |
+> | ------ | ----- |
+> | b      | 2     |
+>
+> > Nested quote.
+
+- Item
+
+  | In  | List |
+  | --- | ---- |
+
+  ```text
+  code
+  ```

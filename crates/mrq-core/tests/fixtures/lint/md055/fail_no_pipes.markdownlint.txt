@@ -1,0 +1,6 @@
+7:1 MD055 Table pipe style [Expected: no_leading_or_trailing; Actual: leading_and_trailing; Unexpected leading pipe]
+7:16 MD055 Table pipe style [Expected: no_leading_or_trailing; Actual: leading_and_trailing; Unexpected trailing pipe]
+8:1 MD055 Table pipe style [Expected: no_leading_or_trailing; Actual: leading_and_trailing; Unexpected leading pipe]
+8:16 MD055 Table pipe style [Expected: no_leading_or_trailing; Actual: leading_and_trailing; Unexpected trailing pipe]
+9:1 MD055 Table pipe style [Expected: no_leading_or_trailing; Actual: leading_and_trailing; Unexpected leading pipe]
+9:16 MD055 Table pipe style [Expected: no_leading_or_trailing; Actual: leading_and_trailing; Unexpected trailing pipe]

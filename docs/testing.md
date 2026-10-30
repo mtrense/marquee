@@ -6,6 +6,8 @@
 
 Each markdownlint rule has fixtures in `crates/mrq-core/tests/fixtures/lint/<rule>/`: `pass*.md` must be clean, `fail*.md` must report something, and rule options come from `<!-- markdownlint-configure-file … -->` comments, which both tools read. Next to each fixture, `<name>.markdownlint.txt` records what markdownlint-cli2 reports with only that rule on (`line[:column] RULE message`) and `<name>.markdownlint.fixed` what its `--fix` writes (absent when nothing changes). `crates/mrq-core/tests/lint_rules.rs` compares mrq with these recordings offline, and snapshots mrq's findings and fixed text.
 
+MD052 and MD053 are recorded with MD043 on as well: markdownlint only parses the document when a rule needs its tokens, and these two read them without saying so, so on their own they never report anything (MD043 does nothing without `headings`, and only the rule's own findings are kept).
+
 `just lint-parity` (`cargo xtask lint-parity`) re-records them with `npx --yes markdownlint-cli2@0.24.0`, then runs that test; it needs Node.js and network access for npx. `--check` only reports stale recordings, and `--command` runs another markdownlint-cli2 (e.g. a local `node_modules/.bin/markdownlint-cli2`). Inside a sandbox where `~/.npm` is read-only, set `npm_config_cache` to a writable directory.
 
 ## Manual checks

@@ -1,0 +1,1 @@
+3 MD043 Required heading structure [Expected: ## Introduction; Actual: ## introduction]

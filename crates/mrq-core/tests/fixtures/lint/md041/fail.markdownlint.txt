@@ -1,0 +1,1 @@
+3 MD041 First line in a file should be a top-level heading [Context: "Some text before the heading, ..."]

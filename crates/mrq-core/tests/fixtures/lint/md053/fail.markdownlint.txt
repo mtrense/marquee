@@ -1,0 +1,5 @@
+6:1 MD053 Link and image reference definitions should be needed [Unused link or image reference definition: "unused"] [Context: "[unused]: https://example.com/..."]
+7:1 MD053 Link and image reference definitions should be needed [Duplicate link or image reference definition: "used"] [Context: "[Used]: https://example.com/du..."]
+8:1 MD053 Link and image reference definitions should be needed [Unused link or image reference definition: "multi-line"] [Context: "[multi-line]:"]
+10:1 MD053 Link and image reference definitions should be needed [Unused link or image reference definition: "^unused-footnote"] [Context: "[^unused-footnote]: A footnote..."]
+12:1 MD053 Link and image reference definitions should be needed [Unused link or image reference definition: "a very long label for the definition"] [Context: "[a very long label for the def..."]

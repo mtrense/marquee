@@ -1,0 +1,5 @@
+3:1 MD054 Link and image style [Context: "[Full][ref]"]
+3:14 MD054 Link and image style [Context: "[ref][]"]
+3:26 MD054 Link and image style [Context: "[ref]"]
+3:42 MD054 Link and image style [Context: "![alt][img]"]
+3:58 MD054 Link and image style [Context: "[brackets \[x\]][paren]"]

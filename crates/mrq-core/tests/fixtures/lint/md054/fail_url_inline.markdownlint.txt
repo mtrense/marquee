@@ -1,0 +1,2 @@
+3:1 MD054 Link and image style [Context: "[https://example.com](https://..."]
+6:18 MD054 Link and image style [Context: "[https://example.com][url]"]

@@ -1,0 +1,3 @@
+5 MD046 Code block style [Expected: indented; Actual: fenced]
+11 MD046 Code block style [Expected: indented; Actual: fenced]
+15 MD046 Code block style [Expected: indented; Actual: fenced]
