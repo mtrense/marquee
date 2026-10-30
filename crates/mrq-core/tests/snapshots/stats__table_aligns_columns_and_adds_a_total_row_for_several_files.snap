@@ -1,0 +1,8 @@
+---
+source: crates/mrq-core/tests/stats.rs
+expression: report().table()
+---
+file       words  chars  reading  headings h1-h6  links int/ext  images  tables  footnotes  tasks open/done  code blocks
+docs/a.md      5     19    1 min     1/0/0/0/0/0            0/0       0       0          0              1/0  0
+<stdin>        2      2    1 min     0/1/0/0/0/0            0/1       0       0          0              0/0  1 (rust 1)
+total          7     21    1 min     1/1/0/0/0/0            0/1       0       0          0              1/0  1 (rust 1)

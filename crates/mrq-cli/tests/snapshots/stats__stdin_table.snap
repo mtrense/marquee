@@ -1,0 +1,6 @@
+---
+source: crates/mrq-cli/tests/stats.rs
+expression: "mrq.stdout(&[\"stats\", \"-\"], Some(notes))"
+---
+file     words  chars  reading  headings h1-h6  links int/ext  images  tables  footnotes  tasks open/done  code blocks
+<stdin>      6     28    1 min     1/0/0/0/0/0            0/0       0       0          0              1/0  0

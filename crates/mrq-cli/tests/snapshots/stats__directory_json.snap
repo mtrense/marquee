@@ -1,0 +1,103 @@
+---
+source: crates/mrq-cli/tests/stats.rs
+expression: out
+---
+{
+  "wpm": 200,
+  "files": [
+    {
+      "file": "docs/guide.md",
+      "reading_minutes": 1,
+      "words": 13,
+      "characters": 67,
+      "headings": {
+        "h1": 1,
+        "h2": 0,
+        "h3": 1,
+        "h4": 0,
+        "h5": 0,
+        "h6": 0
+      },
+      "links": {
+        "internal": 1,
+        "external": 1
+      },
+      "images": 0,
+      "code_blocks": {
+        "total": 2,
+        "languages": {
+          "python": 1
+        }
+      },
+      "tables": 0,
+      "footnotes": 0,
+      "tasks": {
+        "open": 0,
+        "done": 0
+      }
+    },
+    {
+      "file": "docs/notes.md",
+      "reading_minutes": 1,
+      "words": 4,
+      "characters": 17,
+      "headings": {
+        "h1": 0,
+        "h2": 1,
+        "h3": 0,
+        "h4": 0,
+        "h5": 0,
+        "h6": 0
+      },
+      "links": {
+        "internal": 0,
+        "external": 0
+      },
+      "images": 0,
+      "code_blocks": {
+        "total": 1,
+        "languages": {
+          "sh": 1
+        }
+      },
+      "tables": 0,
+      "footnotes": 0,
+      "tasks": {
+        "open": 0,
+        "done": 2
+      }
+    }
+  ],
+  "total": {
+    "files": 2,
+    "reading_minutes": 1,
+    "words": 17,
+    "characters": 84,
+    "headings": {
+      "h1": 1,
+      "h2": 1,
+      "h3": 1,
+      "h4": 0,
+      "h5": 0,
+      "h6": 0
+    },
+    "links": {
+      "internal": 1,
+      "external": 1
+    },
+    "images": 0,
+    "code_blocks": {
+      "total": 3,
+      "languages": {
+        "python": 1,
+        "sh": 1
+      }
+    },
+    "tables": 0,
+    "footnotes": 0,
+    "tasks": {
+      "open": 0,
+      "done": 2
+    }
+  }
+}

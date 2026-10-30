@@ -181,7 +181,7 @@ flowchart LR
 
 - [x] **M2.1 toc.** Outline extraction (level, text, slug, span), plus `mrq toc` with `--json`, `--depth` and `--links` (a nested Markdown list). Multiple files are printed with file headers. **AC:** CLI snapshot tests for a file, a directory and stdin.
 - [x] **M2.2 toc insert.** `mrq toc --insert` refreshes an `<!-- mrq:toc -->` region using TextEdits, with `--check`. **AC:** idempotent, and bytes outside the region are unchanged.
-- [ ] **M2.3 stats.** Counters from the README (words via unicode-segmentation, reading time at a configurable `--wpm`, per-language code block counts, tasks open/done, …). Per-file and total, human table and `--json`. **AC:** snapshot tests. Word counts exclude code blocks and frontmatter by default (`--include-code` to count them).
+- [x] **M2.3 stats.** Counters from the README (words via unicode-segmentation, reading time at a configurable `--wpm`, per-language code block counts, tasks open/done, …). Per-file and total, human table and `--json`. **AC:** snapshot tests. Word counts exclude code blocks and frontmatter by default (`--include-code` to count them).
 
 ### M3: Query
 

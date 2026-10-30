@@ -1,0 +1,9 @@
+---
+source: crates/mrq-cli/tests/stats.rs
+expression: "mrq.stdout(&[\"stats\"], None)"
+---
+file           words  chars  reading  headings h1-h6  links int/ext  images  tables  footnotes  tasks open/done  code blocks
+README.md         30    138    1 min     1/2/0/0/0/0            2/1       1       1          1              2/1  2 (rust 1, sh 1)
+docs/guide.md     13     67    1 min     1/0/1/0/0/0            1/1       0       0          0              0/0  2 (python 1)
+docs/notes.md      4     17    1 min     0/1/0/0/0/0            0/0       0       0          0              0/2  1 (sh 1)
+total             47    222    1 min     2/3/1/0/0/0            3/2       1       1          1              2/3  5 (python 1, rust 1, sh 2)

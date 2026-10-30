@@ -6,7 +6,7 @@
 use std::env;
 use std::fs;
 use std::io::{self, IsTerminal, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use mrq_core::config::{
@@ -18,6 +18,7 @@ use mrq_core::input::{Input, InputResolver};
 use mrq_core::source::SourceFile;
 
 pub mod cli;
+mod stats;
 mod toc;
 
 use cli::{Cli, ColorChoice, Command, ConfigCommand, DiagnosticFormat, Flavor, GlobalArgs, Inputs};
@@ -48,7 +49,7 @@ pub fn run(cli: Cli) -> ExitCode {
             }
         },
         Command::Toc(args) => {
-            let Some((options, inputs)) = prepare(&cli.global, &args.inputs) else {
+            let Some((options, inputs)) = prepare(&cli.global, &args.inputs, false) else {
                 return ExitCode::from(EXIT_USAGE);
             };
             if args.insert {
@@ -56,6 +57,12 @@ pub fn run(cli: Cli) -> ExitCode {
             } else {
                 toc::run(&args, &inputs, &options)
             }
+        }
+        Command::Stats(args) => {
+            let Some((options, inputs)) = prepare(&cli.global, &args.inputs, true) else {
+                return ExitCode::from(EXIT_USAGE);
+            };
+            stats::run(&args, &inputs, &options)
         }
         other => {
             let _ = writeln!(
@@ -69,9 +76,14 @@ pub fn run(cli: Cli) -> ExitCode {
 }
 
 /// Loads the configuration and resolves the input arguments of a document command,
-/// reporting failures on stderr (`None`, exit 2). At least one path is required; `-`
-/// reads stdin.
-fn prepare(global: &GlobalArgs, inputs: &Inputs) -> Option<(DocumentOptions, Vec<Input>)> {
+/// reporting failures on stderr (`None`, exit 2). `-` reads stdin. Without paths, the
+/// current directory is used if `default_to_cwd` is set (project-wide commands such as
+/// `stats`); otherwise at least one path is required.
+fn prepare(
+    global: &GlobalArgs,
+    inputs: &Inputs,
+    default_to_cwd: bool,
+) -> Option<(DocumentOptions, Vec<Input>)> {
     let loaded = match load_config(global) {
         Ok(loaded) => loaded,
         Err(err) => {
@@ -79,7 +91,13 @@ fn prepare(global: &GlobalArgs, inputs: &Inputs) -> Option<(DocumentOptions, Vec
             return None;
         }
     };
-    if inputs.paths.is_empty() {
+    let cwd = [PathBuf::from(".")];
+    let paths = if inputs.paths.is_empty() && default_to_cwd {
+        &cwd[..]
+    } else {
+        &inputs.paths[..]
+    };
+    if paths.is_empty() {
         let _ = writeln!(
             io::stderr().lock(),
             "mrq: no input given; pass files, directories, globs or `-` for stdin"
@@ -88,7 +106,7 @@ fn prepare(global: &GlobalArgs, inputs: &Inputs) -> Option<(DocumentOptions, Vec
     }
     let resolved = InputResolver::new()
         .ignore_patterns(loaded.config().ignore.iter().cloned())
-        .resolve(&inputs.paths);
+        .resolve(paths);
     match resolved {
         Ok(resolved) => Some((document_options(global, &loaded), resolved)),
         Err(err) => {

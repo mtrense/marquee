@@ -84,7 +84,6 @@ fn stubbed_subcommands_report_not_implemented_and_exit_2() {
         &["merge", "a.md", "b.md"],
         &["interpolate", "--in-place", "README.md"],
         &["split", "-d", "2", "guide.md"],
-        &["stats"],
         &["diff", "old.md", "new.md"],
         &["show"],
         &["lsp"],

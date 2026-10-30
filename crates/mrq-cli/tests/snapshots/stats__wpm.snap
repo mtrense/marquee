@@ -1,0 +1,6 @@
+---
+source: crates/mrq-cli/tests/stats.rs
+expression: "mrq.stdout(&[\"stats\", \"--wpm\", \"180\", \"-\"], Some(&text))"
+---
+file     words  chars  reading  headings h1-h6  links int/ext  images  tables  footnotes  tasks open/done  code blocks
+<stdin>    400   1600    3 min     0/0/0/0/0/0            0/0       0       0          0              0/0  0

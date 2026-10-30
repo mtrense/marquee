@@ -332,8 +332,12 @@ pub struct StatsArgs {
     #[arg(long)]
     pub json: bool,
     /// Reading speed for the reading-time estimate, in words per minute.
-    #[arg(long, value_name = "N", default_value_t = 200)]
+    #[arg(long, value_name = "N", default_value_t = 200,
+          value_parser = clap::value_parser!(u32).range(1..))]
     pub wpm: u32,
+    /// Count words and characters in code blocks and math too.
+    #[arg(long)]
+    pub include_code: bool,
     #[command(flatten)]
     pub inputs: Inputs,
 }

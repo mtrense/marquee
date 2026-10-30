@@ -19,6 +19,9 @@ Options:
           
           [default: 200]
 
+      --include-code
+          Count words and characters in code blocks and math too
+
   -h, --help
           Print help (see a summary with '-h')
 
