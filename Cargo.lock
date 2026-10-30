@@ -952,6 +952,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "toml_edit",
+ "unicode-general-category",
 ]
 
 [[package]]

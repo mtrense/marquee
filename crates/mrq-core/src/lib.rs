@@ -3,6 +3,7 @@
 pub mod ast;
 pub mod config;
 pub mod diag;
+pub mod flavor;
 pub mod frontmatter;
 pub mod input;
 pub mod parse;

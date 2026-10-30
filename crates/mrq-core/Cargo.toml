@@ -7,8 +7,9 @@ rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-# The vendored spec files are CC BY-SA test data, not part of the published crate.
-exclude = ["tests/fixtures/spec"]
+# Vendored test data under other licences (CC BY-SA spec files, ISC github-slugger corpus)
+# is not part of the published crate.
+exclude = ["tests/fixtures/spec", "tests/fixtures/slug"]
 
 [features]
 default = ["human"]
@@ -28,6 +29,7 @@ schemars.workspace = true
 serde-saphyr.workspace = true
 comrak.workspace = true
 toml_edit.workspace = true
+unicode-general-category.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

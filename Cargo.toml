@@ -36,6 +36,7 @@ schemars = "1.2.3"
 serde-saphyr = { version = "2.0.0", default-features = false, features = ["deserialize"] }
 comrak = { version = "0.59.0", default-features = false }
 toml_edit = { version = "0.25.17", default-features = false, features = ["parse"] }
+unicode-general-category = "1.1.0"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -45,6 +45,19 @@ pub enum FlavorName {
     Mkdocs,
 }
 
+impl FlavorName {
+    /// The name as written in config files and accepted by
+    /// [`flavor::Registry`](crate::flavor::Registry): `commonmark`, `gfm`, ….
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Commonmark => "commonmark",
+            Self::Gfm => "gfm",
+            Self::Obsidian => "obsidian",
+            Self::Mkdocs => "mkdocs",
+        }
+    }
+}
+
 /// `lint` section.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(default, deny_unknown_fields)]
