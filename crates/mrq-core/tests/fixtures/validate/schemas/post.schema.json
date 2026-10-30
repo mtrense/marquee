@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["title", "date"],
+  "properties": {
+    "title": { "type": "string" },
+    "date": { "type": "string" },
+    "status": { "enum": ["draft", "published"] },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "author": {
+      "type": "object",
+      "required": ["name"],
+      "properties": { "name": { "type": "string" } }
+    }
+  },
+  "additionalProperties": false
+}

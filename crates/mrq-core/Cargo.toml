@@ -12,16 +12,20 @@ repository.workspace = true
 exclude = ["tests/fixtures/spec", "tests/fixtures/slug"]
 
 [features]
-default = ["human"]
+default = ["human", "frontmatter-schema"]
 # Graphical (miette) rendering of human-readable diagnostics. Without it, the human
 # format falls back to one plain `file:line:col: severity[code]: message` line per diagnostic.
 human = ["dep:miette", "miette/fancy-no-syscall"]
+# Frontmatter JSON Schema checks (`validate.frontmatter`) via jsonschema, built without its
+# default features: no HTTP or file `$ref` retrieval, so validation never touches the network.
+frontmatter-schema = ["dep:jsonschema"]
 
 [dependencies]
 thiserror.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 miette = { workspace = true, optional = true }
+jsonschema = { workspace = true, optional = true }
 ignore.workspace = true
 globset.workspace = true
 figment.workspace = true

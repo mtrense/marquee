@@ -165,7 +165,7 @@ impl Workspace {
 /// `path` with `.` components dropped and `..` folded into a preceding normal component;
 /// `..` at the start (or after another `..`) is kept, and `..` right after the root is
 /// dropped. An empty result is `.`.
-fn normalize(path: &Path) -> PathBuf {
+pub(crate) fn normalize(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for component in path.components() {
         match component {

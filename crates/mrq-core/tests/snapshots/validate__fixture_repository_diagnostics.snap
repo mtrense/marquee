@@ -14,6 +14,18 @@ README.md:16:40: error[undefined-reference]: reference `[api]` is not defined
 README.md:16:47: error[undefined-reference]: reference `[old docs]` is not defined
 README.md:20:1: warning[unused-footnote]: footnote `[^orphan]` is never referenced
 README.md:23:1: warning[unused-reference]: reference definition `[unused]` is never used
+blog/2024/broken.md:1:1: error[frontmatter-schema]: missing required key `date`
+  help: schema `schemas/post.schema.json`
+blog/2024/broken.md:2:8: error[frontmatter-schema]: `title`: expected string, found integer
+  help: schema `schemas/post.schema.json`
+blog/2024/broken.md:3:9: error[frontmatter-schema]: `status`: expected one of "draft", "published", found "wip"
+  help: schema `schemas/post.schema.json`
+blog/2024/broken.md:4:12: error[frontmatter-schema]: `tags.1`: expected string, found integer
+  help: schema `schemas/post.schema.json`
+blog/2024/broken.md:5:1: error[frontmatter-schema]: `author`: missing required key `name`
+  help: schema `schemas/post.schema.json`
+blog/2024/broken.md:7:1: error[frontmatter-schema]: unexpected key `summary`
+  help: schema `schemas/post.schema.json`
 docs/guide.md:6:1: error[missing-anchor]: no anchor `#gone` in `../README.md`
   help: resolved to `README.md`
 docs/guide.md:10:43: error[missing-anchor]: no anchor `#setup-2` in this document

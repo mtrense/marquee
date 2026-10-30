@@ -1,0 +1,4 @@
+validate:
+  frontmatter:
+    - files: "blog/**/*.md"
+      schema: schemas/post.schema.json

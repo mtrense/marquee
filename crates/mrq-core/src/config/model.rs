@@ -258,7 +258,8 @@ pub struct ValidateConfig {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct FrontmatterSchema {
-    /// Glob of the files the schema applies to.
+    /// Glob of the files the schema applies to, relative to the directory of the config
+    /// file that sets it.
     pub files: String,
     /// Path of the JSON Schema, relative to the config file that sets it.
     pub schema: PathBuf,

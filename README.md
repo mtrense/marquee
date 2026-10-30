@@ -175,6 +175,8 @@ validate:
       schema: ./schemas/post.schema.json
 ```
 
+`files` and `schema` are relative to the config file that declares them, and every matching schema applies. The draft (7, 2020-12, …) comes from the schema's `$schema`, defaulting to 2020-12. Schemas are self-contained: `$ref`s to other files or URLs are not followed, so validation never touches the network. Errors point at the offending value, an unexpected key, or the object missing a required key.
+
 ### `mrq lint`
 
 Applies style rules. The rule set is compatible with markdownlint (`MD001`–`MD059`, same IDs and semantics), extended with mrq-specific rules (`MRQ001`…). Existing `.markdownlint.{json,jsonc,yaml}` files are honored when there is no `.mrq.yaml`.

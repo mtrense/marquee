@@ -322,7 +322,7 @@ expression: "mrq_core::config::schema_json()"
       "type": "object",
       "properties": {
         "files": {
-          "description": "Glob of the files the schema applies to.",
+          "description": "Glob of the files the schema applies to, relative to the directory of the config\nfile that sets it.",
           "type": "string"
         },
         "schema": {

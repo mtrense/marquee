@@ -35,6 +35,8 @@ exceptions = [
   { allow = ["Unicode-DFS-2016"], crate = "finl_unicode" },
   # hashbrown's default hasher; pulled in by indexmap via toml_edit (TOML frontmatter).
   { allow = ["Zlib"], crate = "foldhash" },
+  # MIT No Attribution; pulled in by jsonschema (via fluent-uri) for frontmatter schemas.
+  { allow = ["MIT-0"], crate = "borrow-or-share" },
 ]
 
 [licenses.private]

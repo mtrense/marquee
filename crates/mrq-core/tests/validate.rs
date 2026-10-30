@@ -1,12 +1,11 @@
 //! Acceptance tests for `mrq_core::validate`: link classification and resolution, and the
 //! internal checks over parsed documents and a fixture repository.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use mrq_core::ast::NodeType;
-use mrq_core::diag::{Severity, emit_plain};
+use mrq_core::diag::Severity;
 use mrq_core::document::{Document, DocumentOptions, Workspace};
-use mrq_core::input::InputResolver;
 use mrq_core::source::SourceFile;
 use mrq_core::validate::{self, Checker, DocumentLink, Target, codes};
 
@@ -361,17 +360,31 @@ fn wikilinks_are_looked_up_by_name_across_the_vault() {
 }
 
 /// Every check over `tests/fixtures/validate`, a small repository with a gfm README, a
-/// mkdocs page and an Obsidian vault, rendered by the plain emitter with paths relative
-/// to the fixture.
+/// mkdocs page, an Obsidian vault and blog posts with a frontmatter schema (from its
+/// `.mrq.yaml`), rendered by the plain emitter with paths relative to the fixture.
+#[cfg(feature = "frontmatter-schema")]
 #[test]
 fn fixture_repository_diagnostics() {
+    use mrq_core::config::ConfigLoader;
+    use mrq_core::diag::emit_plain;
+    use mrq_core::input::InputResolver;
+    use mrq_core::validate::FrontmatterSchemas;
+    use std::path::Path;
+
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/validate");
+    let config = ConfigLoader::new(&root)
+        .explicit(Some(root.join(".mrq.yaml")))
+        .load()
+        .unwrap();
+    let schemas = FrontmatterSchemas::from_config(&config).unwrap();
     let inputs = InputResolver::new()
         .base_dir(&root)
         .resolve(&["."])
         .unwrap();
     let ws = Workspace::from_inputs(&root, DocumentOptions::new(), &inputs).unwrap();
-    let diagnostics = Checker::new(&ws).check_workspace();
+    let diagnostics = Checker::new(&ws)
+        .with_frontmatter_schemas(&schemas)
+        .check_workspace();
     let sources: Vec<SourceFile> = ws.documents().map(|doc| doc.source().clone()).collect();
     let mut out = Vec::new();
     emit_plain(&diagnostics, &sources, &mut out).unwrap();

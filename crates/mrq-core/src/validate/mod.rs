@@ -39,6 +39,7 @@
 //! | `undefined-reference` | error | `[label]` of `[text][label]`, or `[label][]` | a full or collapsed reference link has no definition (shortcut `[label]` is ordinary text) |
 //! | `unused-reference` | warning | the definition | a link reference definition is never used |
 //! | `unresolved-wikilink` | warning | the wikilink or embed | no file in the vault has the name |
+//! | `frontmatter-schema` | error | the offending value; a missing key at its parent's key (the opening `---`/`+++` for top-level keys, the start of a document without frontmatter); an unexpected key at the key | the frontmatter does not match a JSON Schema configured for the file (`validate.frontmatter`); types, enums, consts and required keys name what was expected |
 //!
 //! How targets are found:
 //!
@@ -59,13 +60,29 @@
 //!   by [`reference_definitions`]. Labels match as in `CommonMark` (case and whitespace
 //!   folded). Footnotes are only checked for flavors that have them.
 //! - External URLs and `mailto:` addresses are not checked here.
+//!
+//! # Frontmatter schemas
+//!
+//! With the `frontmatter-schema` feature (on by default), `FrontmatterSchemas` maps
+//! globs to JSON Schemas (drafts 4 to 2020-12, picked by `$schema`, else 2020-12) and
+//! [`Checker::with_frontmatter_schemas`] adds them to the checks. `from_config` reads
+//! `validate.frontmatter`, resolving each entry's `files` glob and `schema` path against
+//! the directory of the config file that declares it. Instance paths of validation errors
+//! are mapped to frontmatter spans with
+//! [`Frontmatter::entry_at_pointer`](crate::frontmatter::Frontmatter::entry_at_pointer).
+//! Schemas cannot `$ref` other files or URLs: nothing is read besides the schema file
+//! itself, and nothing is fetched from the network.
 
 mod brackets;
 mod check;
 mod links;
 mod refdefs;
+#[cfg(feature = "frontmatter-schema")]
+mod schema;
 
 pub use check::{Checker, codes};
 pub(crate) use links::scheme;
 pub use links::{DocumentLink, Target, links};
 pub use refdefs::{ReferenceDefinition, reference_definitions};
+#[cfg(feature = "frontmatter-schema")]
+pub use schema::{FrontmatterSchemas, SchemaError};

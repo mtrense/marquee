@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 
 use ignore::WalkBuilder;
 
+#[cfg(feature = "frontmatter-schema")]
+use super::FrontmatterSchemas;
 use super::brackets::{Unresolved, unresolved};
 use super::{DocumentLink, Target, links, reference_definitions};
 use crate::ast::{NodeKind, NodeType, Span};
@@ -35,6 +37,8 @@ pub mod codes {
     pub const UNUSED_REFERENCE: &str = "unused-reference";
     /// A wikilink or embed whose name matches no file in the vault.
     pub const UNRESOLVED_WIKILINK: &str = "unresolved-wikilink";
+    /// Frontmatter that its JSON Schema (`validate.frontmatter`) rejects.
+    pub const FRONTMATTER_SCHEMA: &str = "frontmatter-schema";
 }
 
 /// Runs the internal checks over the documents of a [`Workspace`].
@@ -62,6 +66,8 @@ pub struct Checker<'w> {
     loaded: HashMap<PathBuf, Option<Document>>,
     /// The vault's files, listed on first use.
     vault: Option<Vec<VaultFile>>,
+    #[cfg(feature = "frontmatter-schema")]
+    schemas: Option<&'w FrontmatterSchemas>,
 }
 
 /// A file a wikilink may name.
@@ -79,7 +85,17 @@ impl<'w> Checker<'w> {
             workspace,
             loaded: HashMap::new(),
             vault: None,
+            #[cfg(feature = "frontmatter-schema")]
+            schemas: None,
         }
+    }
+
+    /// Also checks frontmatter against `schemas` (code [`codes::FRONTMATTER_SCHEMA`]).
+    #[cfg(feature = "frontmatter-schema")]
+    #[must_use]
+    pub const fn with_frontmatter_schemas(mut self, schemas: &'w FrontmatterSchemas) -> Self {
+        self.schemas = Some(schemas);
+        self
     }
 
     /// The diagnostics for `document`, ordered by position.
@@ -89,6 +105,10 @@ impl<'w> Checker<'w> {
         check_duplicate_anchors(document, &mut out);
         check_footnotes(document, &mut out);
         check_references(document, &self.links_of(document), &mut out);
+        #[cfg(feature = "frontmatter-schema")]
+        if let Some(schemas) = self.schemas {
+            out.extend(schemas.check(document));
+        }
         out.sort_by_key(|diag| (diag.range.start, diag.range.end));
         out
     }

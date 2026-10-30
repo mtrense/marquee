@@ -31,3 +31,5 @@ pub use crate::toc::TocEntry;
 pub use anchors::AnchorIndex;
 pub use doc::{Document, DocumentError, DocumentOptions};
 pub use workspace::Workspace;
+#[cfg(feature = "frontmatter-schema")]
+pub(crate) use workspace::normalize;
