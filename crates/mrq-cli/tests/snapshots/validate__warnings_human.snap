@@ -1,0 +1,14 @@
+---
+source: crates/mrq-cli/tests/validate.rs
+expression: out
+---
+stale-toc
+
+  ⚠ table of contents is out of date
+   ╭─[warn/toc.md:3:1]
+ 2 │ 
+ 3 │ <!-- mrq:toc -->
+   · ────────────────
+ 4 │ - [New](#new)
+   ╰────
+  help: run `mrq toc --insert` to regenerate it

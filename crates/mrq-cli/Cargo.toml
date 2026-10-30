@@ -16,7 +16,12 @@ name = "mrq"
 path = "src/main.rs"
 
 [features]
-# Checking external http(s) links (wired to `mrq validate --external` in M4.6).
+default = ["frontmatter-schema", "external-links"]
+# Frontmatter JSON Schema checks in `mrq validate` (`validate.frontmatter`); without it the
+# setting is ignored with a warning.
+frontmatter-schema = ["mrq-core/frontmatter-schema"]
+# Checking external http(s) links with `mrq validate --external` (or `validate.external`).
+# On by default, so release binaries can do it; nothing is requested unless asked for.
 external-links = ["mrq-core/external-links"]
 
 [dependencies]

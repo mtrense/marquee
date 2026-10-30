@@ -219,7 +219,7 @@ flowchart LR
 - [x] **M4.3 Frontmatter schema.** Glob-to-schema mapping from config. Validate with jsonschema (drafts 7 and 2020-12), and map instance paths to spans in the frontmatter. Enums, types and required keys are reported with the expected values. **AC:** error spans point at the offending key or value.
 - [x] **M4.4 Directive checks.** Missing include targets, cycles (with the chain in labels), stale `mrq:include`/`mrq:toc` regions (reusing M7 and M2.2). **AC:** fixtures. Added after M7 if needed, otherwise stubbed behind a TODO diagnostic.
 - [x] **M4.5 External links.** Feature `external-links`: collect URLs, check them via a lychee-lib client with retries, rate limits, `external_exclude`, an on-disk cache with TTL, and `--external`. **AC:** integration test against a local mock HTTP server, and nothing hits the network by default.
-- [ ] **M4.6 `mrq validate` command.** Runs all checks over a workspace, supports every output format, exit codes. **AC:** CLI snapshots, and the SARIF output is accepted by `github/codeql-action/upload-sarif` (manual check documented).
+- [x] **M4.6 `mrq validate` command.** Runs all checks over a workspace, supports every output format, exit codes. **AC:** CLI snapshots, and the SARIF output is accepted by `github/codeql-action/upload-sarif` (manual check documented).
 
 ### M5: Lint
 

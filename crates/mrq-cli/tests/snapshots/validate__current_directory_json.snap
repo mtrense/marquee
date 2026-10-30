@@ -1,0 +1,192 @@
+---
+source: crates/mrq-cli/tests/validate.rs
+expression: out
+---
+[
+  {
+    "code": "frontmatter-schema",
+    "severity": "error",
+    "message": "missing required key `title`",
+    "file": "blog/post.md",
+    "range": {
+      "start_offset": 0,
+      "end_offset": 3,
+      "start": {
+        "line": 1,
+        "column": 1
+      },
+      "end": {
+        "line": 1,
+        "column": 4
+      }
+    },
+    "help": "schema `[fixtures]/schemas/post.schema.json`"
+  },
+  {
+    "code": "frontmatter-schema",
+    "severity": "error",
+    "message": "`status`: expected one of \"draft\", \"published\", found \"wip\"",
+    "file": "blog/post.md",
+    "range": {
+      "start_offset": 12,
+      "end_offset": 15,
+      "start": {
+        "line": 2,
+        "column": 9
+      },
+      "end": {
+        "line": 2,
+        "column": 12
+      }
+    },
+    "help": "schema `[fixtures]/schemas/post.schema.json`"
+  },
+  {
+    "code": "missing-file",
+    "severity": "error",
+    "message": "file `../CHANGELOG.md` does not exist",
+    "file": "docs/guide.md",
+    "range": {
+      "start_offset": 27,
+      "end_offset": 55,
+      "start": {
+        "line": 5,
+        "column": 9
+      },
+      "end": {
+        "line": 5,
+        "column": 37
+      }
+    },
+    "help": "resolved to `CHANGELOG.md`"
+  },
+  {
+    "code": "missing-anchor",
+    "severity": "error",
+    "message": "no anchor `#usage` in this document",
+    "file": "docs/guide.md",
+    "range": {
+      "start_offset": 57,
+      "end_offset": 72,
+      "start": {
+        "line": 5,
+        "column": 39
+      },
+      "end": {
+        "line": 5,
+        "column": 54
+      }
+    }
+  },
+  {
+    "code": "missing-asset",
+    "severity": "error",
+    "message": "image `img/logo.png` does not exist",
+    "file": "docs/guide.md",
+    "range": {
+      "start_offset": 81,
+      "end_offset": 102,
+      "start": {
+        "line": 5,
+        "column": 63
+      },
+      "end": {
+        "line": 5,
+        "column": 84
+      }
+    },
+    "help": "resolved to `docs/img/logo.png`"
+  },
+  {
+    "code": "unused-footnote",
+    "severity": "warning",
+    "message": "footnote `[^orphan]` is never referenced",
+    "file": "docs/guide.md",
+    "range": {
+      "start_offset": 146,
+      "end_offset": 155,
+      "start": {
+        "line": 9,
+        "column": 1
+      },
+      "end": {
+        "line": 9,
+        "column": 10
+      }
+    }
+  },
+  {
+    "code": "directive",
+    "severity": "error",
+    "message": "`depth` must be a heading level from 1 to 6, not `9`; the table of contents is not refreshed",
+    "file": "docs/guide.md",
+    "range": {
+      "start_offset": 189,
+      "end_offset": 196,
+      "start": {
+        "line": 11,
+        "column": 14
+      },
+      "end": {
+        "line": 11,
+        "column": 21
+      }
+    },
+    "help": "write e.g. `<!-- mrq:toc depth=3 -->`"
+  },
+  {
+    "code": "directive",
+    "severity": "error",
+    "message": "`mrq:end` without a preceding `mrq:include` or `mrq:toc`",
+    "file": "docs/guide.md",
+    "range": {
+      "start_offset": 219,
+      "end_offset": 235,
+      "start": {
+        "line": 14,
+        "column": 1
+      },
+      "end": {
+        "line": 14,
+        "column": 17
+      }
+    }
+  },
+  {
+    "code": "frontmatter",
+    "severity": "error",
+    "message": "invalid YAML frontmatter: unclosed bracket '['",
+    "file": "docs/malformed.md",
+    "range": {
+      "start_offset": 11,
+      "end_offset": 12,
+      "start": {
+        "line": 2,
+        "column": 8
+      },
+      "end": {
+        "line": 2,
+        "column": 9
+      }
+    }
+  },
+  {
+    "code": "stale-toc",
+    "severity": "warning",
+    "message": "table of contents is out of date",
+    "file": "warn/toc.md",
+    "range": {
+      "start_offset": 12,
+      "end_offset": 28,
+      "start": {
+        "line": 3,
+        "column": 1
+      },
+      "end": {
+        "line": 3,
+        "column": 17
+      }
+    },
+    "help": "run `mrq toc --insert` to regenerate it"
+  }
+]

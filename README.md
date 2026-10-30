@@ -49,7 +49,7 @@ Release binaries enable everything. A minimal build is available with `cargo ins
 | Feature          | Enables                                                           |
 | ---------------- | ----------------------------------------------------------------- |
 | `pdf`            | `render -o pdf` (embedded Typst)                                  |
-| `external-links` | checking http(s) links in `validate --external`                   |
+| `external-links` | checking http(s) links in `validate --external` (default; no request without `--external`) |
 | `remote-include` | `mrq:include` from http(s) URLs                                   |
 | `tree-sitter`    | structural code includes (`function="…"`) and tree-sitter grammars |
 | `mermaid`        | built-in Mermaid rendering (no Node.js needed)                    |
@@ -161,9 +161,15 @@ Checks syntax and consistency:
 - external http(s) links, with `--external` (retries, rate limiting, caching)
 
 ```sh
+mrq validate                            # the current directory
 mrq validate docs/
+mrq validate --strict docs/             # warnings fail too
 mrq validate --external --format sarif . > results.sarif
 ```
+
+Diagnostics go to stdout in the `--format` (`human` by default, `github` when `GITHUB_ACTIONS=true`; also `json`, `ndjson` and `sarif`); the human format prints nothing when there is nothing to report. The inputs form one workspace rooted at the current directory, so a link starting with `/` resolves from there. Errors exit with 1, warnings (unused footnotes and references, duplicate anchors, unresolved wikilinks, stale tables of contents) only with `--strict`, and an unreadable input, a bad schema or an invalid `external_exclude` pattern with 2.
+
+External links are only checked with `--external` or `validate.external: true`, skipping URLs that match a `validate.external_exclude` regular expression. URLs found working are cached for a day in `external-links.json` in the user cache directory: `$MRQ_CACHE_HOME`, else `$XDG_CACHE_HOME/mrq`, else `~/.cache/mrq`. `mrq-cli` builds with the `external-links` feature by default; without it, `--external` fails with exit code 2.
 
 The frontmatter schema is configured per glob:
 

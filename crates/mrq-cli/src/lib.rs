@@ -21,6 +21,7 @@ pub mod cli;
 mod query;
 mod stats;
 mod toc;
+mod validate;
 
 use cli::{Cli, ColorChoice, Command, ConfigCommand, DiagnosticFormat, Flavor, GlobalArgs, Inputs};
 
@@ -75,6 +76,13 @@ pub fn run(cli: Cli) -> ExitCode {
             };
             query::run(&args, &compiled, &inputs, &options)
         }
+        Command::Validate(args) => {
+            let Some((loaded, options, inputs)) = prepare_loaded(&cli.global, &args.inputs, true)
+            else {
+                return ExitCode::from(EXIT_USAGE);
+            };
+            validate::run(&args, &inputs, &options, &loaded, &cli.global)
+        }
         other => {
             let _ = writeln!(
                 io::stderr().lock(),
@@ -95,6 +103,15 @@ fn prepare(
     inputs: &Inputs,
     default_to_cwd: bool,
 ) -> Option<(DocumentOptions, Vec<Input>)> {
+    prepare_loaded(global, inputs, default_to_cwd).map(|(_, options, inputs)| (options, inputs))
+}
+
+/// [`prepare`], also returning the loaded configuration.
+fn prepare_loaded(
+    global: &GlobalArgs,
+    inputs: &Inputs,
+    default_to_cwd: bool,
+) -> Option<(LoadedConfig, DocumentOptions, Vec<Input>)> {
     let loaded = match load_config(global) {
         Ok(loaded) => loaded,
         Err(err) => {
@@ -119,7 +136,10 @@ fn prepare(
         .ignore_patterns(loaded.config().ignore.iter().cloned())
         .resolve(paths);
     match resolved {
-        Ok(resolved) => Some((document_options(global, &loaded), resolved)),
+        Ok(resolved) => {
+            let options = document_options(global, &loaded);
+            Some((loaded, options, resolved))
+        }
         Err(err) => {
             let _ = writeln!(io::stderr().lock(), "mrq: {err}");
             None
@@ -199,9 +219,21 @@ fn report_config_error(err: &ConfigError, global: &GlobalArgs) {
 /// set or detected otherwise), honouring `--color`.
 fn emit_diagnostics(diagnostics: &[Diagnostic], files: &[SourceFile], global: &GlobalArgs) {
     let stderr = io::stderr();
-    let mut out = stderr.lock();
+    let is_terminal = stderr.is_terminal();
+    emit_diagnostics_to(&mut stderr.lock(), is_terminal, diagnostics, files, global);
+}
+
+/// Writes `diagnostics` about `files` to `out` like [`emit_diagnostics`]; colors in the
+/// human format only if `is_terminal` (and `--color` allows them) or `--color always`.
+fn emit_diagnostics_to(
+    out: &mut impl Write,
+    is_terminal: bool,
+    diagnostics: &[Diagnostic],
+    files: &[SourceFile],
+    global: &GlobalArgs,
+) {
     let format = OutputFormat::select_from_env(global.format.map(output_format));
-    let mut human = HumanStyle::detect(stderr.is_terminal(), |key| env::var(key).ok());
+    let mut human = HumanStyle::detect(is_terminal, |key| env::var(key).ok());
     human.color = match global.color {
         ColorChoice::Always => true,
         ColorChoice::Never => false,
@@ -211,7 +243,7 @@ fn emit_diagnostics(diagnostics: &[Diagnostic], files: &[SourceFile], global: &G
         human,
         ..EmitOptions::default()
     };
-    let _ = diag::emit(format, diagnostics, files, &options, &mut out);
+    let _ = diag::emit(format, diagnostics, files, &options, out);
 }
 
 /// Replaces the file at `path` with `text` atomically: writes a temp file in the same

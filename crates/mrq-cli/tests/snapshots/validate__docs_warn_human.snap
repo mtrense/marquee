@@ -1,0 +1,86 @@
+---
+source: crates/mrq-cli/tests/validate.rs
+expression: out
+---
+missing-file
+
+  × file `../CHANGELOG.md` does not exist
+   ╭─[docs/guide.md:5:9]
+ 4 │ 
+ 5 │ See the [changelog](../CHANGELOG.md), [usage](#usage) and the ![logo](img/logo.png).
+   ·         ────────────────────────────
+ 6 │ A claim[^source].
+   ╰────
+  help: resolved to `CHANGELOG.md`
+
+missing-anchor
+
+  × no anchor `#usage` in this document
+   ╭─[docs/guide.md:5:39]
+ 4 │ 
+ 5 │ See the [changelog](../CHANGELOG.md), [usage](#usage) and the ![logo](img/logo.png).
+   ·                                       ───────────────
+ 6 │ A claim[^source].
+   ╰────
+
+missing-asset
+
+  × image `img/logo.png` does not exist
+   ╭─[docs/guide.md:5:63]
+ 4 │ 
+ 5 │ See the [changelog](../CHANGELOG.md), [usage](#usage) and the ![logo](img/logo.png).
+   ·                                                               ─────────────────────
+ 6 │ A claim[^source].
+   ╰────
+  help: resolved to `docs/img/logo.png`
+
+unused-footnote
+
+  ⚠ footnote `[^orphan]` is never referenced
+    ╭─[docs/guide.md:9:1]
+  8 │ [^source]: The source.
+  9 │ [^orphan]: Never referenced.
+    · ─────────
+ 10 │ 
+    ╰────
+
+directive
+
+  × `depth` must be a heading level from 1 to 6, not `9`; the table of contents is not refreshed
+    ╭─[docs/guide.md:11:14]
+ 10 │ 
+ 11 │ <!-- mrq:toc depth=9 -->
+    ·              ───────
+ 12 │ <!-- mrq:end -->
+    ╰────
+  help: write e.g. `<!-- mrq:toc depth=3 -->`
+
+directive
+
+  × `mrq:end` without a preceding `mrq:include` or `mrq:toc`
+    ╭─[docs/guide.md:14:1]
+ 13 │ 
+ 14 │ <!-- mrq:end -->
+    · ────────────────
+    ╰────
+
+frontmatter
+
+  × invalid YAML frontmatter: unclosed bracket '['
+   ╭─[docs/malformed.md:2:8]
+ 1 │ ---
+ 2 │ title: [unclosed
+   ·        ─
+ 3 │ ---
+   ╰────
+
+stale-toc
+
+  ⚠ table of contents is out of date
+   ╭─[warn/toc.md:3:1]
+ 2 │ 
+ 3 │ <!-- mrq:toc -->
+   · ────────────────
+ 4 │ - [New](#new)
+   ╰────
+  help: run `mrq toc --insert` to regenerate it

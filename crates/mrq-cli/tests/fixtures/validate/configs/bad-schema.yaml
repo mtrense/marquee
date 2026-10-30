@@ -1,0 +1,4 @@
+validate:
+  frontmatter:
+    - files: "**/*.md"
+      schema: missing.schema.json

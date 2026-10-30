@@ -1,0 +1,278 @@
+---
+source: crates/mrq-cli/tests/validate.rs
+expression: out
+---
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "mrq",
+          "version": "[version]",
+          "informationUri": "https://github.com/mtrense/marquee",
+          "rules": [
+            {
+              "id": "frontmatter-schema"
+            },
+            {
+              "id": "missing-file"
+            },
+            {
+              "id": "missing-anchor"
+            },
+            {
+              "id": "missing-asset"
+            },
+            {
+              "id": "unused-footnote"
+            },
+            {
+              "id": "directive"
+            },
+            {
+              "id": "frontmatter"
+            },
+            {
+              "id": "stale-toc"
+            }
+          ]
+        }
+      },
+      "columnKind": "utf16CodeUnits",
+      "results": [
+        {
+          "ruleId": "frontmatter-schema",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "missing required key `title`\n\nhelp: schema `[fixtures]/schemas/post.schema.json`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "blog/post.md"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1,
+                  "endLine": 1,
+                  "endColumn": 4
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "frontmatter-schema",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "`status`: expected one of \"draft\", \"published\", found \"wip\"\n\nhelp: schema `[fixtures]/schemas/post.schema.json`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "blog/post.md"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 9,
+                  "endLine": 2,
+                  "endColumn": 12
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "missing-file",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "file `../CHANGELOG.md` does not exist\n\nhelp: resolved to `CHANGELOG.md`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "docs/guide.md"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 9,
+                  "endLine": 5,
+                  "endColumn": 37
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "missing-anchor",
+          "ruleIndex": 2,
+          "level": "error",
+          "message": {
+            "text": "no anchor `#usage` in this document"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "docs/guide.md"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 39,
+                  "endLine": 5,
+                  "endColumn": 54
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "missing-asset",
+          "ruleIndex": 3,
+          "level": "error",
+          "message": {
+            "text": "image `img/logo.png` does not exist\n\nhelp: resolved to `docs/img/logo.png`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "docs/guide.md"
+                },
+                "region": {
+                  "startLine": 5,
+                  "startColumn": 63,
+                  "endLine": 5,
+                  "endColumn": 84
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "unused-footnote",
+          "ruleIndex": 4,
+          "level": "warning",
+          "message": {
+            "text": "footnote `[^orphan]` is never referenced"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "docs/guide.md"
+                },
+                "region": {
+                  "startLine": 9,
+                  "startColumn": 1,
+                  "endLine": 9,
+                  "endColumn": 10
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "directive",
+          "ruleIndex": 5,
+          "level": "error",
+          "message": {
+            "text": "`depth` must be a heading level from 1 to 6, not `9`; the table of contents is not refreshed\n\nhelp: write e.g. `<!-- mrq:toc depth=3 -->`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "docs/guide.md"
+                },
+                "region": {
+                  "startLine": 11,
+                  "startColumn": 14,
+                  "endLine": 11,
+                  "endColumn": 21
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "directive",
+          "ruleIndex": 5,
+          "level": "error",
+          "message": {
+            "text": "`mrq:end` without a preceding `mrq:include` or `mrq:toc`"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "docs/guide.md"
+                },
+                "region": {
+                  "startLine": 14,
+                  "startColumn": 1,
+                  "endLine": 14,
+                  "endColumn": 17
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "frontmatter",
+          "ruleIndex": 6,
+          "level": "error",
+          "message": {
+            "text": "invalid YAML frontmatter: unclosed bracket '['"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "docs/malformed.md"
+                },
+                "region": {
+                  "startLine": 2,
+                  "startColumn": 8,
+                  "endLine": 2,
+                  "endColumn": 9
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "stale-toc",
+          "ruleIndex": 7,
+          "level": "warning",
+          "message": {
+            "text": "table of contents is out of date\n\nhelp: run `mrq toc --insert` to regenerate it"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "warn/toc.md"
+                },
+                "region": {
+                  "startLine": 3,
+                  "startColumn": 1,
+                  "endLine": 3,
+                  "endColumn": 17
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

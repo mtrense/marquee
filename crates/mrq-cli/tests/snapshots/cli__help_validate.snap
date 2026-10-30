@@ -14,6 +14,9 @@ Options:
       --external
           Also check external http(s) links
 
+      --strict
+          Exit 1 on warnings too, not only on errors
+
   -h, --help
           Print help (see a summary with '-h')
 

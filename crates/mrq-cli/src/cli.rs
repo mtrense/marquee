@@ -219,6 +219,9 @@ pub struct ValidateArgs {
     /// Also check external http(s) links.
     #[arg(long)]
     pub external: bool,
+    /// Exit 1 on warnings too, not only on errors.
+    #[arg(long)]
+    pub strict: bool,
     #[command(flatten)]
     pub inputs: Inputs,
 }

@@ -1,0 +1,13 @@
+---
+source: crates/mrq-cli/tests/validate.rs
+expression: out
+---
+::error file=docs/guide.md,line=5,col=9,endLine=5,endColumn=36,title=missing-file::file `../CHANGELOG.md` does not exist%0A%0Ahelp: resolved to `CHANGELOG.md`
+::error file=docs/guide.md,line=5,col=39,endLine=5,endColumn=53,title=missing-anchor::no anchor `#usage` in this document
+::error file=docs/guide.md,line=5,col=63,endLine=5,endColumn=83,title=missing-asset::image `img/logo.png` does not exist%0A%0Ahelp: resolved to `docs/img/logo.png`
+::warning file=docs/guide.md,line=9,col=1,endLine=9,endColumn=9,title=unused-footnote::footnote `[^orphan]` is never referenced
+::error file=docs/guide.md,line=11,col=14,endLine=11,endColumn=20,title=directive::`depth` must be a heading level from 1 to 6, not `9`; the table of contents is not refreshed%0A%0Ahelp: write e.g. `<!-- mrq:toc depth=3 -->`
+::error file=docs/guide.md,line=14,col=1,endLine=14,endColumn=16,title=directive::`mrq:end` without a preceding `mrq:include` or `mrq:toc`
+::error file=docs/malformed.md,line=2,col=8,endLine=2,endColumn=8,title=frontmatter::invalid YAML frontmatter: unclosed bracket '['
+::error file=blog/post.md,line=1,col=1,endLine=1,endColumn=3,title=frontmatter-schema::missing required key `title`%0A%0Ahelp: schema `[fixtures]/schemas/post.schema.json`
+::error file=blog/post.md,line=2,col=9,endLine=2,endColumn=11,title=frontmatter-schema::`status`: expected one of "draft", "published", found "wip"%0A%0Ahelp: schema `[fixtures]/schemas/post.schema.json`
