@@ -1,0 +1,7 @@
+---
+source: crates/mrq-cli/tests/query.rs
+expression: out
+---
+```sh
+cargo install mrq
+```

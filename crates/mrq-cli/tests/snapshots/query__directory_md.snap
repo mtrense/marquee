@@ -1,0 +1,11 @@
+---
+source: crates/mrq-cli/tests/query.rs
+expression: "mrq.stdout(&[\"[]()\", \"docs\", \"README.md\"], None)"
+---
+==> docs/guide.md <==
+[README](../README.md)
+
+==> README.md <==
+[home link](https://example.com)
+
+[the guide](docs/guide.md)

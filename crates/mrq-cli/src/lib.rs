@@ -18,6 +18,7 @@ use mrq_core::input::{Input, InputResolver};
 use mrq_core::source::SourceFile;
 
 pub mod cli;
+mod query;
 mod stats;
 mod toc;
 
@@ -63,6 +64,16 @@ pub fn run(cli: Cli) -> ExitCode {
                 return ExitCode::from(EXIT_USAGE);
             };
             stats::run(&args, &inputs, &options)
+        }
+        Command::Query(args) => {
+            // Compiled first, so a bad query fails before any input is resolved or read.
+            let Some(compiled) = query::compile(&args) else {
+                return ExitCode::from(EXIT_USAGE);
+            };
+            let Some((options, inputs)) = prepare(&cli.global, &args.inputs, false) else {
+                return ExitCode::from(EXIT_USAGE);
+            };
+            query::run(&args, &compiled, &inputs, &options)
         }
         other => {
             let _ = writeln!(

@@ -1,0 +1,13 @@
+---
+source: crates/mrq-cli/tests/query.rs
+expression: "mrq.stdout(&[\"-o\", \"text\", \"# Install\", \"docs\", \"README.md\"], None)"
+---
+==> docs/guide.md <==
+Install
+brew install mrq
+
+==> README.md <==
+Install
+Run this:
+cargo install mrq
+fn main() {}

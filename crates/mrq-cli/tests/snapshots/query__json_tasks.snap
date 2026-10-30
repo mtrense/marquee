@@ -1,0 +1,121 @@
+---
+source: crates/mrq-cli/tests/query.rs
+expression: out
+---
+[
+  {
+    "file": "README.md",
+    "matches": [
+      {
+        "type": "listItem",
+        "checked": false,
+        "taskMarker": null,
+        "id": 19,
+        "position": {
+          "start": {
+            "line": 19,
+            "column": 1,
+            "offset": 144
+          },
+          "end": {
+            "line": 19,
+            "column": 17,
+            "offset": 160
+          }
+        },
+        "children": [
+          {
+            "type": "paragraph",
+            "id": 22,
+            "position": {
+              "start": {
+                "line": 19,
+                "column": 7,
+                "offset": 150
+              },
+              "end": {
+                "line": 19,
+                "column": 17,
+                "offset": 160
+              }
+            },
+            "children": [
+              {
+                "type": "text",
+                "value": "write docs",
+                "id": 23,
+                "position": {
+                  "start": {
+                    "line": 19,
+                    "column": 7,
+                    "offset": 150
+                  },
+                  "end": {
+                    "line": 19,
+                    "column": 17,
+                    "offset": 160
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "listItem",
+        "checked": false,
+        "taskMarker": null,
+        "id": 21,
+        "position": {
+          "start": {
+            "line": 21,
+            "column": 1,
+            "offset": 175
+          },
+          "end": {
+            "line": 21,
+            "column": 16,
+            "offset": 190
+          }
+        },
+        "children": [
+          {
+            "type": "paragraph",
+            "id": 26,
+            "position": {
+              "start": {
+                "line": 21,
+                "column": 7,
+                "offset": 181
+              },
+              "end": {
+                "line": 21,
+                "column": 16,
+                "offset": 190
+              }
+            },
+            "children": [
+              {
+                "type": "text",
+                "value": "add tests",
+                "id": 27,
+                "position": {
+                  "start": {
+                    "line": 21,
+                    "column": 7,
+                    "offset": 181
+                  },
+                  "end": {
+                    "line": 21,
+                    "column": 16,
+                    "offset": 190
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

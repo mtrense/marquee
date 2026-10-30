@@ -266,7 +266,11 @@ pub struct QueryArgs {
     /// Output format.
     #[arg(short, long = "output", value_name = "FORMAT", default_value = "md")]
     pub output: QueryOutput,
+    /// Exit 1 if nothing matches in any input.
+    #[arg(short, long)]
+    pub exit_status: bool,
     /// The query (Markdown selector by default).
+    #[arg(allow_hyphen_values = true)]
     pub query: String,
     #[command(flatten)]
     pub inputs: Inputs,

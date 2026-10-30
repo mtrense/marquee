@@ -1,0 +1,7 @@
+---
+source: crates/mrq-cli/tests/query.rs
+expression: "String::from_utf8(out.stderr).unwrap()"
+---
+mrq: invalid query
+# A | ?
+      ^ expected a selector (`#`, `-`, `1.`, `[]()`, `![]()`, `>`, ```, `:-:`, `</>`, `+++` or `P:`)

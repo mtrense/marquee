@@ -236,7 +236,7 @@ mrq query --css 'link[url^="http"]' docs/
 mrq query --jq '.. | select(.type? == "link") | .url' docs/
 ```
 
-Output is Markdown by default (`-o md`). It can also be `json` (nodes with source positions) or `text` (plain text content).
+Output is Markdown by default (`-o md`). It can also be `json` (nodes with source positions) or `text` (plain text content). jq results that aren't nodes of the document print as plain strings or compact JSON. `-e`/`--exit-status` exits with 1 when nothing matches.
 
 Markdown selector cheat sheet:
 

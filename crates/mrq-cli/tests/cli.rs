@@ -80,7 +80,6 @@ fn stubbed_subcommands_report_not_implemented_and_exit_2() {
         &["validate"],
         &["lint", "--fix", "docs/"],
         &["fmt", "--check", "."],
-        &["query", "# Install", "README.md"],
         &["merge", "a.md", "b.md"],
         &["interpolate", "--in-place", "README.md"],
         &["split", "-d", "2", "guide.md"],

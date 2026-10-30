@@ -198,7 +198,7 @@ flowchart LR
 - [x] **M3.2 Selector DSL.** A winnow parser for the README cheat sheet (`#`, `-`, `1.`, `- [ ]`, `[]()`, `![]()`, `>`, ```` ```lang ````, `:-:`, `</>`, `+++`, `P:`, `|`). Parse errors come with a caret position. **AC:** every README example parses and returns the expected nodes.
 - [x] **M3.3 CSS front-end** *(parallel with M3.2)*. Type selectors (`section`, `heading`, `h1`–`h6`, `code`, `link`, `image`, `list`, `item`, `task`, `table`, `blockquote`, …), attribute selectors (`=`, `^=`, `$=`, `*=`, `~=`), descendant and child combinators, `:has()`, `:not()`, `:nth-child()`. **AC:** README examples pass, and `section[heading="X"]` matches sections.
 - [x] **M3.4 jq front-end** *(parallel with M3.2)*. Embed jaq-core + jaq-std over the JSON projection, plus mrq helper definitions (`sections`, `links`, `code($lang)`, `text`). **AC:** README example works, and jq errors map to diagnostics.
-- [ ] **M3.5 `mrq query` command.** Front-end selection (`--css`, `--jq`, default DSL) and output modes `md` (source slices of the matched nodes, sections in full), `json` and `text`. Multi-file output with file prefixes. Exit 1 when nothing matches if `--exit-status` is set. **AC:** CLI snapshot tests.
+- [x] **M3.5 `mrq query` command.** Front-end selection (`--css`, `--jq`, default DSL) and output modes `md` (source slices of the matched nodes, sections in full), `json` and `text`. Multi-file output with file prefixes. Exit 1 when nothing matches if `--exit-status` is set. **AC:** CLI snapshot tests.
 
 ### M4: Validate
 
