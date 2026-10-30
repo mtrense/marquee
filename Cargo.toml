@@ -34,6 +34,7 @@ globset = "0.4.21"
 figment = { version = "0.10.19", default-features = false }
 schemars = "1.2.3"
 serde-saphyr = { version = "2.0.0", default-features = false, features = ["deserialize"] }
+comrak = { version = "0.59.0", default-features = false }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

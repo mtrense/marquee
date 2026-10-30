@@ -29,6 +29,10 @@ confidence-threshold = 0.93
 exceptions = [
   # "(Apache-2.0 OR MIT) AND BSD-3-Clause" (WHATWG-derived data); pulled in by serde-saphyr.
   { allow = ["BSD-3-Clause"], crate = "encoding_rs" },
+  # The Markdown parser behind `mrq_core::parse`.
+  { allow = ["BSD-2-Clause"], crate = "comrak" },
+  # "(MIT OR Apache-2.0) AND Unicode-DFS-2016" (Unicode data tables); pulled in by comrak.
+  { allow = ["Unicode-DFS-2016"], crate = "finl_unicode" },
 ]
 
 [licenses.private]

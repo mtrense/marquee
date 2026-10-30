@@ -7,6 +7,8 @@ rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
+# The vendored spec files are CC BY-SA test data, not part of the published crate.
+exclude = ["tests/fixtures/spec"]
 
 [features]
 default = ["human"]
@@ -24,6 +26,7 @@ globset.workspace = true
 figment.workspace = true
 schemars.workspace = true
 serde-saphyr.workspace = true
+comrak.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

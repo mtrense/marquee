@@ -4,4 +4,5 @@ pub mod ast;
 pub mod config;
 pub mod diag;
 pub mod input;
+pub mod parse;
 pub mod source;

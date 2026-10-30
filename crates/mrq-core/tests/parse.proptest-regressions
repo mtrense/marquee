@@ -1,0 +1,28 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 1e9b4bd35fe61af4af8fcb6612eadfe484023359dae774d18d14bb65a4ca562c # shrinks to src = "> [a]: /u\né"
+cc d6571582637e7ead69338b9c4df30e4f6a5f69d07fc074541ee07ea73dbaae76 # shrinks to src = " [a]: /u\na\né"
+cc 21f4a99dfa9022896fa4b54c63b1238139c42a3c2b5a4e17d57f73f47409fe8a # shrinks to src = "[^a]:  [a]: /u\n&amp;aaa\né"
+cc 348089192a28467ba5d0b0432df84da31da767d8ebc4ca0297086af032ed66aa # shrinks to src = "---\n "
+cc 5206cc3740a02379cfc760811498d2f984bd3f863ca4329344439639fd4f767d # shrinks to src = "a\n\n[a]: /u\n\t>\né"
+cc de14074150d030d3910532ce7bcbf8aadaebdc7033c0641e072ed6c58f20342d # shrinks to src = "- [^a]: \n\n"
+cc 7d9e7e786a462c437df5ac42a2bdaff62c1a07080708e74e7fbe1f9d0b651719 # shrinks to src = "> [a]: /u\n a\na"
+cc add71a8eb850cc7a16bb4b8fce295be8c29bf6bc11ab983cd70ec74605b399fd # shrinks to src = "<a\n \t> "
+cc 956d06ca66af14f74bd7fb118f537f9a04fb5c68721ab7141d3f4d28f37436cf # shrinks to src = "[a]: /u\na\\#aa"
+cc e1a1f9fcac6c3ca61b4fc7a20c03ef1c7c8b7c734f68db3c9b63dd67c969e580 # shrinks to src = "- [^a]: a\n\té\n a"
+cc e31bdbecda8d71bea1bf843d2b2dcd9159a9ccc08f9de6fdedc68f755b2205d1 # shrinks to src = "- >`a\n\t`a"
+cc e735c5d8c0221e2149ec4f5d3c49afddd610eed22dee520e0318b6bbacf06af1 # shrinks to src = "[^a](\n)\na"
+cc 0d935fba762e7eec662755488243369400c4e2bf3c97ebef53ac5d06a374bc0d # shrinks to src = "[aa\naaa]()a\n"
+cc 17b3eda50a1efe95e686f65edb068dcd5f2bcc305ec9a82cc52c041458ccab6c # shrinks to src = "[a]: /u\n    <!-- c -->  "
+cc 4e28c26fef46934ebc9f1b868d584de43bd136d4c64069d142272dc749637fac # shrinks to src = "[](\n a)\nwww.x.org"
+cc c4b5f7e34f2c2747af5dcf43b8ea97aa3eac911d5bb2a4633d9e89f20fc65f4b # shrinks to src = "[a]: /u\n---\néaa\n: "
+cc 13a0f5a5b80d5a91c9dfb496335a0d89188d5ff7902ed0f3e5cf9d8b4b8930e5 # shrinks to src = "- [^a]: [a]: /u\n\ta\né"
+cc 8392444a25d2654ad3ac14d3a00b56d2b661c2b770fd20430ba1da453e645f4d # shrinks to src = "<a\r a>"
+cc a95dcce71978c6096c5d70e62ec3c9e86a371aa7efd741d2afdb278f2468b343 # shrinks to src = "[^a]: [a]: /u\né\n [^a]\né"
+cc dd16984eb62a912eb69c4ddbbf18933723f917189b0cd9a181e537e60bb27c4c # shrinks to src = "[a]: /u\nwww.x.org\n[^a]: "
+cc 2aead72cc9dc0e10e25e115b34644154cddb3e8085127822227262fc2decd931 # shrinks to src = "- > `\n\t`\na"
+cc ccd9f1cb7688fae2faf02fcc3acbbf251fed8c5bb335a0d73857669f5e109cbc # shrinks to src = "> [a]: /u\né\n\t><!-- c -->\t\né"
