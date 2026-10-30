@@ -1,0 +1,4 @@
+5 MD040 Fenced code blocks should have a language specified ["python" is not allowed]
+9 MD040 Fenced code blocks should have a language specified ["JS" is not allowed]
+13 MD040 Fenced code blocks should have a language specified [Info string contains more than language: "```rust title="main.rs""]
+17 MD040 Fenced code blocks should have a language specified [Context: "```"]

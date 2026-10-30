@@ -1,0 +1,6 @@
+2 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "> # Quoted heading right below text"]
+2 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "> # Quoted heading right below text"]
+6 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "> > ## Nested heading"]
+12 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "Setext in a list"]
+16 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "### Heading with trailing hashes ###"]
+17 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "#### Heading at the end"]

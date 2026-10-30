@@ -1,0 +1,5 @@
+3:1 MD023 Headings must start at the beginning of the line [Context: "  # Indented heading 1"]
+5:1 MD023 Headings must start at the beginning of the line [Context: "   ## Indented heading 2 with ..."]
+7:1 MD023 Headings must start at the beginning of the line [Context: " Setext heading"]
+10:3 MD023 Headings must start at the beginning of the line [Context: ">  ### Indented in a quote"]
+14:3 MD023 Headings must start at the beginning of the line [Context: "   #### Indented in a list ite..."]

@@ -1,0 +1,7 @@
+# Heading.
+
+## Heading?
+
+### Heading with a bracket]
+
+<!-- markdownlint-configure-file { "MD026": { "punctuation": "?]" } } -->

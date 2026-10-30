@@ -1,0 +1,5 @@
+Backticks next to the spaces: `` `tick``, `` `tick ``, `` `both` ``.
+
+A tab: `tab`, and a padded `` ` `` is fine.
+
+Spaces on both ends with padding: ``both``.

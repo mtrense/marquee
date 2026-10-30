@@ -1,0 +1,5 @@
+2 MD032 Lists should be surrounded by blank lines [Context: "- Item"]
+6 MD032 Lists should be surrounded by blank lines [Context: "2. Item"]
+10 MD032 Lists should be surrounded by blank lines [Context: "> - Quoted list"]
+16 MD032 Lists should be surrounded by blank lines [Context: "Paragraph in the item"]
+19 MD032 Lists should be surrounded by blank lines [Context: "- Item"]

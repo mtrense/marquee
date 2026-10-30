@@ -1,0 +1,7 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:3 MD036 Emphasis used instead of a heading [Context: "Bold followed by a comment"]
+7:5 MD036 Emphasis used instead of a heading [Context: "Indented bold"]
+9:20 MD036 Emphasis used instead of a heading [Context: "After a comment"]

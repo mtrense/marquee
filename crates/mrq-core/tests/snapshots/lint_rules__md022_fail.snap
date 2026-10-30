@@ -1,0 +1,44 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "# Heading 1"]
+5:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "## Heading 2"]
+7:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "### Heading 3"]
+8:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "#### Heading 4"]
+8:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "#### Heading 4"]
+9:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "Setext heading"]
+9:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "Setext heading"]
+14:3 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "> # Quoted heading"]
+14:3 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "> # Quoted heading"]
+18:3 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "##### Heading in a list item"]
+18:3 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "##### Heading in a list item"]
+--- fixed ---
+# Heading 1
+
+Text right below
+
+Text right above
+
+## Heading 2
+
+### Heading 3
+
+#### Heading 4
+
+Setext heading
+--------------
+
+Text
+
+> Quoted text
+>
+> # Quoted heading
+>
+> Quoted text
+
+- Item
+
+  ##### Heading in a list item
+
+  Text

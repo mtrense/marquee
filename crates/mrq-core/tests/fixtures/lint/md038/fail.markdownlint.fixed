@@ -1,0 +1,12 @@
+# Heading with `code`
+
+Text with `leading`, `trailing`, and `both`.
+
+Double `` backticks `` and `three spaces`.
+
+- List with `code`
+
+| Table with `code` |
+| ------------------- |
+
+A long `code span with a rather long text to shorten`.

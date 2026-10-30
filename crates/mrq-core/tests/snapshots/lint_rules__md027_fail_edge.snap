@@ -1,0 +1,26 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+5:3 MD027 Multiple spaces after blockquote symbol [Context: ">  ```"]
+6:3 MD027 Multiple spaces after blockquote symbol [Context: ">   code"]
+14:3 MD027 Multiple spaces after blockquote symbol [Context: ">  lazy"]
+16:3 MD027 Multiple spaces after blockquote symbol [Context: ">  | a |"]
+--- fixed ---
+>  <div>
+>  x
+>  </div>
+
+> ```
+>  code
+>  ```
+
+> ```
+>   code
+> ```
+
+> para
+> lazy
+
+> | a |
+>  | - |

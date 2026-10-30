@@ -1,0 +1,6 @@
+2:1 MD029 Ordered list item prefix [Expected: 2; Actual: 1; Style: 1/2/3]
+3:1 MD029 Ordered list item prefix [Expected: 3; Actual: 1; Style: 1/2/3]
+7:2 MD029 Ordered list item prefix [Expected: 1; Actual: 9; Style: 1/2/3]
+8:2 MD029 Ordered list item prefix [Expected: 2; Actual: 9; Style: 1/2/3]
+9:2 MD029 Ordered list item prefix [Expected: 3; Actual: 9; Style: 1/2/3]
+14:1 MD029 Ordered list item prefix [Expected: 1; Actual: 0; Style: 1/2/3]

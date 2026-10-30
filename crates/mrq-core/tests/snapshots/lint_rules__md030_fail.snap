@@ -1,0 +1,26 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:1 MD030 Spaces after list markers [Expected: 1; Actual: 2]
+3:1 MD030 Spaces after list markers [Expected: 1; Actual: 3]
+7:1 MD030 Spaces after list markers [Expected: 1; Actual: 2]
+8:1 MD030 Spaces after list markers [Expected: 1; Actual: 3]
+13:3 MD030 Spaces after list markers [Expected: 1; Actual: 2]
+15:3 MD030 Spaces after list markers [Expected: 1; Actual: 2]
+--- fixed ---
+- One
+- Two
+* Three
+
+Text
+
+1. One
+2. Two
+
+Text
+
+- Item
+  - Nested
+
+> - Quoted

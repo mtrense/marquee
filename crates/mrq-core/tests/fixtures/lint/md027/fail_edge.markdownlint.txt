@@ -1,0 +1,4 @@
+5:3 MD027 Multiple spaces after blockquote symbol [Context: ">  ```"]
+6:3 MD027 Multiple spaces after blockquote symbol [Context: ">   code"]
+14:3 MD027 Multiple spaces after blockquote symbol [Context: ">  lazy"]
+16:3 MD027 Multiple spaces after blockquote symbol [Context: ">  | a |"]

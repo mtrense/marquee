@@ -1,0 +1,18 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:3 MD027 Multiple spaces after blockquote symbol [Context: ">  Two"]
+7:3 MD027 Multiple spaces after blockquote symbol [Context: ">  # H"]
+8:3 MD027 Multiple spaces after blockquote symbol [Context: ">  text"]
+--- fixed ---
+> Two
+
+>  - List
+
+- >  Quote in list
+
+> # H
+> text
+
+<!-- markdownlint-configure-file { "MD027": { "list_items": false } } -->

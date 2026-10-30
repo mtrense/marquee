@@ -1,0 +1,29 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:10 MD026 Trailing punctuation in heading [Punctuation: '.']
+3:24 MD026 Trailing punctuation in heading [Punctuation: ' !!!']
+5:19 MD026 Trailing punctuation in heading [Punctuation: ':']
+7:28 MD026 Trailing punctuation in heading [Punctuation: ' :']
+9:29 MD026 Trailing punctuation in heading [Punctuation: '。']
+11:15 MD026 Trailing punctuation in heading [Punctuation: ';']
+14:27 MD026 Trailing punctuation in heading [Punctuation: ',']
+16:23 MD026 Trailing punctuation in heading [Punctuation: '!']
+--- fixed ---
+# Heading
+
+## Heading with several
+
+### Closed heading ###
+
+#### Space before the colon
+
+##### Full-width punctuation
+
+Setext heading
+---------------
+
+- ###### Heading in a list
+
+> # Heading in a quote

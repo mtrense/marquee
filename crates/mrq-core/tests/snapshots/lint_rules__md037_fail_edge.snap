@@ -1,0 +1,24 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:15 MD037 Spaces inside emphasis markers [Context: "* s"]
+2:4 MD037 Spaces inside emphasis markers [Context: "d *"]
+4:53 MD037 Spaces inside emphasis markers [Context: "** a"]
+6:8 MD037 Spaces inside emphasis markers [Context: "_ u"]
+6:16 MD037 Spaces inside emphasis markers [Context: "* s"]
+6:21 MD037 Spaces inside emphasis markers [Context: "r _"]
+6:27 MD037 Spaces inside emphasis markers [Context: "d *"]
+10:17 MD037 Spaces inside emphasis markers [Context: "* r"]
+10:22 MD037 Spaces inside emphasis markers [Context: "l *"]
+--- fixed ---
+Across lines *start
+end* here.
+
+A [link with * spaces *](https://example.com) and **a**b.
+
+Mixed _under *star_ and* stars.
+
+Run of four **** is not a marker **** at all.
+
+Escaped \* and *real*.

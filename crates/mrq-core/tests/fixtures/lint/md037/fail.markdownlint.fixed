@@ -1,0 +1,14 @@
+Text with *emphasis* and *emphasis* and *both*.
+
+Text with **strong** and __underscores__ and ___all three___.
+
+# Heading with *emphasis*
+
+- List with _underscore_
+
+| Table with **strong** |
+| ----------------------- |
+
+Text with *two spaces*
+
+Math like 2 *3* 4 is reported too.

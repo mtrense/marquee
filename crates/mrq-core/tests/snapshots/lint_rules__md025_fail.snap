@@ -1,0 +1,7 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+7:1 MD025 Multiple top-level headings in the same document [Context: "Another title"]
+9:1 MD025 Multiple top-level headings in the same document [Context: "Setext title with a rather lon..."]
+12:3 MD025 Multiple top-level headings in the same document [Context: "Title in a list"]

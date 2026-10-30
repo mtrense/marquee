@@ -1,0 +1,12 @@
+Text
+```text
+code
+```
+
+- Item
+  ```text
+  code in a list item is not checked
+  ```
+- Item
+
+<!-- markdownlint-configure-file { "MD031": { "list_items": false } } -->

@@ -1,0 +1,3 @@
+7 MD025 Multiple top-level headings in the same document [Context: "Another title"]
+9 MD025 Multiple top-level headings in the same document [Context: "Setext title with a rather lon..."]
+12 MD025 Multiple top-level headings in the same document [Context: "Title in a list"]

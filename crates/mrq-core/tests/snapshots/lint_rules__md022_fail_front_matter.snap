@@ -1,0 +1,15 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+4:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "# Heading 1"]
+--- fixed ---
+---
+title: Front matter
+---
+
+# Heading 1
+
+Text
+
+<!-- markdownlint-configure-file { "MD022": { "include_front_matter": true } } -->

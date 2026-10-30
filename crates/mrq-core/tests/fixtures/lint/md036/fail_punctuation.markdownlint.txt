@@ -1,0 +1,1 @@
+1 MD036 Emphasis used instead of a heading [Context: "Bold with a period."]

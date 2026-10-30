@@ -1,0 +1,19 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:1 MD031 Fenced code blocks should be surrounded by blank lines [Context: "```text"]
+--- fixed ---
+Text
+
+```text
+code
+```
+
+- Item
+  ```text
+  code in a list item is not checked
+  ```
+- Item
+
+<!-- markdownlint-configure-file { "MD031": { "list_items": false } } -->

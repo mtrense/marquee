@@ -1,0 +1,5 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:3 MD036 Emphasis used instead of a heading [Context: "Bold with a period."]

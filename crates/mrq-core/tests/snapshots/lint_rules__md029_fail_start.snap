@@ -1,0 +1,20 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD029 Ordered list item prefix [Expected: 1; Actual: 3; Style: 1/2/3]
+4:1 MD029 Ordered list item prefix [Expected: 2; Actual: 4; Style: 1/2/3]
+8:2 MD029 Ordered list item prefix [Expected: 1; Actual: 8; Style: 1/2/3]
+9:2 MD029 Ordered list item prefix [Expected: 2; Actual: 9; Style: 1/2/3]
+10:1 MD029 Ordered list item prefix [Expected: 3; Actual: 10; Style: 1/2/3]
+--- fixed ---
+Lists have to start at one (or zero), even if their numbers increase.
+
+1. Three
+2. Four
+
+Text
+
+ 1. Eight
+ 2. Nine
+ 3. Ten

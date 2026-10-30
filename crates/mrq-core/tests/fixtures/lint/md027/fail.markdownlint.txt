@@ -1,0 +1,7 @@
+1:3 MD027 Multiple spaces after blockquote symbol [Context: ">  Two spaces"]
+2:3 MD027 Multiple spaces after blockquote symbol [Context: ">   Three spaces in a continua..."]
+4:5 MD027 Multiple spaces after blockquote symbol [Context: "> >  Nested quote"]
+6:3 MD027 Multiple spaces after blockquote symbol [Context: ">  - List in a quote"]
+8:3 MD027 Multiple spaces after blockquote symbol [Context: ">  1. Ordered list in a quote"]
+10:5 MD027 Multiple spaces after blockquote symbol [Context: "- >  Quote in a list"]
+12:3 MD027 Multiple spaces after blockquote symbol [Context: ">  # Heading in a quote"]

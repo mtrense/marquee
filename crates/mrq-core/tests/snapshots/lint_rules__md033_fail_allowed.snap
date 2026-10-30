@@ -1,0 +1,6 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:36 MD033 Inline HTML [Element: i]
+3:40 MD033 Inline HTML [Element: b]

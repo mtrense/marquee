@@ -1,0 +1,2 @@
+8 MD032 Lists should be surrounded by blank lines [Context: "1. An ordered list starting at..."]
+15 MD032 Lists should be surrounded by blank lines [Context: "- Item right after a table"]

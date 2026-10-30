@@ -1,0 +1,24 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD023 Headings must start at the beginning of the line [Context: "  # Indented heading 1"]
+5:1 MD023 Headings must start at the beginning of the line [Context: "   ## Indented heading 2 with ..."]
+7:1 MD023 Headings must start at the beginning of the line [Context: " Setext heading"]
+10:3 MD023 Headings must start at the beginning of the line [Context: ">  ### Indented in a quote"]
+14:3 MD023 Headings must start at the beginning of the line [Context: "   #### Indented in a list ite..."]
+--- fixed ---
+Some text
+
+# Indented heading 1
+
+## Indented heading 2 with a rather long text to shorten
+
+Setext heading
+ --------------
+
+> ### Indented in a quote
+
+- Item
+
+  #### Indented in a list item

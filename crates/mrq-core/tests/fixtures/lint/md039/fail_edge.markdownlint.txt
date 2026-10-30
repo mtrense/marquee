@@ -1,0 +1,6 @@
+1:4 MD039 Spaces inside link text [Context: "[ `code` ]"]
+1:11 MD039 Spaces inside link text [Context: "[ `code` ]"]
+1:43 MD039 Spaces inside link text [Context: "[ ![image](image.png) ]"]
+1:63 MD039 Spaces inside link text [Context: "[ ![image](image.png) ]"]
+4:10 MD039 Spaces inside link text [Context: "[label over two lines ]"]
+4:49 MD039 Spaces inside link text [Context: "[shortcut ]"]

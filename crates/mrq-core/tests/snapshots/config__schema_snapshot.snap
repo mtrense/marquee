@@ -446,6 +446,457 @@ expression: "mrq_core::config::schema_json()"
             }
           ]
         },
+        "MD021": {
+          "description": "MD021: Multiple spaces inside hashes on closed atx style heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-multiple-space-closed-atx": {
+          "description": "MD021: Multiple spaces inside hashes on closed atx style heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD022": {
+          "description": "MD022: Headings should be surrounded by blank lines",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md022Options"
+            }
+          ]
+        },
+        "blanks-around-headings": {
+          "description": "MD022: Headings should be surrounded by blank lines",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md022Options"
+            }
+          ]
+        },
+        "MD023": {
+          "description": "MD023: Headings must start at the beginning of the line",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "heading-start-left": {
+          "description": "MD023: Headings must start at the beginning of the line",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD024": {
+          "description": "MD024: Multiple headings with the same content",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md024Options"
+            }
+          ]
+        },
+        "no-duplicate-heading": {
+          "description": "MD024: Multiple headings with the same content",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md024Options"
+            }
+          ]
+        },
+        "MD025": {
+          "description": "MD025: Multiple top-level headings in the same document",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md025Options"
+            }
+          ]
+        },
+        "single-title": {
+          "description": "MD025: Multiple top-level headings in the same document",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md025Options"
+            }
+          ]
+        },
+        "single-h1": {
+          "description": "MD025: Multiple top-level headings in the same document",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md025Options"
+            }
+          ]
+        },
+        "MD026": {
+          "description": "MD026: Trailing punctuation in heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md026Options"
+            }
+          ]
+        },
+        "no-trailing-punctuation": {
+          "description": "MD026: Trailing punctuation in heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md026Options"
+            }
+          ]
+        },
+        "MD027": {
+          "description": "MD027: Multiple spaces after blockquote symbol",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md027Options"
+            }
+          ]
+        },
+        "no-multiple-space-blockquote": {
+          "description": "MD027: Multiple spaces after blockquote symbol",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md027Options"
+            }
+          ]
+        },
+        "MD028": {
+          "description": "MD028: Blank line inside blockquote",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-blanks-blockquote": {
+          "description": "MD028: Blank line inside blockquote",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD029": {
+          "description": "MD029: Ordered list item prefix",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md029Options"
+            }
+          ]
+        },
+        "ol-prefix": {
+          "description": "MD029: Ordered list item prefix",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md029Options"
+            }
+          ]
+        },
+        "MD030": {
+          "description": "MD030: Spaces after list markers",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md030Options"
+            }
+          ]
+        },
+        "list-marker-space": {
+          "description": "MD030: Spaces after list markers",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md030Options"
+            }
+          ]
+        },
+        "MD031": {
+          "description": "MD031: Fenced code blocks should be surrounded by blank lines",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md031Options"
+            }
+          ]
+        },
+        "blanks-around-fences": {
+          "description": "MD031: Fenced code blocks should be surrounded by blank lines",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md031Options"
+            }
+          ]
+        },
+        "MD032": {
+          "description": "MD032: Lists should be surrounded by blank lines",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "blanks-around-lists": {
+          "description": "MD032: Lists should be surrounded by blank lines",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD033": {
+          "description": "MD033: Inline HTML",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md033Options"
+            }
+          ]
+        },
+        "no-inline-html": {
+          "description": "MD033: Inline HTML",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md033Options"
+            }
+          ]
+        },
+        "MD034": {
+          "description": "MD034: Bare URL used",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-bare-urls": {
+          "description": "MD034: Bare URL used",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD035": {
+          "description": "MD035: Horizontal rule style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md035Options"
+            }
+          ]
+        },
+        "hr-style": {
+          "description": "MD035: Horizontal rule style",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md035Options"
+            }
+          ]
+        },
+        "MD036": {
+          "description": "MD036: Emphasis used instead of a heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md036Options"
+            }
+          ]
+        },
+        "no-emphasis-as-heading": {
+          "description": "MD036: Emphasis used instead of a heading",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md036Options"
+            }
+          ]
+        },
+        "MD037": {
+          "description": "MD037: Spaces inside emphasis markers",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-space-in-emphasis": {
+          "description": "MD037: Spaces inside emphasis markers",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD038": {
+          "description": "MD038: Spaces inside code span elements",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-space-in-code": {
+          "description": "MD038: Spaces inside code span elements",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD039": {
+          "description": "MD039: Spaces inside link text",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-space-in-links": {
+          "description": "MD039: Spaces inside link text",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MD040": {
+          "description": "MD040: Fenced code blocks should have a language specified",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md040Options"
+            }
+          ]
+        },
+        "fenced-code-language": {
+          "description": "MD040: Fenced code blocks should have a language specified",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Md040Options"
+            }
+          ]
+        },
         "MD047": {
           "description": "MD047: Files should end with a single newline character",
           "anyOf": [
@@ -492,6 +943,14 @@ expression: "mrq_core::config::schema_json()"
             }
           ]
         },
+        "blockquote": {
+          "description": "Every rule tagged `blockquote`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
         "bullet": {
           "description": "Every rule tagged `bullet`",
           "allOf": [
@@ -502,6 +961,14 @@ expression: "mrq_core::config::schema_json()"
         },
         "code": {
           "description": "Every rule tagged `code`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "emphasis": {
+          "description": "Every rule tagged `emphasis`",
           "allOf": [
             {
               "$ref": "#/$defs/RuleSwitch"
@@ -524,8 +991,32 @@ expression: "mrq_core::config::schema_json()"
             }
           ]
         },
+        "hr": {
+          "description": "Every rule tagged `hr`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "html": {
+          "description": "Every rule tagged `html`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
         "indentation": {
           "description": "Every rule tagged `indentation`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "language": {
+          "description": "Every rule tagged `language`",
           "allOf": [
             {
               "$ref": "#/$defs/RuleSwitch"
@@ -548,6 +1039,14 @@ expression: "mrq_core::config::schema_json()"
             }
           ]
         },
+        "ol": {
+          "description": "Every rule tagged `ol`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
         "spaces": {
           "description": "Every rule tagged `spaces`",
           "allOf": [
@@ -558,6 +1057,14 @@ expression: "mrq_core::config::schema_json()"
         },
         "ul": {
           "description": "Every rule tagged `ul`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "url": {
+          "description": "Every rule tagged `url`",
           "allOf": [
             {
               "$ref": "#/$defs/RuleSwitch"
@@ -848,6 +1355,256 @@ expression: "mrq_core::config::schema_json()"
         },
         "stern": {
           "description": "Stern length checking.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md022Options": {
+      "description": "Options of MD022 `blanks-around-headings`.",
+      "type": "object",
+      "properties": {
+        "lines_above": {
+          "description": "Blank lines above heading.",
+          "$ref": "#/$defs/BlankLines",
+          "default": 1
+        },
+        "lines_below": {
+          "description": "Blank lines below heading.",
+          "$ref": "#/$defs/BlankLines",
+          "default": 1
+        },
+        "include_front_matter": {
+          "description": "Include front matter content.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "BlankLines": {
+      "description": "Blank lines for every heading, or per level (index 0 for level 1; missing levels\ntake 1). `-1` turns the check off.",
+      "anyOf": [
+        {
+          "description": "The same for every level.",
+          "type": "integer",
+          "format": "int64"
+        },
+        {
+          "description": "One count per level.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      ]
+    },
+    "Md024Options": {
+      "description": "Options of MD024 `no-duplicate-heading`.",
+      "type": "object",
+      "properties": {
+        "siblings_only": {
+          "description": "Only check sibling headings.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md025Options": {
+      "description": "Options of MD025 `single-title`.",
+      "type": "object",
+      "properties": {
+        "level": {
+          "description": "Heading level.",
+          "type": "integer",
+          "format": "uint8",
+          "minimum": 0,
+          "maximum": 255,
+          "default": 1
+        },
+        "front_matter_title": {
+          "description": "`RegExp` for matching title in front matter; empty to ignore front matter.",
+          "type": "string",
+          "default": "^\\s*\"?title\"?\\s*[:=]"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md026Options": {
+      "description": "Options of MD026 `no-trailing-punctuation`.",
+      "type": "object",
+      "properties": {
+        "punctuation": {
+          "description": "Punctuation characters.",
+          "type": "string",
+          "default": ".,;:!。，；：！"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md027Options": {
+      "description": "Options of MD027 `no-multiple-space-blockquote`.",
+      "type": "object",
+      "properties": {
+        "list_items": {
+          "description": "Include list items.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md029Options": {
+      "description": "Options of MD029 `ol-prefix`.",
+      "type": "object",
+      "properties": {
+        "style": {
+          "description": "List style.",
+          "$ref": "#/$defs/OrderedListStyle",
+          "default": "one_or_ordered"
+        }
+      },
+      "additionalProperties": false
+    },
+    "OrderedListStyle": {
+      "description": "A numbering style of MD029.",
+      "oneOf": [
+        {
+          "description": "`ordered` if the list counts up, else `one`.",
+          "type": "string",
+          "const": "one_or_ordered"
+        },
+        {
+          "description": "`1. 1. 1.`",
+          "type": "string",
+          "const": "one"
+        },
+        {
+          "description": "`1. 2. 3.` (or `0. 1. 2.`)",
+          "type": "string",
+          "const": "ordered"
+        },
+        {
+          "description": "`0. 0. 0.`",
+          "type": "string",
+          "const": "zero"
+        }
+      ]
+    },
+    "Md030Options": {
+      "description": "Options of MD030 `list-marker-space`.",
+      "type": "object",
+      "properties": {
+        "ul_single": {
+          "description": "Spaces for single-line unordered list items.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0,
+          "default": 1
+        },
+        "ol_single": {
+          "description": "Spaces for single-line ordered list items.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0,
+          "default": 1
+        },
+        "ul_multi": {
+          "description": "Spaces for multi-line unordered list items.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0,
+          "default": 1
+        },
+        "ol_multi": {
+          "description": "Spaces for multi-line ordered list items.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0,
+          "default": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md031Options": {
+      "description": "Options of MD031 `blanks-around-fences`.",
+      "type": "object",
+      "properties": {
+        "list_items": {
+          "description": "Include list items.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md033Options": {
+      "description": "Options of MD033 `no-inline-html`.",
+      "type": "object",
+      "properties": {
+        "allowed_elements": {
+          "description": "Allowed elements.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "table_allowed_elements": {
+          "description": "Allowed elements in tables; defaults to `allowed_elements`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "default": null
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md035Options": {
+      "description": "Options of MD035 `hr-style`.",
+      "type": "object",
+      "properties": {
+        "style": {
+          "description": "Horizontal rule style: `consistent` or the exact text, like `---`.",
+          "type": "string",
+          "default": "consistent"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md036Options": {
+      "description": "Options of MD036 `no-emphasis-as-heading`.",
+      "type": "object",
+      "properties": {
+        "punctuation": {
+          "description": "Punctuation characters.",
+          "type": "string",
+          "default": ".,;:!?。，；：！？"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Md040Options": {
+      "description": "Options of MD040 `fenced-code-language`.",
+      "type": "object",
+      "properties": {
+        "allowed_languages": {
+          "description": "List of languages.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "language_only": {
+          "description": "Require language only.",
           "type": "boolean",
           "default": false
         }

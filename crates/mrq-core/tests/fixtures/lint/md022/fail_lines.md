@@ -1,0 +1,17 @@
+# Heading 1
+
+Text
+
+## Heading 2
+Text
+
+Text
+
+
+### Heading 3
+
+Text
+#### Heading 4 is not checked above
+Text
+
+<!-- markdownlint-configure-file { "MD022": { "lines_above": [1, 2, 2, -1], "lines_below": [2] } } -->

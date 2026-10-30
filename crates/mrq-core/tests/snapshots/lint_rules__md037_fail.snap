@@ -1,0 +1,36 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:12 MD037 Spaces inside emphasis markers [Context: "* e"]
+1:36 MD037 Spaces inside emphasis markers [Context: "s *"]
+1:44 MD037 Spaces inside emphasis markers [Context: "* b"]
+1:49 MD037 Spaces inside emphasis markers [Context: "h *"]
+3:13 MD037 Spaces inside emphasis markers [Context: "** s"]
+3:20 MD037 Spaces inside emphasis markers [Context: "g **"]
+3:30 MD037 Spaces inside emphasis markers [Context: "__ u"]
+3:52 MD037 Spaces inside emphasis markers [Context: "___ a"]
+3:62 MD037 Spaces inside emphasis markers [Context: "e ___"]
+5:17 MD037 Spaces inside emphasis markers [Context: "* e"]
+5:26 MD037 Spaces inside emphasis markers [Context: "s *"]
+7:14 MD037 Spaces inside emphasis markers [Context: "_ u"]
+9:16 MD037 Spaces inside emphasis markers [Context: "** s"]
+9:23 MD037 Spaces inside emphasis markers [Context: "g **"]
+12:12 MD037 Spaces inside emphasis markers [Context: "*  t"]
+14:14 MD037 Spaces inside emphasis markers [Context: "* 3"]
+14:16 MD037 Spaces inside emphasis markers [Context: "3 *"]
+--- fixed ---
+Text with *emphasis* and *emphasis* and *both*.
+
+Text with **strong** and __underscores__ and ___all three___.
+
+# Heading with *emphasis*
+
+- List with _underscore_
+
+| Table with **strong** |
+| ----------------------- |
+
+Text with *two spaces*
+
+Math like 2 *3* 4 is reported too.

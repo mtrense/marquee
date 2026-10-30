@@ -1,0 +1,5 @@
+1:1 MD033 Inline HTML [Element: p]
+3:1 MD033 Inline HTML [Element: ?php]
+5:1 MD033 Inline HTML [Element: img]
+8:1 MD033 Inline HTML [Element: custom-element]
+14:3 MD033 Inline HTML [Element: ul-item]

@@ -1,0 +1,10 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD024 Multiple headings with the same content [Context: "Heading"]
+5:1 MD024 Multiple headings with the same content [Context: "Heading"]
+8:1 MD024 Multiple headings with the same content [Context: "Heading"]
+12:1 MD024 Multiple headings with the same content [Context: "Heading with html"]
+16:1 MD024 Multiple headings with the same content [Context: "Another heading with a rather ..."]
+18:3 MD024 Multiple headings with the same content [Context: "Heading"]

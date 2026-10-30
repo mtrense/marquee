@@ -1,0 +1,37 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:1 MD032 Lists should be surrounded by blank lines [Context: "- Item"]
+6:1 MD032 Lists should be surrounded by blank lines [Context: "2. Item"]
+10:1 MD032 Lists should be surrounded by blank lines [Context: "> - Quoted list"]
+16:1 MD032 Lists should be surrounded by blank lines [Context: "Paragraph in the item"]
+19:1 MD032 Lists should be surrounded by blank lines [Context: "- Item"]
+--- fixed ---
+Text
+
+- Item
+- Item
+
+1. Item
+2. Item
+
+---
+
+> Quoted text
+>
+> - Quoted list
+>
+> Text
+
+* Item
+
+  Paragraph in the item
+
+# Heading
+
+- Item
+
+```text
+code
+```

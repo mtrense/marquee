@@ -1,0 +1,2 @@
+3 MD035 Horizontal rule style [Expected: ***; Actual: ---]
+11 MD035 Horizontal rule style [Expected: ***; Actual: * * *]

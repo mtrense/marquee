@@ -1,0 +1,30 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:1 MD022 Headings should be surrounded by blank lines [Expected: 2; Actual: 1; Below] [Context: "# Heading 1"]
+5:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "## Heading 2"]
+5:1 MD022 Headings should be surrounded by blank lines [Expected: 2; Actual: 1; Above] [Context: "## Heading 2"]
+14:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "#### Heading 4 is not checked above"]
+--- fixed ---
+# Heading 1
+
+
+Text
+
+
+## Heading 2
+
+Text
+
+Text
+
+
+### Heading 3
+
+Text
+#### Heading 4 is not checked above
+
+Text
+
+<!-- markdownlint-configure-file { "MD022": { "lines_above": [1, 2, 2, -1], "lines_below": [2] } } -->

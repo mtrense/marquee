@@ -1,0 +1,8 @@
+---
+title: Front matter
+---
+# Heading 1
+
+Text
+
+<!-- markdownlint-configure-file { "MD022": { "include_front_matter": true } } -->

@@ -1,0 +1,4 @@
+1:36 MD026 Trailing punctuation in heading [Punctuation: '.']
+3:38 MD026 Trailing punctuation in heading [Punctuation: ':.']
+5:25 MD026 Trailing punctuation in heading [Punctuation: '.']
+10:10 MD026 Trailing punctuation in heading [Punctuation: '!']

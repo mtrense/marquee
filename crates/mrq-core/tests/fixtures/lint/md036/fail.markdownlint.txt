@@ -1,0 +1,5 @@
+1 MD036 Emphasis used instead of a heading [Context: "Bold as a heading"]
+5 MD036 Emphasis used instead of a heading [Context: "Emphasis as a heading"]
+7 MD036 Emphasis used instead of a heading [Context: "Underscores"]
+9 MD036 Emphasis used instead of a heading [Context: "Underscore emphasis with a rat..."]
+11 MD036 Emphasis used instead of a heading [Context: "Bold followed by HTML"]

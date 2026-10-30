@@ -1,0 +1,33 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:3 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "> # Quoted heading right below text"]
+2:3 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "> # Quoted heading right below text"]
+6:5 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "> > ## Nested heading"]
+12:3 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "Setext in a list"]
+16:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "### Heading with trailing hashes ###"]
+17:1 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Above] [Context: "#### Heading at the end"]
+--- fixed ---
+Text
+
+> # Quoted heading right below text
+>
+> Quoted text
+
+> > Nested quote
+> >
+> > ## Nested heading
+>
+> Text
+
+- Item
+
+  Setext in a list
+  ----------------
+
+  Text
+
+### Heading with trailing hashes ###
+
+#### Heading at the end

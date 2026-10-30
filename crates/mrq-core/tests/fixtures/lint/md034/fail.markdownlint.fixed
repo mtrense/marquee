@@ -1,0 +1,14 @@
+# Bare URL <https://example.com/heading>
+
+Visit <https://example.com> or <www.example.com> today.
+
+Write to <user@example.com>.
+
+A long one: <https://example.com/a/rather/long/path/that/needs/shortening?query=1>
+
+- In a list: <http://example.org>
+> In a quote: <https://example.net>
+
+| Table                |
+| -------------------- |
+| <https://example.com/> |

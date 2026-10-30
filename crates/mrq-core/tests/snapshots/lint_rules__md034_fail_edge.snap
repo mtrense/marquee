@@ -1,0 +1,17 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:77 MD034 Bare URL used [Context: "https://example.com/after"]
+3:92 MD034 Bare URL used [Context: "https://example.com/out"]
+5:21 MD034 Bare URL used [Context: "https://example.com/unclosed"]
+7:11 MD034 Bare URL used [Context: "https://example.com/emphasis"]
+7:83 MD034 Bare URL used [Context: "www.example.org"]
+--- fixed ---
+Inside <span>an element https://example.com/inside</span> is fine, after it <https://example.com/after> is not.
+
+<b><b>nested https://example.com/nested</b> still inside https://example.com/still</b> but <https://example.com/out>.
+
+An unclosed <i> tag <https://example.com/unclosed> does not hide it.
+
+*Emphasis <https://example.com/emphasis>* and [a link](https://example.com) next to <www.example.org>.

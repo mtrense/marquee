@@ -1,0 +1,16 @@
+# Heading.
+
+## Heading with several !!!
+
+### Closed heading: ###
+
+#### Space before the colon :
+
+##### Full-width punctuation。
+
+Setext heading;
+---------------
+
+- ###### Heading in a list,
+
+> # Heading in a quote!

@@ -1,0 +1,42 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+12:1 MD030 Spaces after list markers [Expected: 3; Actual: 1]
+14:1 MD030 Spaces after list markers [Expected: 3; Actual: 1]
+25:1 MD030 Spaces after list markers [Expected: 2; Actual: 1]
+30:1 MD030 Spaces after list markers [Expected: 2; Actual: 1]
+--- fixed ---
+- Single
+- line
+
+Text
+
+-   Multi
+
+-   line
+
+Text
+
+-   Wrong
+
+-   spacing
+
+Text
+
+1. Single
+2. line
+
+Text
+
+1.  Multi
+    line
+2.  Wrong
+    spacing
+
+Text
+
+10.  Ten
+    lines
+
+<!-- markdownlint-configure-file { "MD030": { "ul_single": 1, "ul_multi": 3, "ol_single": 1, "ol_multi": 2 } } -->

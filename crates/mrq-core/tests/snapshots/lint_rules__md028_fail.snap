@@ -1,0 +1,9 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:1 MD028 Blank line inside blockquote
+4:1 MD028 Blank line inside blockquote
+5:1 MD028 Blank line inside blockquote
+9:1 MD028 Blank line inside blockquote
+13:1 MD028 Blank line inside blockquote

@@ -1,0 +1,17 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:33 MD038 Spaces inside code span elements [Context: "``  `tick``"]
+1:52 MD038 Spaces inside code span elements [Context: "`` `tick  ``"]
+1:61 MD038 Spaces inside code span elements [Context: "``  `both`  ``"]
+1:68 MD038 Spaces inside code span elements [Context: "``  `both`  ``"]
+3:9 MD038 Spaces inside code span elements [Context: "`	tab`"]
+5:37 MD038 Spaces inside code span elements [Context: "``   both   ``"]
+5:44 MD038 Spaces inside code span elements [Context: "``   both   ``"]
+--- fixed ---
+Backticks next to the spaces: `` `tick``, `` `tick ``, `` `both` ``.
+
+A tab: `tab`, and a padded `` ` `` is fine.
+
+Spaces on both ends with padding: ``both``.

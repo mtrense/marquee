@@ -1,0 +1,8 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MD040 Fenced code blocks should have a language specified [Context: "```"]
+7:1 MD040 Fenced code blocks should have a language specified [Context: "~~~"]
+13:3 MD040 Fenced code blocks should have a language specified [Context: "````"]
+17:3 MD040 Fenced code blocks should have a language specified [Context: "```   "]

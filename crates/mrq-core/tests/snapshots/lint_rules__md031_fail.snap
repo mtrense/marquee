@@ -1,0 +1,41 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:1 MD031 Fenced code blocks should be surrounded by blank lines [Context: "```text"]
+4:1 MD031 Fenced code blocks should be surrounded by blank lines [Context: "```"]
+9:1 MD031 Fenced code blocks should be surrounded by blank lines [Context: "~~~"]
+13:1 MD031 Fenced code blocks should be surrounded by blank lines [Context: "> ```text"]
+15:1 MD031 Fenced code blocks should be surrounded by blank lines [Context: "> ```"]
+19:1 MD031 Fenced code blocks should be surrounded by blank lines [Context: "```text"]
+21:1 MD031 Fenced code blocks should be surrounded by blank lines [Context: "```"]
+--- fixed ---
+Text
+
+```text
+code
+```
+
+Text
+
+~~~
+tildes without a language and a rather long line
+~~~
+
+Text
+
+> Quoted text
+>
+> ```text
+> quoted code
+> ```
+>
+> Quoted text
+
+- Item
+
+  ```text
+  code in a list item
+  ```
+
+- Item

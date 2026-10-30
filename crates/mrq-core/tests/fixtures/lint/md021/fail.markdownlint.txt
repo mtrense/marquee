@@ -1,0 +1,8 @@
+1:3 MD021 Multiple spaces inside hashes on closed atx style heading [Context: "#  Extra space after the openi..."]
+3:42 MD021 Multiple spaces inside hashes on closed atx style heading [Context: "... before the closing hashes  ##"]
+5:5 MD021 Multiple spaces inside hashes on closed atx style heading [Context: "###   Both sides   ###"]
+5:18 MD021 Multiple spaces inside hashes on closed atx style heading [Context: "###   Both sides   ###"]
+7:6 MD021 Multiple spaces inside hashes on closed atx style heading [Context: "####		Tabs	####"]
+9:9 MD021 Multiple spaces inside hashes on closed atx style heading [Context: "#####  Heading in a list item ..."]
+11:10 MD021 Multiple spaces inside hashes on closed atx style heading [Context: "######  Heading in a quote wit..."]
+11:58 MD021 Multiple spaces inside hashes on closed atx style heading [Context: "... rather long text too   ######"]

@@ -1,0 +1,6 @@
+3 MD024 Multiple headings with the same content [Context: "Heading"]
+5 MD024 Multiple headings with the same content [Context: "Heading"]
+8 MD024 Multiple headings with the same content [Context: "Heading"]
+12 MD024 Multiple headings with the same content [Context: "Heading with html"]
+16 MD024 Multiple headings with the same content [Context: "Another heading with a rather ..."]
+18 MD024 Multiple headings with the same content [Context: "Heading"]

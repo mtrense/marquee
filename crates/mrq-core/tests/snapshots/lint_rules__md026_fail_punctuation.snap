@@ -1,0 +1,14 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:11 MD026 Trailing punctuation in heading [Punctuation: '?']
+5:27 MD026 Trailing punctuation in heading [Punctuation: ']']
+--- fixed ---
+# Heading.
+
+## Heading
+
+### Heading with a bracket
+
+<!-- markdownlint-configure-file { "MD026": { "punctuation": "?]" } } -->

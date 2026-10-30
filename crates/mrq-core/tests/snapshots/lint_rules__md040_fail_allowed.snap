@@ -1,0 +1,8 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+5:1 MD040 Fenced code blocks should have a language specified ["python" is not allowed]
+9:1 MD040 Fenced code blocks should have a language specified ["JS" is not allowed]
+13:1 MD040 Fenced code blocks should have a language specified [Info string contains more than language: "```rust title="main.rs""]
+17:1 MD040 Fenced code blocks should have a language specified [Context: "```"]

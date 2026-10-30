@@ -1,0 +1,28 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+8:1 MD032 Lists should be surrounded by blank lines [Context: "1. An ordered list starting at..."]
+15:1 MD032 Lists should be surrounded by blank lines [Context: "- Item right after a table"]
+--- fixed ---
+- Item
+
+  > Quote in the item
+  > - List in a quote in a list
+  > Lazy text
+
+Text
+
+1. An ordered list starting at 1 interrupts a paragraph
+
+Text
+2. One starting elsewhere does not
+
+| Table |
+| ----- |
+
+- Item right after a table
+
+> > - Nested quote list
+> > Lazy
+> Text

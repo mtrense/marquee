@@ -1,0 +1,8 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+7:1 MD035 Horizontal rule style [Expected: ---; Actual: ***]
+11:1 MD035 Horizontal rule style [Expected: ---; Actual: - - -]
+15:1 MD035 Horizontal rule style [Expected: ---; Actual: ___]
+19:1 MD035 Horizontal rule style [Expected: ---; Actual: ---   ]

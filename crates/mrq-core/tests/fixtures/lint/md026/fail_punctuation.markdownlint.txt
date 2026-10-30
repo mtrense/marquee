@@ -1,0 +1,2 @@
+3:11 MD026 Trailing punctuation in heading [Punctuation: '?']
+5:27 MD026 Trailing punctuation in heading [Punctuation: ']']

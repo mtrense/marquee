@@ -1,0 +1,10 @@
+# Heading with [link](https://example.com)
+
+A [leading](https://example.com), a [trailing](https://example.com) and a [both](https://example.com).
+
+A [reference][ref] and a [collapsed][].
+
+- List with [link with a rather long text to shorten](https://example.com)
+
+[ collapsed ]: https://example.com
+[ref]: https://example.com

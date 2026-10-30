@@ -81,13 +81,16 @@ fn findings(doc: &Document, diagnostics: &[Diagnostic]) -> Vec<(usize, usize, St
     findings
 }
 
-/// The text after applying every fix whose edits do not overlap an earlier one.
+/// The text after applying every fix whose edits do not overlap an earlier one. Like
+/// markdownlint, identical fixes (two findings inserting the same blank line) apply
+/// once.
 fn apply_fixes(doc: &Document, diagnostics: &[Diagnostic]) -> String {
     let mut fixes: Vec<&Vec<TextEdit>> = diagnostics
         .iter()
         .filter_map(|diag| diag.fix.as_ref().map(|fix| &fix.edits))
         .collect();
     fixes.sort_by_key(|edits| edits.iter().map(|edit| edit.range.start).min());
+    fixes.dedup();
     let mut edits = Vec::new();
     let mut end = 0;
     for fix in fixes {

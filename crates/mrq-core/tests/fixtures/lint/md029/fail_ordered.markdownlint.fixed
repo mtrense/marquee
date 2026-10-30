@@ -1,0 +1,16 @@
+1. One
+2. One
+3. One
+
+Text
+
+ 1. Nine
+ 2. Nine
+ 3. Nine
+
+Text
+
+0. Zero
+1. Zero
+
+<!-- markdownlint-configure-file { "MD029": { "style": "ordered" } } -->

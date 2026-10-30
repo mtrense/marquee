@@ -1,0 +1,17 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+2:1 MD029 Ordered list item prefix [Expected: 0; Actual: 1; Style: 0/0/0]
+6:1 MD029 Ordered list item prefix [Expected: 0; Actual: 1; Style: 0/0/0]
+7:1 MD029 Ordered list item prefix [Expected: 0; Actual: 1; Style: 0/0/0]
+--- fixed ---
+0. Zero
+0. One
+
+Text
+
+0) One
+0) One
+
+<!-- markdownlint-configure-file { "MD029": { "style": "zero" } } -->

@@ -1,0 +1,4 @@
+3 MD040 Fenced code blocks should have a language specified [Context: "```"]
+7 MD040 Fenced code blocks should have a language specified [Context: "~~~"]
+13 MD040 Fenced code blocks should have a language specified [Context: "````"]
+17 MD040 Fenced code blocks should have a language specified [Context: "```   "]

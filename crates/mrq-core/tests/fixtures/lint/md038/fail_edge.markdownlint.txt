@@ -1,0 +1,7 @@
+1:33 MD038 Spaces inside code span elements [Context: "``  `tick``"]
+1:52 MD038 Spaces inside code span elements [Context: "`` `tick  ``"]
+1:61 MD038 Spaces inside code span elements [Context: "``  `both`  ``"]
+1:68 MD038 Spaces inside code span elements [Context: "``  `both`  ``"]
+3:9 MD038 Spaces inside code span elements [Context: "`	tab`"]
+5:37 MD038 Spaces inside code span elements [Context: "``   both   ``"]
+5:44 MD038 Spaces inside code span elements [Context: "``   both   ``"]

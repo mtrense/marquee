@@ -1,0 +1,4 @@
+1 MD022 Headings should be surrounded by blank lines [Expected: 2; Actual: 1; Below] [Context: "# Heading 1"]
+5 MD022 Headings should be surrounded by blank lines [Expected: 2; Actual: 1; Above] [Context: "## Heading 2"]
+5 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "## Heading 2"]
+14 MD022 Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "#### Heading 4 is not checked above"]

@@ -1,0 +1,17 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:4 MD039 Spaces inside link text [Context: "[ `code` ]"]
+1:11 MD039 Spaces inside link text [Context: "[ `code` ]"]
+1:43 MD039 Spaces inside link text [Context: "[ ![image](image.png) ]"]
+1:63 MD039 Spaces inside link text [Context: "[ ![image](image.png) ]"]
+4:10 MD039 Spaces inside link text [Context: "[label over two lines ]"]
+4:49 MD039 Spaces inside link text [Context: "[shortcut ]"]
+--- fixed ---
+A [`code`](https://example.com) and an [![image](image.png)](https://example.com).
+
+A [label over
+two lines](https://example.com) and a [shortcut] link.
+
+[shortcut]: https://example.com

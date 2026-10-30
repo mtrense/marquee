@@ -1,0 +1,5 @@
+1:77 MD034 Bare URL used [Context: "https://example.com/after"]
+3:92 MD034 Bare URL used [Context: "https://example.com/out"]
+5:21 MD034 Bare URL used [Context: "https://example.com/unclosed"]
+7:11 MD034 Bare URL used [Context: "https://example.com/emphasis"]
+7:83 MD034 Bare URL used [Context: "www.example.org"]

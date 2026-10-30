@@ -1,0 +1,8 @@
+1:12 MD034 Bare URL used [Context: "https://example.com/heading"]
+3:7 MD034 Bare URL used [Context: "https://example.com"]
+3:30 MD034 Bare URL used [Context: "www.example.com"]
+5:10 MD034 Bare URL used [Context: "user@example.com"]
+7:13 MD034 Bare URL used [Context: "https://example.com/a/rather/l..."]
+9:14 MD034 Bare URL used [Context: "http://example.org"]
+10:15 MD034 Bare URL used [Context: "https://example.net"]
+14:3 MD034 Bare URL used [Context: "https://example.com/"]

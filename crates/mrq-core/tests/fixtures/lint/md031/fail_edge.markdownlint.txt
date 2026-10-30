@@ -1,0 +1,5 @@
+2 MD031 Fenced code blocks should be surrounded by blank lines [Context: "> > ```text"]
+4 MD031 Fenced code blocks should be surrounded by blank lines [Context: "> > ```"]
+8 MD031 Fenced code blocks should be surrounded by blank lines [Context: "```text"]
+10 MD031 Fenced code blocks should be surrounded by blank lines [Context: "```"]
+18 MD031 Fenced code blocks should be surrounded by blank lines [Context: "```text"]

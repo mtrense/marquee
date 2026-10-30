@@ -1,0 +1,20 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:36 MD026 Trailing punctuation in heading [Punctuation: '.']
+3:38 MD026 Trailing punctuation in heading [Punctuation: ':.']
+5:25 MD026 Trailing punctuation in heading [Punctuation: '.']
+10:10 MD026 Trailing punctuation in heading [Punctuation: '!']
+--- fixed ---
+# Trailing spaces after punctuation   
+
+## Emoji code then punctuation :smile
+
+### Escaped punctuation\
+
+#### Emphasis *at the end.*
+
+Setext over
+two lines
+==========

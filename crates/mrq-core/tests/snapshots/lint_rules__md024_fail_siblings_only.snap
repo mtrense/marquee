@@ -1,0 +1,6 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+9:1 MD024 Multiple headings with the same content [Context: "Added"]
+17:1 MD024 Multiple headings with the same content [Context: "Version 2"]
