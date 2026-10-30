@@ -27,6 +27,8 @@ clap_complete.workspace = true
 assert_cmd.workspace = true
 predicates.workspace = true
 insta.workspace = true
+tempfile.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true

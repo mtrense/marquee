@@ -1,0 +1,39 @@
+---
+source: crates/mrq-cli/tests/config.rs
+expression: "tree.stdout(&[\"--flavor\", \"commonmark\", \"config\", \"show\", \"--origin\"])"
+---
+flavor: commonmark  # cli
+fmt:
+  code_fence: "```"  # default
+  code_formatters: {}  # default
+  emphasis: "_"  # [TMP]/user/config.yaml:4
+  frontmatter: preserve  # default
+  list_marker: "-"  # default
+  ordered_list: ordered  # default
+  strong: "**"  # default
+  width: 72  # [TMP]/user/config.yaml:3
+  wrap: sentence  # [TMP]/proj/docs/.mrq.yaml:2
+ignore:
+  - "vendor/**"  # [TMP]/proj/.mrq.yaml:2
+  - CHANGELOG.md  # [TMP]/proj/.mrq.yaml:2
+include:
+  allow_remote: false  # default
+lint:
+  extends: default  # default
+  rules:
+    MD013:
+      line_length: 120  # [TMP]/proj/.mrq.yaml:5
+    MD041: false  # [TMP]/proj/.mrq.yaml:6
+render:
+  diagrams:
+    commands: {}  # default
+    kroki:
+      enabled: false  # default
+      url: "https://kroki.io"  # default
+  style: null  # default
+validate:
+  external: false  # default
+  external_exclude: []  # default
+  frontmatter:
+    - files: "blog/**/*.md"  # [TMP]/proj/.mrq.yaml:9
+      schema: "./post.schema.json"  # [TMP]/proj/.mrq.yaml:10

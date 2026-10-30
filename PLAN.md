@@ -141,7 +141,7 @@ flowchart LR
 - [x] **M0.5 Source and edits.** `mrq_core::source`: `SourceFile`, line index, byte↔(line, col) in UTF-8 and UTF-16, `TextEdit`, `apply_edits` with conflict detection. **AC:** unit and proptest coverage, including multi-byte characters and CRLF.
 - [x] **M0.6 Diagnostics.** `Diagnostic`, `Severity`, `Label`, `Fix`. Emitters for human (miette), json, ndjson, sarif and github, plus automatic github selection when `GITHUB_ACTIONS=true`. **AC:** snapshot tests for every emitter, and SARIF output validates against the 2.1.0 schema.
 - [x] **M0.7 Input resolution.** `mrq_core::input`: files, directories (via `ignore`, respecting `.gitignore` and the config `ignore`), globs, `-`. Deterministic ordering. **AC:** tests with temp directory trees. Stdin is detected and marked as non-writable.
-- [ ] **M0.8 Config.** `.mrq.yaml` structs (all sections from the README, `#[serde(deny_unknown_fields)]`), layered loading with figment (user config, then ancestors with the closest winning, then CLI), provenance in errors, `mrq config show [--origin]`, and `mrq config schema` that prints the JSON Schema via schemars. **AC:** layering tests. An unknown key produces an error naming the file and line.
+- [x] **M0.8 Config.** `.mrq.yaml` structs (all sections from the README, `#[serde(deny_unknown_fields)]`), layered loading with figment (user config, then ancestors with the closest winning, then CLI), provenance in errors, `mrq config show [--origin]`, and `mrq config schema` that prints the JSON Schema via schemars. **AC:** layering tests. An unknown key produces an error naming the file and line.
 
 ### M1: Document model
 

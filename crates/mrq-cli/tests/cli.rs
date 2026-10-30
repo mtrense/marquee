@@ -89,8 +89,6 @@ fn stubbed_subcommands_report_not_implemented_and_exit_2() {
         &["diff", "old.md", "new.md"],
         &["show"],
         &["lsp"],
-        &["config", "show"],
-        &["config", "schema"],
     ];
     for args in invocations {
         mrq()

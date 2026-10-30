@@ -1,0 +1,13 @@
+---
+source: crates/mrq-cli/tests/config.rs
+expression: tree.redact(&out.stderr)
+---
+config
+
+  × unknown key `wrapp` in `fmt`; expected one of `wrap`, `width`, `emphasis`, `strong`,
+  │ `list_marker`, `ordered_list`, `code_fence`, `frontmatter`, `code_formatters`
+   ╭─[[TMP]/proj/.mrq.yaml:4:3]
+ 3 │   width: 80
+ 4 │   wrapp: never
+   ·   ─────
+   ╰────

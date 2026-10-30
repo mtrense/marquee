@@ -1,0 +1,421 @@
+---
+source: crates/mrq-core/tests/config.rs
+expression: "mrq_core::config::schema_json()"
+---
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "mrq configuration (.mrq.yaml)",
+  "description": "The effective configuration of mrq (`.mrq.yaml`).",
+  "type": "object",
+  "properties": {
+    "flavor": {
+      "description": "Markdown flavor used when neither `--flavor` nor frontmatter `mrq.flavor` picks one.",
+      "$ref": "#/$defs/FlavorName",
+      "default": "gfm"
+    },
+    "fmt": {
+      "description": "`mrq fmt` settings.",
+      "$ref": "#/$defs/FmtConfig",
+      "default": {
+        "code_fence": "```",
+        "code_formatters": {},
+        "emphasis": "*",
+        "frontmatter": "preserve",
+        "list_marker": "-",
+        "ordered_list": "ordered",
+        "strong": "**",
+        "width": 80,
+        "wrap": "preserve"
+      }
+    },
+    "ignore": {
+      "description": "Globs of files and directories to skip when walking directories.",
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "include": {
+      "description": "`mrq:include` settings.",
+      "$ref": "#/$defs/IncludeConfig",
+      "default": {
+        "allow_remote": false
+      }
+    },
+    "lint": {
+      "description": "`mrq lint` settings.",
+      "$ref": "#/$defs/LintConfig",
+      "default": {
+        "extends": "default",
+        "rules": {}
+      }
+    },
+    "render": {
+      "description": "`mrq render` settings.",
+      "$ref": "#/$defs/RenderConfig",
+      "default": {
+        "diagrams": {
+          "commands": {},
+          "kroki": {
+            "enabled": false,
+            "url": "https://kroki.io"
+          }
+        },
+        "style": null
+      }
+    },
+    "validate": {
+      "description": "`mrq validate` settings.",
+      "$ref": "#/$defs/ValidateConfig",
+      "default": {
+        "external": false,
+        "external_exclude": [],
+        "frontmatter": []
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "CodeFence": {
+      "description": "Code fence of `fmt.code_fence`.",
+      "type": "string",
+      "enum": [
+        "```",
+        "~~~"
+      ]
+    },
+    "DiagramsConfig": {
+      "description": "`render.diagrams` section.",
+      "type": "object",
+      "properties": {
+        "commands": {
+          "description": "Custom renderers keyed by fence language: a command and its arguments, reading\nthe diagram source on stdin and writing SVG to stdout.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default": {}
+        },
+        "kroki": {
+          "description": "The Kroki diagram service, tried after built-in renderers and commands.",
+          "$ref": "#/$defs/KrokiConfig",
+          "default": {
+            "enabled": false,
+            "url": "https://kroki.io"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Emphasis": {
+      "description": "Emphasis marker of `fmt.emphasis`.",
+      "type": "string",
+      "enum": [
+        "*",
+        "_"
+      ]
+    },
+    "FlavorName": {
+      "description": "A built-in Markdown flavor.",
+      "oneOf": [
+        {
+          "description": "Strict `CommonMark`.",
+          "type": "string",
+          "const": "commonmark"
+        },
+        {
+          "description": "GitHub Flavored Markdown.",
+          "type": "string",
+          "const": "gfm"
+        },
+        {
+          "description": "gfm + wikilinks, embeds, callouts, tags, math, comments.",
+          "type": "string",
+          "const": "obsidian"
+        },
+        {
+          "description": "gfm + admonitions, heading attributes, definition lists, math, abbreviations.",
+          "type": "string",
+          "const": "mkdocs"
+        }
+      ]
+    },
+    "FmtConfig": {
+      "description": "`fmt` section.",
+      "type": "object",
+      "properties": {
+        "code_fence": {
+          "description": "Code fence.",
+          "$ref": "#/$defs/CodeFence",
+          "default": "```"
+        },
+        "code_formatters": {
+          "description": "External formatters for fenced code, keyed by language: a command and its\narguments, reading the code on stdin and writing the result to stdout.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "default": {}
+        },
+        "emphasis": {
+          "description": "Emphasis marker.",
+          "$ref": "#/$defs/Emphasis",
+          "default": "*"
+        },
+        "frontmatter": {
+          "description": "Frontmatter handling.",
+          "$ref": "#/$defs/FrontmatterFormat",
+          "default": "preserve"
+        },
+        "list_marker": {
+          "description": "Bullet list marker.",
+          "$ref": "#/$defs/ListMarker",
+          "default": "-"
+        },
+        "ordered_list": {
+          "description": "Ordered list numbering.",
+          "$ref": "#/$defs/OrderedList",
+          "default": "ordered"
+        },
+        "strong": {
+          "description": "Strong emphasis marker.",
+          "$ref": "#/$defs/Strong",
+          "default": "**"
+        },
+        "width": {
+          "description": "Line width for `wrap: width`.",
+          "type": "integer",
+          "format": "uint16",
+          "default": 80,
+          "maximum": 65535,
+          "minimum": 0
+        },
+        "wrap": {
+          "description": "Prose wrapping mode.",
+          "$ref": "#/$defs/Wrap",
+          "default": "preserve"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FrontmatterFormat": {
+      "description": "Frontmatter handling of `fmt.frontmatter`.",
+      "oneOf": [
+        {
+          "description": "Keep frontmatter bytes verbatim.",
+          "type": "string",
+          "const": "preserve"
+        },
+        {
+          "description": "Re-serialize frontmatter canonically.",
+          "type": "string",
+          "const": "normalize"
+        }
+      ]
+    },
+    "FrontmatterSchema": {
+      "description": "One `validate.frontmatter` entry.",
+      "type": "object",
+      "properties": {
+        "files": {
+          "description": "Glob of the files the schema applies to.",
+          "type": "string"
+        },
+        "schema": {
+          "description": "Path of the JSON Schema, relative to the config file that sets it.",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "files",
+        "schema"
+      ]
+    },
+    "IncludeConfig": {
+      "description": "`include` section.",
+      "type": "object",
+      "properties": {
+        "allow_remote": {
+          "description": "Allow `mrq:include` from http(s) URLs (needs the `remote-include` feature).",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "KrokiConfig": {
+      "description": "`render.diagrams.kroki` section.",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Kroki is never contacted unless this is `true`.",
+          "type": "boolean",
+          "default": false
+        },
+        "url": {
+          "description": "Base URL of the Kroki service.",
+          "type": "string",
+          "default": "https://kroki.io"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LintConfig": {
+      "description": "`lint` section.",
+      "type": "object",
+      "properties": {
+        "extends": {
+          "description": "Base rule set: `default` enables every rule that is on by default, `none` starts empty.",
+          "$ref": "#/$defs/LintExtends",
+          "default": "default"
+        },
+        "rules": {
+          "description": "Per-rule settings keyed by rule id (`MD013`, `MRQ001`, …): an options object,\n`off`/`false` to disable, or `on`/`true` to enable with defaults.\n\nOpen for now: rule ids and their option types are validated once the rule\nregistry exists (M5), which will also extend this schema.",
+          "type": "object",
+          "additionalProperties": true,
+          "default": {}
+        }
+      },
+      "additionalProperties": false
+    },
+    "LintExtends": {
+      "description": "Base rule set of `lint.extends`.",
+      "oneOf": [
+        {
+          "description": "Every rule that is enabled by default.",
+          "type": "string",
+          "const": "default"
+        },
+        {
+          "description": "No rules; only those listed under `rules` run.",
+          "type": "string",
+          "const": "none"
+        }
+      ]
+    },
+    "ListMarker": {
+      "description": "Bullet list marker of `fmt.list_marker`.",
+      "type": "string",
+      "enum": [
+        "-",
+        "*",
+        "+"
+      ]
+    },
+    "OrderedList": {
+      "description": "Ordered list numbering of `fmt.ordered_list`.",
+      "oneOf": [
+        {
+          "description": "Every item is numbered `1.`.",
+          "type": "string",
+          "const": "one"
+        },
+        {
+          "description": "Items are numbered consecutively from the first number.",
+          "type": "string",
+          "const": "ordered"
+        },
+        {
+          "description": "Numbers are kept as written.",
+          "type": "string",
+          "const": "preserve"
+        }
+      ]
+    },
+    "RenderConfig": {
+      "description": "`render` section.",
+      "type": "object",
+      "properties": {
+        "diagrams": {
+          "description": "Diagram rendering.",
+          "$ref": "#/$defs/DiagramsConfig",
+          "default": {
+            "commands": {},
+            "kroki": {
+              "enabled": false,
+              "url": "https://kroki.io"
+            }
+          }
+        },
+        "style": {
+          "description": "Built-in theme name (`light`, `dark`, `github`, `paper`) or a theme file path.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false
+    },
+    "Strong": {
+      "description": "Strong emphasis marker of `fmt.strong`.",
+      "type": "string",
+      "enum": [
+        "**",
+        "__"
+      ]
+    },
+    "ValidateConfig": {
+      "description": "`validate` section.",
+      "type": "object",
+      "properties": {
+        "external": {
+          "description": "Check external http(s) links (also enabled by `--external`).",
+          "type": "boolean",
+          "default": false
+        },
+        "external_exclude": {
+          "description": "Regular expressions of external URLs never to check.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "frontmatter": {
+          "description": "JSON Schemas for frontmatter, per glob.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/FrontmatterSchema"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Wrap": {
+      "description": "Prose wrapping mode of `fmt.wrap`.",
+      "oneOf": [
+        {
+          "description": "Keep line breaks as written.",
+          "type": "string",
+          "const": "preserve"
+        },
+        {
+          "description": "One line per paragraph.",
+          "type": "string",
+          "const": "never"
+        },
+        {
+          "description": "Wrap at `fmt.width` columns.",
+          "type": "string",
+          "const": "width"
+        },
+        {
+          "description": "One sentence per line.",
+          "type": "string",
+          "const": "sentence"
+        }
+      ]
+    }
+  }
+}

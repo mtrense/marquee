@@ -21,6 +21,9 @@ serde_json.workspace = true
 miette = { workspace = true, optional = true }
 ignore.workspace = true
 globset.workspace = true
+figment.workspace = true
+schemars.workspace = true
+serde-saphyr.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

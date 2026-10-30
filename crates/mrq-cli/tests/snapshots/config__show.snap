@@ -1,0 +1,39 @@
+---
+source: crates/mrq-cli/tests/config.rs
+expression: "tree.stdout(&[\"config\", \"show\"])"
+---
+flavor: obsidian
+fmt:
+  code_fence: "```"
+  code_formatters: {}
+  emphasis: "_"
+  frontmatter: preserve
+  list_marker: "-"
+  ordered_list: ordered
+  strong: "**"
+  width: 72
+  wrap: sentence
+ignore:
+  - "vendor/**"
+  - CHANGELOG.md
+include:
+  allow_remote: false
+lint:
+  extends: default
+  rules:
+    MD013:
+      line_length: 120
+    MD041: false
+render:
+  diagrams:
+    commands: {}
+    kroki:
+      enabled: false
+      url: "https://kroki.io"
+  style: null
+validate:
+  external: false
+  external_exclude: []
+  frontmatter:
+    - files: "blog/**/*.md"
+      schema: "./post.schema.json"
