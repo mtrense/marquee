@@ -6,7 +6,7 @@ This plan implements the tool described in [README.md](README.md). It has three 
 
 | Topic | Decision |
 | --- | --- |
-| Language / edition | Rust 2024 edition, stable toolchain, MSRV pinned in `rust-toolchain.toml` and tracked in CI |
+| Language / edition | Rust 2024 edition on the latest stable toolchain, currently `1.99.1`. `rust-toolchain.toml` pins `channel = "1.99.1"` and the workspace sets `rust-version = "1.99"` (MSRV), checked in CI. Never pick an older toolchain just because it is installed locally; check `rustup run stable rustc --version` and use the newest stable release. |
 | License | MIT OR Apache-2.0 |
 | Crates | Cargo workspace. `mrq-core` (library) and `mrq-cli` (binary `mrq`; the name `mrq` is taken on crates.io) are published to crates.io. `mrq-render`, `mrq-tui` and `mrq-lsp` are internal at first (`publish = false`) and published once their APIs settle. |
 | Distribution | GitHub Releases via cargo-dist, plus Homebrew tap, Nix flake and AUR (`mrq` and `mrq-bin`) |
@@ -132,7 +132,7 @@ flowchart LR
 
 ### M0: Workspace skeleton and infrastructure
 
-- [ ] **M0.1 Workspace.** Create the Cargo workspace with `crates/mrq-core`, `crates/mrq-render`, `crates/mrq-tui`, `crates/mrq-lsp` and `crates/mrq-cli` (binary `mrq`). Add `rust-toolchain.toml`, workspace lints (`clippy::pedantic` subset, `unsafe_code = "forbid"`), `rustfmt.toml`, `LICENSE-MIT`, `LICENSE-APACHE` and `.gitignore`. **AC:** `cargo build --workspace` and `cargo clippy --workspace -- -D warnings` pass. `mrq --version` works.
+- [ ] **M0.1 Workspace.** Create the Cargo workspace with `crates/mrq-core`, `crates/mrq-render`, `crates/mrq-tui`, `crates/mrq-lsp` and `crates/mrq-cli` (binary `mrq`). Add `rust-toolchain.toml` with `channel = "1.99.1"` and components `rustfmt` and `clippy` (the latest stable release, not the oldest installed toolchain), `rust-version = "1.99"` in `[workspace.package]`, workspace lints (`clippy::pedantic` subset, `unsafe_code = "forbid"`), `rustfmt.toml`, `LICENSE-MIT`, `LICENSE-APACHE` and `.gitignore`. **AC:** `cargo build --workspace` and `cargo clippy --workspace -- -D warnings` pass. `mrq --version` works. `cargo --version` inside the repo reports 1.99.1.
 - [ ] **M0.2 CI.** GitHub Actions workflow for fmt, clippy, tests (Linux, macOS, Windows), an MSRV check, `cargo deny` (licenses and advisories) and a feature-powerset check (`cargo hack --each-feature`) for `mrq-core` and `mrq-cli`. **AC:** the workflow is green on an empty project.
 - [ ] **M0.3 CLI shell.** A clap derive tree with every subcommand from the README stubbed out (returning "not implemented", exit 2). Global flags: `--config`, `--flavor`, `--color auto|always|never`, `--format`, `-q/-v`. Shell completions (`mrq completions <shell>`) and man page generation (`xtask`). **AC:** `mrq --help` lists every command. Snapshot test of the help output.
 - [ ] **M0.4 Source and edits.** `mrq_core::source`: `SourceFile`, line index, byte↔(line, col) in UTF-8 and UTF-16, `TextEdit`, `apply_edits` with conflict detection. **AC:** unit and proptest coverage, including multi-byte characters and CRLF.
