@@ -945,6 +945,7 @@ dependencies = [
  "jsonschema",
  "miette",
  "proptest",
+ "regex",
  "schemars",
  "serde",
  "serde-saphyr",

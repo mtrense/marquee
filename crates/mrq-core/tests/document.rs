@@ -324,10 +324,10 @@ fn toc_lists_headings_with_level_text_and_slug() {
     assert_eq!(doc.toc()[0].node, doc.anchors().get("guide").unwrap());
 }
 
-// --- Query (stubbed until M3) ----------------------------------------------------------
+// --- Query (text front-ends stubbed until M3.2–M3.4) ------------------------------------
 
 #[test]
-fn queries_are_not_implemented_yet() {
+fn text_queries_are_not_implemented_yet() {
     let doc = Document::parse("# Install\n\n```sh\nmake\n```\n");
     let query = Query::selector("# Install | ```sh").unwrap();
     assert_eq!(query.source(), "# Install | ```sh");

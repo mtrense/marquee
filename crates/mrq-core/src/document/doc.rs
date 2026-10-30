@@ -5,13 +5,13 @@ use std::sync::{Arc, OnceLock};
 
 use super::AnchorIndex;
 use crate::ast::json::{self, JsonAst};
-use crate::ast::{Ast, Node, NodeKind};
+use crate::ast::{Ast, NodeKind};
 use crate::diag::Diagnostic;
 use crate::directive::DirectiveRegion;
 use crate::flavor::{self, Flavor, FlavorError, FlavorOrigin, Registry, Resolved};
 use crate::frontmatter::Frontmatter;
 use crate::input::{Input, InputError};
-use crate::query::{Query, QueryError};
+use crate::query::{Match, Query, QueryError};
 use crate::source::SourceFile;
 use crate::toc::TocEntry;
 
@@ -302,13 +302,17 @@ impl Document {
         json::project(self)
     }
 
-    /// The nodes `query` matches.
+    /// The nodes and sections `query` matches, in document order; see
+    /// [`QueryPlan::evaluate`](crate::query::QueryPlan::evaluate).
     ///
     /// # Errors
     ///
-    /// Always [`QueryError::NotImplemented`] until the query engine lands.
-    pub fn select(&self, query: &Query) -> Result<Vec<Node<'_>>, QueryError> {
-        let _ = query;
-        Err(QueryError::NotImplemented)
+    /// [`QueryError::NotImplemented`] for a query without a [plan](Query::plan), i.e.
+    /// one written in a syntax whose front-end does not exist yet.
+    pub fn select(&self, query: &Query) -> Result<Vec<Match<'_>>, QueryError> {
+        query
+            .plan()
+            .map(|plan| plan.evaluate(self))
+            .ok_or(QueryError::NotImplemented)
     }
 }

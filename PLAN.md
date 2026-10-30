@@ -194,7 +194,7 @@ flowchart LR
 
 ### M3: Query
 
-- [ ] **M3.1 Query engine.** `QueryPlan` IR (`Select(kind, predicates)`, `Descendant`, `Child`, `Pipe`, `Section(matcher)`, `Union`), text matchers (substring, exact, regex, anchored, any), evaluation over a `Document` returning node refs, and the section concept (a heading plus the content up to the next heading of the same or higher level). **AC:** the engine is tested against plans built by hand.
+- [x] **M3.1 Query engine.** `QueryPlan` IR (`Select(kind, predicates)`, `Descendant`, `Child`, `Pipe`, `Section(matcher)`, `Union`), text matchers (substring, exact, regex, anchored, any), evaluation over a `Document` returning node refs, and the section concept (a heading plus the content up to the next heading of the same or higher level). **AC:** the engine is tested against plans built by hand.
 - [ ] **M3.2 Selector DSL.** A winnow parser for the README cheat sheet (`#`, `-`, `1.`, `- [ ]`, `[]()`, `![]()`, `>`, ```` ```lang ````, `:-:`, `</>`, `+++`, `P:`, `|`). Parse errors come with a caret position. **AC:** every README example parses and returns the expected nodes.
 - [ ] **M3.3 CSS front-end** *(parallel with M3.2)*. Type selectors (`section`, `heading`, `h1`–`h6`, `code`, `link`, `image`, `list`, `item`, `task`, `table`, `blockquote`, …), attribute selectors (`=`, `^=`, `$=`, `*=`, `~=`), descendant and child combinators, `:has()`, `:not()`, `:nth-child()`. **AC:** README examples pass, and `section[heading="X"]` matches sections.
 - [ ] **M3.4 jq front-end** *(parallel with M3.2)*. Embed jaq-core + jaq-std over the JSON projection, plus mrq helper definitions (`sections`, `links`, `code($lang)`, `text`). **AC:** README example works, and jq errors map to diagnostics.

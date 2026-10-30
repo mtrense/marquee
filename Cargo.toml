@@ -39,6 +39,7 @@ toml_edit = { version = "0.25.17", default-features = false, features = ["parse"
 unicode-general-category = "1.1.0"
 unicode-normalization = "0.1.26"
 unicode-segmentation = "1.13.3"
+regex = "1.13.1"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
