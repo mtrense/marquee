@@ -8,9 +8,12 @@ use std::path::Path;
 
 use mrq_core::Document;
 use mrq_core::ast::NodeKind;
-use mrq_core::config::{CodeFence, Emphasis, FmtConfig, ListMarker, OrderedList, Strong, Wrap};
+use mrq_core::config::{
+    CodeFence, Emphasis, FmtConfig, FrontmatterFormat, ListMarker, OrderedList, Strong, Wrap,
+};
+use mrq_core::diag::Severity;
 use mrq_core::document::DocumentOptions;
-use mrq_core::fmt::format;
+use mrq_core::fmt::{Formatted, codes, format, format_with};
 use mrq_core::parse::ParseOptions;
 use proptest::prelude::*;
 
@@ -680,6 +683,105 @@ fn frontmatter_is_kept_verbatim() {
         fmt("---\ntitle:   x\n---\n# A\n"),
         "---\ntitle:   x\n---\n\n# A\n"
     );
+    assert_eq!(
+        fmt("+++\ntitle =   'x' # why\n+++\n# A\n"),
+        "+++\ntitle =   'x' # why\n+++\n\n# A\n"
+    );
+}
+
+fn normalize() -> FmtConfig {
+    FmtConfig {
+        frontmatter: FrontmatterFormat::Normalize,
+        ..FmtConfig::default()
+    }
+}
+
+/// Formats `src` with `fmt.frontmatter: normalize` and no code formatters.
+fn fmt_normalized(src: &str) -> Formatted {
+    format_with(&Document::parse(src), &normalize(), &no_code_formatter)
+}
+
+fn no_code_formatter(_: &str, _: &str) -> Option<Result<String, String>> {
+    None
+}
+
+#[test]
+fn normalized_yaml_frontmatter_is_canonical() {
+    let out = fmt_normalized(
+        "---\ntitle:   'Hello'\ntags: [a,   b]\nn: 0x10\nyes: true\nnested: {x: 1,   y: \"two\"}\n---\n# A\n",
+    );
+    assert!(out.diagnostics.is_empty(), "{:?}", out.diagnostics);
+    assert_eq!(
+        out.text,
+        "---\ntitle: Hello\ntags:\n- a\n- b\n\"n\": 16\n\"yes\": true\nnested:\n  x: 1\n  \"y\": two\n---\n\n# A\n"
+    );
+    // An empty mapping has no lines.
+    assert_eq!(fmt_normalized("---\n{}\n---\nA\n").text, "---\n---\n\nA\n");
+}
+
+#[test]
+fn normalized_toml_frontmatter_is_canonical() {
+    let out = fmt_normalized(
+        "+++\ntitle =   'x'\nn = 0x10\nd =  1979-05-27\nlist = [ 1,2 ]\npoint = {x=1}\n[t]\nk  = \"v\"\n[[a]]\nb = 1\n+++\n# A\n",
+    );
+    assert!(out.diagnostics.is_empty(), "{:?}", out.diagnostics);
+    assert_eq!(
+        out.text,
+        "+++\ntitle = \"x\"\nn = 16\nd = 1979-05-27\nlist = [1, 2]\npoint = { x = 1 }\n\n[t]\nk = \"v\"\n\n[[a]]\nb = 1\n+++\n\n# A\n"
+    );
+}
+
+#[test]
+fn normalized_frontmatter_keeps_its_data_and_is_stable() {
+    for src in [
+        "---\ntitle: Hello\nlong: |\n  line one\n  line two\nempty: ''\nq: \"multi\\nline\"\nanchor: &x [1, 2]\nalias: *x\nlist:\n  - a: 1\n    b: [true, null, 1.5]\n  - c\n---\n",
+        "---\ndate: 2024-01-01\nwords: ['yes', \"no\", ~, '', ' x ', -.5, 0o17]\nlong: \"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\"\n---\n",
+        "+++\ndt = 1979-05-27T07:32:00Z\nt = 07:32:00\nf = 1e3\ns = '''\nraw \\ text'''\n\"key with space\" = 1\na.b.c = 2\n[x.y]\nz = [[1], {w = 'v'}]\n+++\n",
+    ] {
+        let doc = Document::parse(src);
+        let once = fmt_normalized(src);
+        assert!(once.diagnostics.is_empty(), "{src}: {:?}", once.diagnostics);
+        let reparsed = Document::parse(once.text.as_str());
+        assert_eq!(
+            reparsed.frontmatter().unwrap().value(),
+            doc.frontmatter().unwrap().value(),
+            "{src}\n{}",
+            once.text
+        );
+        assert_eq!(fmt_normalized(&once.text).text, once.text, "{src}");
+    }
+}
+
+#[test]
+fn frontmatter_that_cannot_be_normalized_is_kept_with_a_warning() {
+    for (src, reason) in [
+        ("---\n# a comment\ntitle: x\n---\n", "comment"),
+        ("---\ntitle: x # why\n---\n", "comment"),
+        ("+++\n# a comment\ntitle = 'x'\n+++\n", "comment"),
+        ("+++\nlist = [\n  1, # one\n]\n+++\n", "comment"),
+        ("---\ndate: !!str 2024\n---\n", "tag"),
+        ("---\n1: one\n---\n", "key"),
+        ("---\nflag: yes\n---\n", "YAML 1.1"),
+        ("---\nlist: [a, off]\n---\n", "YAML 1.1"),
+        ("---\n? [a]\n: b\n---\n", "key"),
+        ("---\ntitle: [unclosed\n---\n", "parse"),
+        ("+++\ntitle = \n+++\n", "parse"),
+    ] {
+        let doc = Document::parse(src);
+        let out = format_with(&doc, &normalize(), &no_code_formatter);
+        assert_eq!(out.text, src, "{src}");
+        let [warning] = out.diagnostics.as_slice() else {
+            panic!("{src}: {:?}", out.diagnostics)
+        };
+        assert_eq!(warning.code, codes::FRONTMATTER_NORMALIZE);
+        assert_eq!(warning.severity, Severity::Warning);
+        assert_eq!(warning.range, doc.frontmatter().unwrap().span(), "{src}");
+        assert!(
+            warning.message.contains(reason),
+            "{src}: {}",
+            warning.message
+        );
+    }
 }
 
 #[test]

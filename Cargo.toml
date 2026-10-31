@@ -33,10 +33,10 @@ ignore = "0.4.34"
 globset = "0.4.21"
 figment = { version = "0.10.19", default-features = false }
 schemars = "1.2.3"
-serde-saphyr = { version = "2.0.0", default-features = false, features = ["deserialize"] }
+serde-saphyr = { version = "2.0.0", default-features = false, features = ["deserialize", "serialize", "comments"] }
 comrak = { version = "0.59.0", default-features = false }
 entities = "1.0.1"
-toml_edit = { version = "0.25.17", default-features = false, features = ["parse"] }
+toml_edit = { version = "0.25.17", default-features = false, features = ["parse", "display"] }
 unicode-general-category = "1.1.0"
 unicode-normalization = "0.1.26"
 unicode-segmentation = "1.13.3"

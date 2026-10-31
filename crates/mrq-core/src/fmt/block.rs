@@ -1,13 +1,13 @@
 //! The block printer: every block node becomes a list of lines, and containers prefix
 //! their children's lines (`> `, list markers and indentation).
 
-use super::Printer;
 use super::wrap::Room;
+use super::{Printer, codes};
 use crate::ast::{
-    Admonition, Callout, CodeBlock, CommentSyntax, Fold, FrontMatterFormat, Heading, HeadingAttrs,
-    List, ListKind, NodeId, NodeKind, OrderedDelimiter, TaskState,
+    Admonition, Callout, CodeBlock, CommentSyntax, Fold, FrontMatter, FrontMatterFormat, Heading,
+    HeadingAttrs, List, ListKind, NodeId, NodeKind, OrderedDelimiter, TaskState,
 };
-use crate::config::OrderedList;
+use crate::config::{FrontmatterFormat, OrderedList};
 
 /// The largest ordered list number `CommonMark` accepts (nine digits).
 const MAX_LIST_NUMBER: u64 = 999_999_999;
@@ -144,16 +144,7 @@ impl Printer<'_> {
         }
         let lines = match self.ast.kind(id) {
             NodeKind::Document => self.blocks(id, false, None, place.room),
-            NodeKind::FrontMatter(front) => self.verbatim(id).unwrap_or_else(|| {
-                let fence = match front.format {
-                    FrontMatterFormat::Toml => "+++",
-                    _ => "---",
-                };
-                let mut lines = vec![fence.to_owned()];
-                lines.extend(split_lines(&front.literal));
-                lines.push(fence.to_owned());
-                lines
-            }),
+            NodeKind::FrontMatter(front) => self.frontmatter(id, front),
             NodeKind::Paragraph if self.is_inline_parent(id) => self.paragraph(id, place.room),
             NodeKind::DefinitionTerm if self.is_inline_parent(id) => {
                 split_lines(&self.inlines(id, false))
@@ -168,7 +159,7 @@ impl Printer<'_> {
                 return (lines, Some(marker));
             }
             NodeKind::ListItem(_) => self.item(id, "-", true, Some('-'), place.room),
-            NodeKind::CodeBlock(code) => self.code_block(code),
+            NodeKind::CodeBlock(code) => self.code_block(id, code),
             NodeKind::HtmlBlock(html) => {
                 // An unclosed block in a container ends with the blank lines before the
                 // container's end; the blank line after the block stands for them.
@@ -508,15 +499,59 @@ impl Printer<'_> {
         indent(marker, &" ".repeat(width), body)
     }
 
-    /// A fenced code block: the configured fence, unless the info string has a backtick,
-    /// longer than any fence-like line of the code.
-    fn code_block(&self, code: &CodeBlock) -> Vec<String> {
+    /// Frontmatter: verbatim, or normalized with `fmt.frontmatter: normalize` where that
+    /// keeps its data (verbatim with a warning where not).
+    fn frontmatter(&self, id: NodeId, front: &FrontMatter) -> Vec<String> {
+        let normalized = (self.config.frontmatter == FrontmatterFormat::Normalize)
+            .then(|| super::frontmatter::normalize(front))
+            .and_then(|result| {
+                result
+                    .map_err(|reason| {
+                        let message = format!("frontmatter left as written: {reason}");
+                        self.warn(codes::FRONTMATTER_NORMALIZE, self.ast.span(id), message);
+                    })
+                    .ok()
+            });
+        if normalized.is_none()
+            && let Some(lines) = self.verbatim(id)
+        {
+            return lines;
+        }
+        let fence = match front.format {
+            FrontMatterFormat::Toml => "+++",
+            _ => "---",
+        };
+        let mut lines = vec![fence.to_owned()];
+        lines.extend(split_lines(normalized.as_deref().unwrap_or(&front.literal)));
+        lines.push(fence.to_owned());
+        lines
+    }
+
+    /// A fenced code block, its code formatted if there is a formatter for its language:
+    /// the configured fence, unless the info string has a backtick, longer than any
+    /// fence-like line of the code.
+    fn code_block(&self, id: NodeId, code: &CodeBlock) -> Vec<String> {
+        let formatted =
+            code.lang()
+                .and_then(|lang| match self.code.format(lang, &code.literal)? {
+                    Ok(mut formatted) => {
+                        if !formatted.is_empty() && !formatted.ends_with('\n') {
+                            formatted.push('\n');
+                        }
+                        Some(formatted)
+                    }
+                    Err(err) => {
+                        let message = format!("`{lang}` code left as written: {err}");
+                        self.warn(codes::CODE_FORMATTER, self.ast.span(id), message);
+                        None
+                    }
+                });
+        let literal = formatted.as_deref().unwrap_or(&code.literal);
         let mut fence_char = first_char(self.config.code_fence.as_str());
         if fence_char == '`' && code.info.contains('`') {
             fence_char = '~';
         }
-        let longest = code
-            .literal
+        let longest = literal
             .lines()
             .map(|line| {
                 line.trim_start()
@@ -529,8 +564,8 @@ impl Printer<'_> {
         let fence = fence_char.to_string().repeat((longest + 1).max(3));
         let mut lines = vec![format!("{fence}{}", super::inline::info(&code.info))];
         // Every line of the code counts, a single empty one too.
-        if !code.literal.is_empty() {
-            let literal = code.literal.strip_suffix('\n').unwrap_or(&code.literal);
+        if !literal.is_empty() {
+            let literal = literal.strip_suffix('\n').unwrap_or(literal);
             let literal = literal.strip_suffix('\r').unwrap_or(literal);
             lines.extend(
                 literal

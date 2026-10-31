@@ -229,7 +229,8 @@ A canonical formatter for Markdown, in the spirit of rustfmt and prettier. It no
 - blank lines between blocks, trailing whitespace and the final newline
 - flavor syntax: callouts, wikilinks and tags (`obsidian`), admonitions with their bodies re-indented, heading attributes, definition lists and abbreviations (`mkdocs`)
 - prose wrapping: `preserve` (default), `never`, `width` (wrap at N columns) or `sentence` (one sentence per line)
-- code inside fenced blocks, optionally, by calling configured external formatters (e.g. `rustfmt` for `rust`)
+- code inside fenced blocks, optionally, by calling configured external formatters (e.g. `rustfmt` for `rust`); code a formatter fails on (non-zero exit, timeout, output that isn't UTF-8) is left unchanged with a warning
+- frontmatter is kept byte for byte, unless `fmt.frontmatter: normalize` asks for canonical YAML or TOML (it stays as written, with a warning, where normalizing would drop comments or change its data)
 
 ```sh
 mrq fmt .                    # rewrite in place
@@ -457,8 +458,9 @@ fmt:
   list_marker: "-"
   ordered_list: ordered       # one | ordered | preserve
   code_fence: "```"
-  code_formatters:
+  code_formatters:           # code on stdin, formatted code on stdout; kept on failure
     rust: ["rustfmt", "--emit=stdout"]
+  frontmatter: preserve       # preserve | normalize
 
 validate:
   external: false

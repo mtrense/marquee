@@ -64,7 +64,10 @@
 //!   to. A label that links use but whose definition was not found gets a definition at
 //!   the end of the document. A shortcut or collapsed reference whose printed text no
 //!   longer equals its label (whitespace runs aside) becomes a full reference.
-//! - Frontmatter, raw HTML and `mrq:` directives are printed verbatim.
+//! - Raw HTML and `mrq:` directives are printed verbatim, and so is frontmatter unless
+//!   `fmt.frontmatter` is `normalize` (see [Frontmatter](#frontmatter)).
+//! - Fenced code is printed as written, unless there is a [`CodeFormatter`] for its
+//!   language (see [Code](#code)).
 //! - Flavor syntax has one form in every flavor (only the escaping differs; see
 //!   [`PrinterHooks`]):
 //!   - callouts are `> [!kind]± title` (title as written), with an empty `>` line
@@ -106,10 +109,30 @@
 //! `!!!` and `???` at the start of a line and a trailing `{…}` in heading text, and
 //! writes an escaped `[` or `(` as `&#91;` or `&#40;`, since `\[` and `\(` open math.
 //!
-//! # Scope
+//! # Frontmatter
 //!
-//! This is the printer core with tables, lists, wrapping and flavor syntax. Code
-//! formatting (M6.6) builds on it.
+//! With `fmt.frontmatter: normalize`, YAML frontmatter is written as serde-saphyr writes
+//! its value (block style, strings quoted only where needed) and TOML as `toml_edit`
+//! writes a document built from scratch (basic strings, decimal numbers, one space around
+//! `=`, inline arrays and tables on one line, a blank line before each table header;
+//! tables keep their kind). Frontmatter is left as written, with a
+//! [`codes::FRONTMATTER_NORMALIZE`] warning, where it does not parse, where normalizing
+//! would drop something (comments, YAML tags) or where its data could change: YAML keys
+//! that are not strings, plain YAML scalars that YAML 1.1 and 1.2 read differently
+//! (`yes`, `off`), and anything that does not read back to the same value.
+//!
+//! # Code
+//!
+//! [`format_with`] hands the code of every block with a language (the first word of its
+//! info string; indented code has none) to a [`CodeFormatter`], in containers too.
+//! [`format()`] uses a [`CommandFormatter`] for `fmt.code_formatters`, which pipes the code
+//! through the command configured for the language (matched ignoring ASCII case) with a
+//! timeout ([`CommandFormatter::DEFAULT_TIMEOUT`]). The formatted code gets a final
+//! newline if it has none, and the fence is chosen for it. When a formatter fails (a
+//! command that cannot start, exits non-zero, times out or writes something other than
+//! UTF-8), the code is kept as written with a [`codes::CODE_FORMATTER`] warning. Fences
+//! and the meaning of the Markdown are kept whatever the formatter does; idempotence then
+//! depends on the formatter's.
 //!
 //! # Known limits
 //!
@@ -146,24 +169,59 @@
 //! a definition no link uses is kept only when it is on the destination's line.
 
 mod block;
+mod code;
+mod frontmatter;
 mod inline;
 mod refs;
 mod table;
 mod wrap;
 
+use std::cell::RefCell;
+use std::path::Path;
+
 use crate::Document;
-use crate::ast::{Ast, NodeId};
+use crate::ast::{Ast, NodeId, Span};
 use crate::config::FmtConfig;
+use crate::diag::{Diagnostic, Severity};
 use crate::flavor::{PrinterHooks, repeated_prefix};
 use crate::parse::ParseOptions;
 
+pub use self::code::{CodeFormatter, CommandFormatter};
 use self::refs::Definitions;
 
-/// Prints `document` as canonical Markdown following `config`.
+/// The [`Diagnostic`] codes of [`format_with`]: plain words, like the parser's and
+/// validate's.
+pub mod codes {
+    /// A fenced code block whose formatter failed; the code is kept as written.
+    pub const CODE_FORMATTER: &str = "code-formatter";
+    /// Frontmatter that `fmt.frontmatter: normalize` could not normalize without losing
+    /// something, or that does not parse; it is kept as written.
+    pub const FRONTMATTER_NORMALIZE: &str = "frontmatter-normalize";
+}
+
+/// The result of [`format_with`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Formatted {
+    /// The formatted document.
+    pub text: String,
+    /// Warnings about the parts left as written, in document order.
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+/// Prints `document` as canonical Markdown following `config`, with fenced code formatted
+/// by the commands of `config.code_formatters` ([`CommandFormatter`]). Use
+/// [`format_with`] for the warnings about what was left as written.
 ///
 /// The result parses (with the document's flavor) into a tree that renders to the same
 /// HTML as the document; see the [module docs](self) for the conventions.
 pub fn format(document: &Document, config: &FmtConfig) -> String {
+    format_with(document, config, &CommandFormatter::from_config(config)).text
+}
+
+/// Like [`format()`], with fenced code formatted by `code`; code it fails on, and
+/// frontmatter that cannot be normalized, are kept as written with a warning (codes in
+/// [`codes`]).
+pub fn format_with(document: &Document, config: &FmtConfig, code: &dyn CodeFormatter) -> Formatted {
     let printer = Printer {
         ast: document.ast(),
         src: document.text(),
@@ -171,11 +229,17 @@ pub fn format(document: &Document, config: &FmtConfig) -> String {
         hooks: document.flavor().printer_hooks(),
         config,
         definitions: Definitions::new(document),
+        code,
+        file: document.name(),
+        diagnostics: RefCell::new(Vec::new()),
     };
-    printer.print()
+    let text = printer.print();
+    let mut diagnostics = printer.diagnostics.into_inner();
+    diagnostics.sort_by_key(|diagnostic| diagnostic.range.start);
+    Formatted { text, diagnostics }
 }
 
-/// Shared state of one [`format`] call; the block printer lives in `block`, tables in
+/// Shared state of one [`format_with`] call; the block printer lives in `block`, tables in
 /// `table`, the inline printer and escaping in `inline`.
 struct Printer<'a> {
     ast: &'a Ast,
@@ -187,9 +251,26 @@ struct Printer<'a> {
     hooks: Option<&'a dyn PrinterHooks>,
     config: &'a FmtConfig,
     definitions: Definitions,
+    /// Formats fenced code.
+    code: &'a dyn CodeFormatter,
+    /// The document's name, for diagnostics.
+    file: &'a Path,
+    /// Warnings about parts left as written.
+    diagnostics: RefCell<Vec<Diagnostic>>,
 }
 
 impl Printer<'_> {
+    /// Records a warning with `code` about `range`.
+    fn warn(&self, code: &str, range: Span, message: String) {
+        self.diagnostics.borrow_mut().push(Diagnostic::new(
+            code,
+            Severity::Warning,
+            self.file,
+            range,
+            message,
+        ));
+    }
+
     /// The whole document. Lines never end with whitespace that is not content (code,
     /// raw HTML): prefixes of empty lines are trimmed where they are added.
     fn print(&self) -> String {
