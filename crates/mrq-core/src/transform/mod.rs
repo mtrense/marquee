@@ -7,6 +7,9 @@
 //! - [`rewrite_links`]: make the links in a byte range work from another file, by
 //!   rebasing relative paths and redirecting what a [`LinkMap`] says moved (used by
 //!   `merge`, `mrq:include` and `split`).
+//! - [`merge`]: combine documents into one, each file a section, with headings shifted,
+//!   links rebased and cross-file links turned into anchors of the merged document
+//!   (`mrq merge`).
 //!
 //! ```
 //! use mrq_core::Document;
@@ -41,7 +44,9 @@
 //! ```
 
 mod links;
+mod merge;
 mod shift;
 
 pub use links::{LinkMap, LinkRewrite, Location, rewrite_links};
+pub use merge::{FrontmatterMerge, MERGE_ANCHORS_CODE, MergeOptions, Merged, merge};
 pub use shift::{HEADING_CLAMP_CODE, Overflow, ShiftOptions, Shifted, shift_headings};

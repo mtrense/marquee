@@ -1,0 +1,48 @@
+---
+source: crates/mrq-cli/tests/merge.rs
+expression: out
+---
+---
+title: Introduction
+authors:
+- Ada
+version: 1
+tags:
+- cli
+---
+
+# Introduction
+
+Welcome to the guide. Start with [installing](#installation), then read about the
+[options](#options-1).
+
+![Logo](img/logo.png)
+
+### Conventions
+
+Commands are shown as `mrq <command>`.
+
+# Installation
+
+## Requirements
+
+A Rust toolchain; see the [conventions](#conventions).
+
+## Options
+
+Pass `--locked` to `cargo install`. The [usage options](#options-1) come later.
+
+# Using mrq
+
+## Usage
+
+Read the [introduction](#introduction) and the [FAQ](notes/faq.md#questions) first.
+
+### Options
+
+Unlike the [install options](#options), these apply to every
+command. See [above](#options-1).
+
+### Shortcuts for [installing](#installation)
+
+See the [project page](https://example.org/mrq).

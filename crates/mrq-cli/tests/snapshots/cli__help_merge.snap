@@ -12,9 +12,7 @@ Arguments:
 
 Options:
       --shift <N>
-          Push each file's headings down by N levels
-          
-          [default: 1]
+          Push each file's headings down by N levels (default: one per heading level above them, the section headings and the title)
 
       --title <TITLE>
           Title of the merged document

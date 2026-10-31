@@ -1,0 +1,23 @@
+---
+source: crates/mrq-cli/tests/merge.rs
+expression: "mrq.read(\"guide.md\")"
+---
+# User Guide
+
+## Basics
+
+See the [advanced chapter](#advanced) and its [tips](#tips-1).
+
+![Diagram](chapters/img/diagram.svg)
+
+### Tips
+
+Keep files small.
+
+## Advanced
+
+Back to the [basics tips](#tips), or read the [introduction](intro.md).
+
+### Tips
+
+Split long files.

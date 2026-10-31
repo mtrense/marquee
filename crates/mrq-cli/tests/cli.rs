@@ -77,7 +77,6 @@ fn no_subcommand_is_a_usage_error() {
 fn stubbed_subcommands_report_not_implemented_and_exit_2() {
     let invocations: &[&[&str]] = &[
         &["render", "-o", "html", "README.md"],
-        &["merge", "a.md", "b.md"],
         &["interpolate", "--in-place", "README.md"],
         &["split", "-d", "2", "guide.md"],
         &["diff", "old.md", "new.md"],

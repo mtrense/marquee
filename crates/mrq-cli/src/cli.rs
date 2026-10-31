@@ -298,9 +298,10 @@ pub enum FrontmatterMode {
 
 #[derive(Debug, Args)]
 pub struct MergeArgs {
-    /// Push each file's headings down by N levels.
-    #[arg(long, value_name = "N", default_value_t = 1)]
-    pub shift: u8,
+    /// Push each file's headings down by N levels (default: one per heading level above
+    /// them, the section headings and the title).
+    #[arg(long, value_name = "N", value_parser = clap::value_parser!(u8).range(0..=5))]
+    pub shift: Option<u8>,
     /// Title of the merged document.
     #[arg(long, value_name = "TITLE")]
     pub title: Option<String>,

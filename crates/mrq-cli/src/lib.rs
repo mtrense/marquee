@@ -20,6 +20,7 @@ use mrq_core::source::SourceFile;
 pub mod cli;
 mod fmt;
 mod lint;
+mod merge;
 mod query;
 mod stats;
 mod toc;
@@ -98,6 +99,12 @@ pub fn run(cli: Cli) -> ExitCode {
                 return ExitCode::from(EXIT_USAGE);
             };
             fmt::run(&args, &inputs, &options, &loaded, &cli.global)
+        }
+        Command::Merge(args) => {
+            let Some((options, inputs)) = prepare(&cli.global, &args.inputs, false) else {
+                return ExitCode::from(EXIT_USAGE);
+            };
+            merge::run(&args, &inputs, &options, &cli.global)
         }
         other => {
             let _ = writeln!(

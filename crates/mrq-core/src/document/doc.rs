@@ -208,6 +208,26 @@ impl Document {
         DocumentOptions::new().load(path)
     }
 
+    /// `source` parsed with this document's flavor, whatever its frontmatter says: an
+    /// edited version of the document, or one made from it.
+    pub(crate) fn reparse(&self, source: SourceFile) -> Self {
+        let name = source
+            .path()
+            .map_or_else(|| PathBuf::from(STDIN_NAME), Path::to_path_buf);
+        let parsed = flavor::parse(&*self.flavor, source.text(), &name);
+        Self {
+            source,
+            name,
+            flavor: Arc::clone(&self.flavor),
+            flavor_origin: self.flavor_origin,
+            ast: parsed.ast,
+            frontmatter: parsed.frontmatter,
+            directives: parsed.directives,
+            diagnostics: parsed.diagnostics,
+            anchors: OnceLock::new(),
+        }
+    }
+
     /// The source text with its path and line index.
     pub const fn source(&self) -> &SourceFile {
         &self.source

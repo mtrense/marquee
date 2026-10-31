@@ -283,7 +283,7 @@ Text matchers: `word` (case-insensitive substring), `"exact"`, `/regex/`, `^anch
 
 ### `mrq merge`
 
-Combines several files into one document. By default each file becomes a section titled by its frontmatter `title` or first heading, with its own headings pushed down one level.
+Combines several files into one document. By default each file becomes a section titled by its frontmatter `title`, its first H1 or its file name, with its own headings pushed down one level. A file that starts with its only H1 keeps that heading as its section heading. `--title` adds a level-1 heading on top, and pushes everything below it down one more level unless `--shift` says otherwise.
 
 ```sh
 mrq merge intro.md install.md usage.md > guide.md
