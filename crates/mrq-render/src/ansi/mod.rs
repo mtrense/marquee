@@ -94,6 +94,7 @@ use crate::diagram::Registry;
 use crate::highlight::{HighlightError, Highlighter};
 use crate::theme::Theme;
 
+pub use escape::palette;
 pub use lines::{BlockInfo, Graphic, HeadingInfo, Image, Line, StyledSpan, TextStyle};
 pub use terminal::{Capabilities, ColorChoice, ColorLevel, GraphicsProtocol};
 

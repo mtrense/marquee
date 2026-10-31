@@ -36,9 +36,17 @@ pub enum Action {
     ToggleOutline,
     ToggleHelp,
     CloseOverlay,
-    /// Move the cursor of the focused list up.
+    /// Move the selection in the document, or the cursor of the focused list, one step
+    /// up; in a block taller than the screen, scroll a line.
     Up,
     Down,
+    /// Scroll the document a screen up (the selection follows), or move the cursor of
+    /// the focused list a screen up.
+    PageUp,
+    PageDown,
+    /// Go to the start of the document or the focused list.
+    Home,
+    End,
     /// Open what the cursor of the focused panel is on.
     Open,
 }
@@ -46,7 +54,9 @@ pub enum Action {
 /// The key bindings for the help overlay: keys and what they do.
 pub const KEYS: &[(&str, &str)] = &[
     ("Tab / Shift-Tab", "next / previous panel"),
-    ("↑ ↓", "move in the file list or outline"),
+    ("↑ ↓", "move the selection or the list cursor"),
+    ("PgUp PgDn", "scroll a page"),
+    ("Home End", "go to the start / end"),
     ("Enter", "open the selected file"),
     ("o", "toggle the outline"),
     ("?", "toggle this help"),
@@ -75,6 +85,10 @@ pub fn action(key: &KeyEvent, app: &App) -> Option<Action> {
         KeyCode::Char('?') => Action::ToggleHelp,
         KeyCode::Up => Action::Up,
         KeyCode::Down => Action::Down,
+        KeyCode::PageUp => Action::PageUp,
+        KeyCode::PageDown => Action::PageDown,
+        KeyCode::Home => Action::Home,
+        KeyCode::End => Action::End,
         KeyCode::Enter => Action::Open,
         _ => return None,
     })

@@ -2,9 +2,10 @@
 //!
 //! The screen is a sidebar on the left (the file list above the outline), the document
 //! on the right and a status line at the bottom. The focused panel has a thick border.
-//! The sidebar is left out below [`SIDEBAR_MIN_SCREEN`] columns.
+//! The sidebar is left out below [`SIDEBAR_MIN_SCREEN`] columns. The document panel
+//! draws only the lines on screen, behind a [`GUTTER`] that marks the selected block.
 
-use mrq_render::ansi::{self, StyledSpan, TextStyle};
+use mrq_render::ansi::{self, ColorLevel, TextStyle};
 use mrq_render::theme::Color as ThemeColor;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -19,6 +20,12 @@ use crate::event::KEYS;
 
 /// The narrowest terminal that gets a sidebar.
 pub const SIDEBAR_MIN_SCREEN: u16 = 40;
+
+/// The columns left of the document's lines, where a bar marks the selected block.
+pub const GUTTER: u16 = 2;
+
+/// The selection mark in the gutter.
+const SELECTION_MARK: &str = "▌ ";
 
 /// Where the panels of an app go; a panel that is not shown is `None`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -141,11 +148,10 @@ fn draw_files(frame: &mut Frame, app: &App, area: Rect) {
 
 fn draw_outline(frame: &mut Frame, app: &App, area: Rect) {
     let file = app.file();
-    // `outline` indents each heading under the closest lower-level one, one line each.
-    let text = mrq_core::toc::outline(file.outline());
-    let items = text
-        .lines()
-        .map(|line| ListItem::new(line.to_owned()))
+    let items = file
+        .outline_text()
+        .iter()
+        .map(|line| ListItem::new(line.as_str()))
         .collect();
     let focused = app.focus() == Panel::Outline;
     draw_list(
@@ -158,13 +164,35 @@ fn draw_outline(frame: &mut Frame, app: &App, area: Rect) {
     );
 }
 
+/// The lines on screen, each behind the gutter, which has the selection mark on the
+/// selected block's lines: cyan while the document is focused, else dark grey.
 fn draw_document(frame: &mut Frame, app: &App, area: Rect) {
     let file = app.file();
-    let rows = usize::from(inner(area).height);
-    let lines: Vec<Line> = file.lines().iter().take(rows).map(line).collect();
+    let view = file.view();
+    let focused = app.focus() == Panel::Document;
+    let selected = view.selected().map_or(0..0, |block| block.lines.clone());
+    let mark = Span::styled(
+        SELECTION_MARK,
+        Style::new().fg(if focused {
+            Color::Cyan
+        } else {
+            Color::DarkGray
+        }),
+    );
+    let blank = Span::raw(" ".repeat(usize::from(GUTTER)));
+    let visible = view.visible();
+    let lines: Vec<Line> = file.lines()[visible.clone()]
+        .iter()
+        .zip(visible)
+        .map(|(styled, i)| {
+            let gutter = if selected.contains(&i) { &mark } else { &blank };
+            let mut line = line(styled, app.color_level());
+            line.spans.insert(0, gutter.clone());
+            line
+        })
+        .collect();
     let title = file.document().name().display().to_string();
-    let block = panel(title, app.focus() == Panel::Document);
-    frame.render_widget(Paragraph::new(lines).block(block), area);
+    frame.render_widget(Paragraph::new(lines).block(panel(title, focused)), area);
 }
 
 fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
@@ -216,27 +244,30 @@ fn draw_help(frame: &mut Frame, area: Rect) {
     );
 }
 
-/// A styled line of the ANSI layout as a ratatui line.
-fn line(line: &ansi::Line) -> Line<'static> {
+/// A styled line of the ANSI layout as a ratatui line, with colours for `level`.
+fn line(line: &ansi::Line, level: ColorLevel) -> Line<'_> {
     let spans = match &line.graphic {
         // Images come with M10.7; until then, their text fallback.
         Some(graphic) => &graphic.fallback,
         None => &line.spans,
     };
-    Line::from(spans.iter().map(span).collect::<Vec<_>>())
+    Line::from(
+        spans
+            .iter()
+            .map(|span| Span::styled(span.text.as_str(), style(span.style, level)))
+            .collect::<Vec<_>>(),
+    )
 }
 
-fn span(span: &StyledSpan) -> Span<'static> {
-    Span::styled(span.text.clone(), style(span.style))
-}
-
-fn style(text: TextStyle) -> Style {
+/// The ratatui style of `text`, with its colours for `level`. Without colours, bold,
+/// italic and the other attributes stay: the panels around them use them as well.
+fn style(text: TextStyle, level: ColorLevel) -> Style {
     let mut style = Style::new();
-    if let Some(fg) = text.fg {
-        style = style.fg(color(fg));
+    if let Some(fg) = text.fg.and_then(|c| color(c, level)) {
+        style = style.fg(fg);
     }
-    if let Some(bg) = text.bg {
-        style = style.bg(color(bg));
+    if let Some(bg) = text.bg.and_then(|c| color(c, level)) {
+        style = style.bg(bg);
     }
     for (on, modifier) in [
         (text.bold, Modifier::BOLD),
@@ -253,6 +284,10 @@ fn style(text: TextStyle) -> Style {
     style
 }
 
-const fn color(color: ThemeColor) -> Color {
-    Color::Rgb(color.r, color.g, color.b)
+fn color(color: ThemeColor, level: ColorLevel) -> Option<Color> {
+    match level {
+        ColorLevel::TrueColor => Some(Color::Rgb(color.r, color.g, color.b)),
+        ColorLevel::Ansi256 => Some(Color::Indexed(ansi::palette(color))),
+        ColorLevel::None => None,
+    }
 }

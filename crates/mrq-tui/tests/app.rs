@@ -1,5 +1,6 @@
 //! App state without a terminal: focus switching, the outline toggle, the help overlay,
-//! the file list, quitting, resizing, and the event loop on a `TestBackend`.
+//! the file list, the document selection and scrolling with the outline following it,
+//! quitting, resizing, and the event loop on a `TestBackend`.
 
 mod common;
 
@@ -247,4 +248,121 @@ fn the_event_loop_ends_with_its_events_and_passes_errors_on() {
     let mut terminal = Terminal::new(TestBackend::new(80, 20)).unwrap();
     let result = mrq_tui::run_on(&mut terminal, &mut app, [Err(Broken)]);
     assert_eq!(result, Err(Broken));
+}
+
+/// The text of the first line of the selected block of the shown file.
+fn selected(app: &mrq_tui::App) -> String {
+    let file = app.file();
+    let block = file.view().selected().unwrap();
+    file.lines()[block.lines.start].text().trim_end().to_owned()
+}
+
+#[test]
+fn arrow_keys_move_the_selection_and_the_outline_follows() {
+    let mut app = guide(100, 10);
+    assert_eq!(selected(&app), "# Guide");
+    press(&mut app, [key(KeyCode::Down), key(KeyCode::Down)]);
+    assert_eq!(selected(&app), "## Install");
+    assert_eq!(app.file().outline_cursor(), 1);
+    press(&mut app, [key(KeyCode::Down)]);
+    assert_eq!(selected(&app), "Run the installer.");
+    assert_eq!(app.file().outline_cursor(), 1);
+    press(&mut app, [key(KeyCode::Down), key(KeyCode::Down)]);
+    assert_eq!(selected(&app), "### Options");
+    assert_eq!(app.file().outline_cursor(), 3);
+    // The document scrolled to keep the selection in view.
+    let view = app.file().view();
+    assert!(view.top() > 0);
+    assert!(
+        view.visible()
+            .contains(&view.selected().unwrap().lines.start)
+    );
+    press(
+        &mut app,
+        [key(KeyCode::Up), key(KeyCode::Up), key(KeyCode::Up)],
+    );
+    assert_eq!(selected(&app), "## Install");
+    assert_eq!(app.file().outline_cursor(), 1);
+}
+
+#[test]
+fn the_outline_cursor_moves_alone_until_the_document_moves() {
+    let mut app = guide(100, 10);
+    press(&mut app, [key(KeyCode::Tab), key(KeyCode::Down)]);
+    assert_eq!(app.file().outline_cursor(), 1);
+    assert_eq!(selected(&app), "# Guide");
+    press(&mut app, [key(KeyCode::Tab), key(KeyCode::Down)]);
+    assert_eq!(app.file().outline_cursor(), 0);
+}
+
+#[test]
+fn page_keys_scroll_the_document() {
+    let mut app = guide(100, 10);
+    let height = usize::from(app.document_height());
+    assert_eq!(app.file().view().height(), height);
+    press(&mut app, [key(KeyCode::PageDown)]);
+    assert_eq!(app.file().view().top(), height);
+    press(&mut app, [key(KeyCode::End)]);
+    let view = app.file().view();
+    assert_eq!(view.top(), app.file().lines().len() - height);
+    assert_eq!(selected(&app), "Pass --help for the options.");
+    assert_eq!(app.file().outline_cursor(), 3);
+    press(&mut app, [key(KeyCode::PageUp), key(KeyCode::Home)]);
+    assert_eq!(app.file().view().top(), 0);
+    assert_eq!(selected(&app), "# Guide");
+    assert_eq!(app.file().outline_cursor(), 0);
+}
+
+#[test]
+fn page_keys_move_the_cursor_of_a_focused_list() {
+    let mut app = guide(100, 10);
+    press(&mut app, [key(KeyCode::Tab), key(KeyCode::End)]);
+    assert_eq!(app.file().outline_cursor(), 3);
+    press(&mut app, [key(KeyCode::Home)]);
+    assert_eq!(app.file().outline_cursor(), 0);
+    press(&mut app, [key(KeyCode::PageDown)]);
+    assert_eq!(app.file().outline_cursor(), 3);
+    press(&mut app, [key(KeyCode::PageUp)]);
+    assert_eq!(app.file().outline_cursor(), 0);
+    assert_eq!(app.file().view().top(), 0);
+}
+
+#[test]
+fn resizing_keeps_the_selection() {
+    let mut app = guide(100, 10);
+    press(&mut app, [key(KeyCode::Down), key(KeyCode::Down)]);
+    let node = app.file().view().selected().unwrap().node;
+    for (width, height) in [(44, 10), (100, 6), (30, 30)] {
+        app.handle(Event::Resize(width, height));
+        let view = app.file().view();
+        assert_eq!(view.selected().unwrap().node, node);
+        assert_eq!(view.height(), usize::from(app.document_height()));
+        assert!(
+            view.visible()
+                .contains(&view.selected().unwrap().lines.start)
+        );
+    }
+}
+
+#[test]
+fn each_file_keeps_its_own_selection() {
+    let mut app = several(100, 16);
+    press(&mut app, [key(KeyCode::Down), key(KeyCode::Down)]);
+    let open = |app: &mut mrq_tui::App, steps: KeyCode| {
+        press(
+            app,
+            [
+                key(KeyCode::Tab),
+                key(steps),
+                key(KeyCode::Enter),
+                key(KeyCode::BackTab),
+            ],
+        );
+    };
+    open(&mut app, KeyCode::Down);
+    assert_eq!(app.current(), 1);
+    assert_eq!(selected(&app), "# Notes");
+    open(&mut app, KeyCode::Up);
+    assert_eq!(app.current(), 0);
+    assert_eq!(selected(&app), "## Install");
 }

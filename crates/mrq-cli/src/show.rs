@@ -8,12 +8,13 @@ use crate::cli::{GlobalArgs, ShowArgs};
 /// Loads the configuration, the inputs and the `render.style` theme, then runs the viewer
 /// until it quits. Exits 2, before the screen is touched, if an input cannot be read, a
 /// directory holds no Markdown file, the theme cannot be loaded or stdout is not a
-/// terminal; also if the terminal fails, or without the `tui` feature.
+/// terminal; also if the terminal fails, or without the `tui` feature. The document's
+/// colours follow `--color`, `NO_COLOR` and `COLORTERM` as for `render -o ansi`.
 #[cfg(feature = "tui")]
 pub fn command(args: &ShowArgs, global: &GlobalArgs) -> ExitCode {
     use std::io::IsTerminal;
 
-    use mrq_render::ansi::{AnsiOptions, AnsiRenderer};
+    use mrq_render::ansi::{AnsiOptions, AnsiRenderer, Capabilities};
 
     let Some((loaded, options, inputs)) = crate::prepare_loaded(global, &args.inputs, false) else {
         return usage();
@@ -47,7 +48,9 @@ pub fn command(args: &ShowArgs, global: &GlobalArgs) -> ExitCode {
         report("`show` needs a terminal on stdout");
         return usage();
     }
-    let mut app = mrq_tui::App::new(documents, renderer);
+    // `--color` and `NO_COLOR` decide the document's colours, `COLORTERM` their depth.
+    let colors = Capabilities::from_env(crate::render::color_choice(global.color), true).color;
+    let mut app = mrq_tui::App::new(documents, renderer).with_color_level(colors);
     match mrq_tui::run(&mut app) {
         Ok(()) => ExitCode::SUCCESS,
         Err(err) => {

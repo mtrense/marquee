@@ -3,6 +3,8 @@
 
 #![allow(dead_code, reason = "each test binary uses a different subset")]
 
+use std::fmt::Write as _;
+use std::ops::Range;
 use std::path::PathBuf;
 
 use mrq_core::Document;
@@ -37,6 +39,14 @@ pub const NOTES: &str = "\
 - one
 - two
 ";
+
+/// `Paragraph {i}.` for each `i` in `numbers`, each followed by a blank line.
+pub fn paragraphs(numbers: Range<usize>) -> String {
+    numbers.fold(String::new(), |mut text, i| {
+        writeln!(text, "Paragraph {i}.\n").unwrap();
+        text
+    })
+}
 
 /// `text` parsed as the file `name`.
 pub fn doc(name: &str, text: &str) -> Document {

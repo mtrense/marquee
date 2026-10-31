@@ -420,7 +420,7 @@ pub(crate) fn diagrams(loaded: &LoadedConfig) -> Registry {
     }
 }
 
-const fn color_choice(color: ColorChoice) -> ansi::ColorChoice {
+pub(crate) const fn color_choice(color: ColorChoice) -> ansi::ColorChoice {
     match color {
         ColorChoice::Auto => ansi::ColorChoice::Auto,
         ColorChoice::Always => ansi::ColorChoice::Always,

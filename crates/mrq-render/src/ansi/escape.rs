@@ -107,8 +107,9 @@ fn sgr(style: TextStyle, level: ColorLevel) -> String {
     format!("\x1b[{}m", codes.join(";"))
 }
 
-/// The closest colour of the xterm 256 palette: its 6×6×6 cube or its grey ramp.
-fn palette(c: Color) -> u8 {
+/// The closest colour of the xterm 256 palette: its 6×6×6 cube or its grey ramp, as
+/// written for [`ColorLevel::Ansi256`](super::ColorLevel::Ansi256).
+pub fn palette(c: Color) -> u8 {
     const LEVELS: [u8; 6] = [0, 95, 135, 175, 215, 255];
     let nearest = |v: u8| {
         (0..6)

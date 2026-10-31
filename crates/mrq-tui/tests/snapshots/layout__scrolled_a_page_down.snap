@@ -1,0 +1,16 @@
+---
+source: crates/mrq-tui/tests/layout.rs
+expression: draw(&app)
+---
+"┌Outline───────┐┏long.md━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+"│› Long        │┃▌ Paragraph 4.                            ┃"
+"│              │┃                                          ┃"
+"│              │┃  Paragraph 5.                            ┃"
+"│              │┃                                          ┃"
+"│              │┃  Paragraph 6.                            ┃"
+"│              │┃                                          ┃"
+"│              │┃  Paragraph 7.                            ┃"
+"│              │┃                                          ┃"
+"│              │┃  Paragraph 8.                            ┃"
+"└──────────────┘┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+" long.md                                     ? help  q quit "

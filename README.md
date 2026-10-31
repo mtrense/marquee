@@ -395,7 +395,7 @@ An interactive viewer for one or more files, or a directory, with colors, syntax
 
 | Key                     | Action                                                |
 | ----------------------- | ----------------------------------------------------- |
-| `↑` `↓` / `PgUp` `PgDn` | scroll / move selection                               |
+| `↑` `↓` / `PgUp` `PgDn` / `Home` `End` | move the selection / scroll a page / go to the start or end |
 | `Tab`                   | switch between panels (outline, document, file list)  |
 | `o`                     | toggle the outline sidebar                            |
 | `Enter`                 | follow link / jump to heading                         |

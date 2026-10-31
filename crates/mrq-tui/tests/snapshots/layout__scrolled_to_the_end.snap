@@ -1,0 +1,16 @@
+---
+source: crates/mrq-tui/tests/layout.rs
+expression: draw(&app)
+---
+"┌Outline───────────┐┏guide.md━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+"│  Guide           │┃                                                          ┃"
+"│    Install       │┃  Run the installer.                                      ┃"
+"│    Usage         │┃                                                          ┃"
+"│›     Options     │┃  ## Usage                                                ┃"
+"│                  │┃  ────────────────────────────────────────────────────────┃"
+"│                  │┃                                                          ┃"
+"│                  │┃  ### Options                                             ┃"
+"│                  │┃                                                          ┃"
+"│                  │┃▌ Pass --help for the options.                            ┃"
+"└──────────────────┘┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+" guide.md                                                        ? help  q quit "
