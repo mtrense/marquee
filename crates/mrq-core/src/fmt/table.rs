@@ -14,7 +14,8 @@ impl Printer<'_> {
     /// A pipe table, one row per line: the header, the delimiter row with each column's
     /// alignment marker, then the body. Every row has one cell per column (a missing cell
     /// is printed empty, one beyond the header's columns is dropped, as GFM does), and
-    /// cells are padded on the side their alignment leaves open.
+    /// cells are padded on the side their alignment leaves open (but not for
+    /// the diff).
     pub(super) fn table(&self, id: NodeId, alignments: &[Alignment]) -> Vec<String> {
         let columns = alignments.len();
         let rows: Vec<Vec<String>> = self
@@ -33,19 +34,26 @@ impl Printer<'_> {
                 cells
             })
             .collect();
+        // Unpadded, cells are as printed and delimiter cells the narrowest.
         let mut widths = vec![MIN_WIDTH; columns];
-        for row in &rows {
+        for row in rows.iter().filter(|_| !self.for_diff) {
             for (width, cell) in widths.iter_mut().zip(row) {
                 *width = (*width).max(cell.width());
             }
         }
         let mut lines = Vec::with_capacity(rows.len() + 1);
         for (index, row) in rows.iter().enumerate() {
-            let cells = row
-                .iter()
-                .zip(alignments)
-                .zip(&widths)
-                .map(|((cell, &alignment), &width)| pad(cell, alignment, width));
+            let cells =
+                row.iter()
+                    .zip(alignments)
+                    .zip(&widths)
+                    .map(|((cell, &alignment), &width)| {
+                        if self.for_diff {
+                            cell.clone()
+                        } else {
+                            pad(cell, alignment, width)
+                        }
+                    });
             lines.push(join(cells));
             if index == 0 {
                 let delimiters = alignments

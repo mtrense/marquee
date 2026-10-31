@@ -299,6 +299,37 @@ pub fn format_with(document: &Document, config: &FmtConfig, code: &dyn CodeForma
     )
 }
 
+/// A top-level part of a document printed on its own, for [`crate::diff`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Piece {
+    /// A child block of the document root and its lines.
+    Block(NodeId, Vec<String>),
+    /// A reference definition between top-level blocks: its source (the line from its
+    /// label to its destination) and its printed line.
+    Definition(Span, String),
+}
+
+/// The top-level blocks and reference definitions of `document`, in document order,
+/// each printed as [`format_with`] prints it, but alone: as if it were the first block
+/// after another one (so a list keeps the configured marker after a list, and a
+/// thematic break is `---`), with tables unpadded (`| a | b |`, delimiter cells of the
+/// narrowest width), ordered lists delimited by `.` and fenced code as written.
+pub(crate) fn pieces(document: &Document, config: &FmtConfig) -> Vec<Piece> {
+    let no_code = |_: &str, _: &str| None;
+    let printer = Printer {
+        for_diff: true,
+        ..Printer::new(
+            document,
+            document.ast(),
+            document.flavor(),
+            true,
+            config,
+            &no_code,
+        )
+    };
+    printer.pieces()
+}
+
 /// Prints `document` for the flavor `target`, as [`format()`] does, after converting
 /// the syntax of its own flavor that `target` cannot express into the closest Markdown
 /// that `target` can (see [Down-conversion](#down-conversion)). Use [`format_as_with`]
@@ -346,18 +377,7 @@ fn print(
     config: &FmtConfig,
     code: &dyn CodeFormatter,
 ) -> Formatted {
-    let printer = Printer {
-        ast,
-        src: document.text(),
-        syntax: flavor.parse_options(),
-        hooks: flavor.printer_hooks(),
-        backslash_math,
-        config,
-        definitions: Definitions::new(document),
-        code,
-        file: document.name(),
-        diagnostics: RefCell::new(Vec::new()),
-    };
+    let printer = Printer::new(document, ast, flavor, backslash_math, config, code);
     let text = printer.print();
     let mut diagnostics = printer.diagnostics.into_inner();
     diagnostics.sort_by_key(|diagnostic| diagnostic.range.start);
@@ -385,6 +405,36 @@ struct Printer<'a> {
     file: &'a Path,
     /// Warnings about parts left as written.
     diagnostics: RefCell<Vec<Diagnostic>>,
+    /// Whether blocks are printed for [`pieces`]: tables unpadded, ordered lists with
+    /// `.` delimiters.
+    for_diff: bool,
+}
+
+impl<'a> Printer<'a> {
+    /// A printer of `ast` (the tree of `document` or one converted from it); see
+    /// [`print`].
+    fn new(
+        document: &'a Document,
+        ast: &'a Ast,
+        flavor: &'a dyn Flavor,
+        backslash_math: bool,
+        config: &'a FmtConfig,
+        code: &'a dyn CodeFormatter,
+    ) -> Self {
+        Self {
+            ast,
+            src: document.text(),
+            syntax: flavor.parse_options(),
+            hooks: flavor.printer_hooks(),
+            backslash_math,
+            config,
+            definitions: Definitions::new(document),
+            code,
+            file: document.name(),
+            diagnostics: RefCell::new(Vec::new()),
+            for_diff: false,
+        }
+    }
 }
 
 impl Printer<'_> {

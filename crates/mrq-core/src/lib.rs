@@ -6,6 +6,7 @@
 pub mod ast;
 pub mod config;
 pub mod diag;
+pub mod diff;
 pub mod directive;
 pub mod document;
 pub mod flavor;

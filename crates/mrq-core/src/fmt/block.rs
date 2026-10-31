@@ -2,7 +2,7 @@
 //! their children's lines (`> `, list markers and indentation).
 
 use super::wrap::Room;
-use super::{Printer, codes};
+use super::{Piece, Printer, codes};
 use crate::ast::{
     Admonition, Callout, CodeBlock, CommentSyntax, Fold, FrontMatter, FrontMatterFormat, Heading,
     HeadingAttrs, List, ListKind, NodeId, NodeKind, OrderedDelimiter, Span, TaskState,
@@ -43,6 +43,43 @@ impl Printer<'_> {
         let mut lines = self.blocks(self.ast.root(), false, None, room);
         push_block(&mut lines, self.definitions.rest(), false);
         lines
+    }
+
+    /// The top-level blocks and the definitions between them, each printed alone; see
+    /// [`pieces`](super::pieces). Definitions after the last block are kept, those for
+    /// labels without one are not (links show their destinations).
+    pub(super) fn pieces(&self) -> Vec<Piece> {
+        let room = Room::new(usize::from(self.config.width));
+        let mut out = Vec::new();
+        for &child in self.ast.children(self.ast.root()) {
+            let span = self.ast.span(child);
+            let before = if is_container(self.ast.kind(child)) {
+                span.start
+            } else {
+                span.end
+            };
+            self.push_definitions(&mut out, before);
+            let place = Place {
+                index: 1,
+                tight: false,
+                previous: None,
+                bullet: None,
+                room,
+            };
+            out.push(Piece::Block(child, self.block(child, place).0));
+        }
+        self.push_definitions(&mut out, usize::MAX);
+        out
+    }
+
+    /// Appends the definitions not handed out yet that start before `offset` to `out`.
+    fn push_definitions(&self, out: &mut Vec<Piece>, offset: usize) {
+        let definitions = self.definitions.take_placed_before(offset);
+        out.extend(
+            definitions
+                .into_iter()
+                .map(|(span, line)| Piece::Definition(span, line)),
+        );
     }
 
     /// The children of the container `parent`, separated by a blank line unless `tight`,
@@ -456,6 +493,8 @@ impl Printer<'_> {
                             OrderedDelimiter::Period => OrderedDelimiter::Paren,
                             OrderedDelimiter::Paren => OrderedDelimiter::Period,
                         }
+                    } else if self.for_diff {
+                        OrderedDelimiter::Period
                     } else {
                         delimiter
                     },

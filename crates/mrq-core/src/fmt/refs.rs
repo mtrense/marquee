@@ -7,14 +7,15 @@ use std::collections::HashMap;
 
 use super::inline::{destination, title_string};
 use crate::Document;
-use crate::ast::{LinkForm, NodeKind};
+use crate::ast::{LinkForm, NodeKind, Span};
 use crate::validate::reference_definitions;
 
 /// The definitions of one document, in printing order.
 #[derive(Debug)]
 pub(super) struct Definitions {
-    /// Recovered definitions: their source offset and printed line, in source order.
-    placed: Vec<(usize, String)>,
+    /// Recovered definitions: their source (from the label to the end of the line the
+    /// destination ends on) and printed line, in source order.
+    placed: Vec<(Span, String)>,
     /// How many of `placed` have been handed out.
     next: Cell<usize>,
     /// Definitions for labels that links use but no recovered definition covers.
@@ -43,6 +44,8 @@ impl Definitions {
         let placed = reference_definitions(document)
             .into_iter()
             .map(|def| {
+                let rest = &text[def.span.end..];
+                let end = def.span.end + rest.find(['\n', '\r']).unwrap_or(rest.len());
                 let line = match index.get(&normalize_label(&def.label)) {
                     Some(&i) if !defined[i] => {
                         defined[i] = true;
@@ -51,14 +54,9 @@ impl Definitions {
                     }
                     // Unused (or a duplicate, which the first one shadows): as written,
                     // up to the end of the line its destination ends on.
-                    _ => {
-                        let rest = &text[def.span.end..];
-                        let end = def.span.end + rest.find(['\n', '\r']).unwrap_or(rest.len());
-                        let raw = &text[def.span.start..end];
-                        collapse_whitespace(raw)
-                    }
+                    _ => collapse_whitespace(&text[def.span.start..end]),
                 };
-                (def.span.start, line)
+                (Span::new(def.span.start, end), line)
             })
             .collect();
         let missing = used
@@ -76,16 +74,21 @@ impl Definitions {
 
     /// The lines of the definitions not handed out yet that start before `offset`.
     pub(super) fn take_before(&self, offset: usize) -> Vec<String> {
+        self.take_placed_before(offset)
+            .into_iter()
+            .map(|(_, line)| line)
+            .collect()
+    }
+
+    /// Like [`take_before`](Self::take_before), with the source of each definition.
+    pub(super) fn take_placed_before(&self, offset: usize) -> Vec<(Span, String)> {
         let from = self.next.get();
         let count = self.placed[from..]
             .iter()
-            .take_while(|(start, _)| *start < offset)
+            .take_while(|(span, _)| span.start < offset)
             .count();
         self.next.set(from + count);
-        self.placed[from..from + count]
-            .iter()
-            .map(|(_, line)| line.clone())
-            .collect()
+        self.placed[from..from + count].to_vec()
     }
 
     /// Every definition not handed out yet.
