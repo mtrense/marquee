@@ -5,7 +5,7 @@ use super::wrap::Room;
 use super::{Printer, codes};
 use crate::ast::{
     Admonition, Callout, CodeBlock, CommentSyntax, Fold, FrontMatter, FrontMatterFormat, Heading,
-    HeadingAttrs, List, ListKind, NodeId, NodeKind, OrderedDelimiter, TaskState,
+    HeadingAttrs, List, ListKind, NodeId, NodeKind, OrderedDelimiter, Span, TaskState,
 };
 use crate::config::{FrontmatterFormat, OrderedList};
 
@@ -59,7 +59,12 @@ impl Printer<'_> {
             } else {
                 span.end
             };
-            push_block(&mut out, self.definitions.take_before(before), tight);
+            let definitions = self.definitions.take_before(before);
+            // A blank line after definitions where the block after them could be read
+            // as part of the last one; the source had one there too.
+            let after_definitions = !definitions.is_empty() && self.continues_definition(child);
+            let prev = self.ast.prev_sibling(child);
+            push_block(&mut out, definitions, tight && !self.continues(prev));
             let place = Place {
                 index,
                 tight,
@@ -79,18 +84,89 @@ impl Printer<'_> {
             if tight && after_quote && matches!(self.ast.kind(child), NodeKind::Paragraph) {
                 out.push(">".to_owned());
             }
-            push_block(&mut out, lines, self.joins_previous(child, tight));
+            push_block(
+                &mut out,
+                lines,
+                self.joins_previous(child, tight) && !after_definitions,
+            );
         }
         // A list item ends with its last child; definitions after that, up to the next
         // item, are still inside it.
+        let item = matches!(self.ast.kind(parent), NodeKind::ListItem(_));
         let end = match self.ast.next_sibling(parent) {
-            Some(next) if matches!(self.ast.kind(parent), NodeKind::ListItem(_)) => {
-                self.ast.span(next).start
-            }
+            Some(next) if item => self.ast.span(next).start,
+            _ if item => self.last_item_end(self.ast.span(parent)),
             _ => self.ast.span(parent).end,
         };
-        push_block(&mut out, self.definitions.take_before(end), tight);
+        let last = self.ast.children(parent).last().copied();
+        push_block(
+            &mut out,
+            self.definitions.take_before(end),
+            tight && !self.continues(last),
+        );
         out
+    }
+
+    /// Whether `block`, printed right after a reference definition, could be read as
+    /// part of it: anything but a block that interrupts a paragraph (a table as a row
+    /// of it, a paragraph starting with a quote as its title, a list starting at 3 as
+    /// its text, `---` as its setext underline).
+    fn continues_definition(&self, block: NodeId) -> bool {
+        !matches!(
+            self.ast.kind(block),
+            NodeKind::Heading(_)
+                | NodeKind::CodeBlock(_)
+                | NodeKind::BlockQuote
+                | NodeKind::Callout(_)
+        )
+    }
+
+    /// Whether the block `prev` would take in definitions right after it, which the
+    /// source then had a blank line before: as lines of a paragraph (also lazily, at
+    /// the end of a container), of a table or of an HTML block.
+    fn continues(&self, prev: Option<NodeId>) -> bool {
+        prev.is_some_and(|prev| {
+            !matches!(
+                self.ast.kind(prev),
+                NodeKind::Heading(_)
+                    | NodeKind::ThematicBreak
+                    | NodeKind::CodeBlock(_)
+                    | NodeKind::FrontMatter(_)
+            )
+        })
+    }
+
+    /// Where the last item of a list, at `span`, ends for the definitions in it. An item
+    /// whose content ends in definitions ends at its last child, or at its marker when
+    /// it holds nothing else; the definitions on the line of its marker and on the lines
+    /// indented to its content that follow are still in it.
+    fn last_item_end(&self, span: Span) -> usize {
+        let src = self.src;
+        let line_start = src[..span.start].rfind('\n').map_or(0, |nl| nl + 1);
+        let first_end = src[span.start..]
+            .find('\n')
+            .map_or(src.len(), |nl| span.start + nl);
+        let first = &src[span.start..first_end];
+        let marker = first
+            .find(|c: char| !(c.is_ascii_digit() || matches!(c, '-' | '*' | '+' | '.' | ')')))
+            .unwrap_or(first.len());
+        let spaces = first[marker..].len() - first[marker..].trim_start_matches(' ').len();
+        let spaces = if (1..=4).contains(&spaces) { spaces } else { 1 };
+        let content = span.start - line_start + marker + spaces;
+        let mut end = first_end;
+        let mut at = first_end;
+        while at < src.len() {
+            let line_end = src[at + 1..].find('\n').map_or(src.len(), |nl| at + 1 + nl);
+            let line = src[at + 1..line_end].trim_end_matches('\r');
+            if !line.trim().is_empty() {
+                if line.len() - line.trim_start_matches(' ').len() < content {
+                    break;
+                }
+                end = line_end;
+            }
+            at = line_end;
+        }
+        span.end.max(end)
     }
 
     /// Whether `id` follows its previous sibling without a blank line: in a tight
@@ -490,9 +566,20 @@ impl Printer<'_> {
                 TaskState::Other(c) => c,
             };
             let task = format!("[{state}]");
+            // Only a paragraph can start on the line of the task marker.
+            let paragraph = self
+                .ast
+                .children(id)
+                .first()
+                .is_some_and(|&first| matches!(self.ast.kind(first), NodeKind::Paragraph));
             match body.first_mut() {
-                Some(first) if !first.is_empty() => *first = format!("{task} {first}"),
-                Some(first) => *first = task,
+                Some(first) if first.is_empty() => *first = task,
+                Some(first) if paragraph => *first = format!("{task} {first}"),
+                Some(_) => {
+                    let blocks = std::mem::take(&mut body);
+                    body.push(task);
+                    push_block(&mut body, blocks, tight);
+                }
                 None => body.push(task),
             }
         }

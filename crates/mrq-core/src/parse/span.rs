@@ -85,7 +85,9 @@ impl<'a> LineIndex<'a> {
 /// Makes the spans of `ast` consistent; `reported[i]` is the span the parser reported for
 /// arena index `i`, `None` where it reported none.
 ///
-/// 0. A block never ends with a line ending (or blank lines after it).
+/// 0. A block never ends with a line ending (or blank lines after it). A fenced code
+///    block covers at least its opening line and the lines of its code: comrak ends an
+///    unclosed one that a blank line and the next list item close at its fence.
 /// 1. Bottom-up, a node's span grows to cover its children's (a node without a span
 ///    gets their union). comrak's inline positions are more precise than the ends it
 ///    reports for some blocks, e.g. definition terms.
@@ -109,6 +111,13 @@ pub(super) fn repair(ast: &mut Ast, src: &str, reported: &[Option<Span>]) {
         if ast.kind(id).is_block()
             && let Some(span) = &mut spans[id.index()]
         {
+            if let NodeKind::CodeBlock(code) = ast.kind(id)
+                && code.fence.is_some()
+            {
+                span.end = span
+                    .end
+                    .max(fenced_code_end(src, span.start, &code.literal));
+            }
             span.end = without_trailing_lines(src, *span);
         }
     }
@@ -209,6 +218,26 @@ fn without_trailing_lines(src: &str, span: Span) -> usize {
     let trailing = &text[content.len()..];
     let cut = trailing.find(['\n', '\r']).unwrap_or(trailing.len());
     span.start + content.len() + cut
+}
+
+/// The end of the last line of `literal`'s code in a fenced block opening at `start`
+/// (with its line ending): as many lines after the opening line as the code has,
+/// without trailing blank ones. Lines end with `\n`, `\r\n` or `\r`.
+fn fenced_code_end(src: &str, start: usize, literal: &str) -> usize {
+    let code = literal.trim_end_matches(['\n', '\r']);
+    let lines = if code.is_empty() {
+        0
+    } else {
+        code.replace("\r\n", "\n").matches(['\n', '\r']).count() + 1
+    };
+    let mut end = start;
+    for _ in 0..=lines {
+        let Some(at) = src[end..].find(['\n', '\r']) else {
+            return src.len();
+        };
+        end += at + 1 + usize::from(src[end + at..].starts_with("\r\n"));
+    }
+    end
 }
 
 fn union(a: Span, b: Span) -> Span {

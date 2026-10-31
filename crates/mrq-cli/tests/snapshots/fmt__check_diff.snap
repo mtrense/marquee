@@ -1,0 +1,26 @@
+---
+source: crates/mrq-cli/tests/fmt.rs
+expression: out
+---
+--- a/docs/messy.md
++++ b/docs/messy.md
+@@ -1,10 +1,11 @@
+-Messy
+-=====
+-Some _emphasis_ and __strong__ text,   
++# Messy
++
++Some *emphasis* and **strong** text,\
+ spread over lines.
+-- one
+-- two
+ 
+-| a | b |
+-|:-|-:|
+-| long cell | x |
++* one
++* two
++
++| a         |   b |
++| :-------- | --: |
++| long cell |   x |

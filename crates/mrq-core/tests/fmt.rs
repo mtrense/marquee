@@ -507,6 +507,13 @@ fn structure(doc: &Document, wrap: Wrap) -> serde_json::Value {
         if let Some(serde_json::Value::Object(attrs)) = map.get_mut("attrs") {
             attrs.remove("position");
         }
+        // A reference label matches its definition whatever its whitespace, which
+        // re-wrapping moves like that of text.
+        if wrap != Wrap::Preserve
+            && let Some(serde_json::Value::String(label)) = map.get_mut("label")
+        {
+            *label = label.split_whitespace().collect::<Vec<_>>().join(" ");
+        }
         let Some(serde_json::Value::Array(children)) = map.get_mut("children") else {
             return;
         };
@@ -963,6 +970,30 @@ fn printer_edge_cases_keep_their_html() {
         // An HTML block start and a one-column delimiter row at the start of a line.
         ("a\n\\<div\n", "a\n\\<div\n"),
         ("a\n\\:--\n", "a\n\\:--\n"),
+        // Found by the generated documents proptest: a definition alone in the last
+        // item of a list, which the parser ends at its marker before a blank line.
+        (
+            "- - [ref]: /r \"T\"\n\n- a\n",
+            "- - [ref]: /r \"T\"\n\n- a\n",
+        ),
+        // After a task marker, only a paragraph can start on its line.
+        ("- [ ]\n  # a\n", "- [ ]\n  # a\n"),
+        ("- [x]\n\n  > q\n", "- [x]\n\n  > q\n"),
+        // A definition right after a paragraph would continue it.
+        ("- a\n\n  [r]: /x \"T\"\n", "- a\n\n  [r]: /x \"T\"\n"),
+        (
+            "- - [a]: /a\n    [b]: /b\n\n  c\n",
+            "- - [a]: /a\n    [b]: /b\n\n  c\n",
+        ),
+        // A definition right before a table would be its first row, before `---` a
+        // setext heading, before a list starting at 3 its text: a blank line, which
+        // keeps the list tight, separates them.
+        ("- [r]: /x\n\n  ---\n- b\n", "- [r]: /x\n\n  ***\n- b\n"),
+        ("- [r]: /x\n\n  3) a\n- b\n", "- [r]: /x\n\n  3) a\n- b\n"),
+        (
+            "- [r]: /x \"T\"\n\n  | h |\n  |---|\n  | |\n- b\n",
+            "- [r]: /x \"T\"\n\n  | h   |\n  | --- |\n  |     |\n- b\n",
+        ),
     ] {
         let once = fmt(src);
         assert_eq!(once, expected, "{src:?}");
@@ -1319,5 +1350,269 @@ proptest! {
         );
         let twice = format(&reparsed, &config);
         prop_assert_eq!(&once, &twice, "not idempotent: {} {:?}", flavor, src);
+    }
+}
+
+/// Corpus files that do not keep their HTML, structure or formatting, with the setting
+/// they fail in; each for a reason given in `fmt`'s module docs ("Known limits"). They
+/// must still fail, so the list never outlives a fix.
+const CORPUS_KNOWN: &[(&str, Wrap)] = &[];
+
+/// The real-world READMEs in `tests/corpus/` (sources and licenses in its `README.md`)
+/// keep their HTML and their [`structure`] under fmt, with the default settings, other
+/// markers and in every wrap mode, and format idempotently.
+#[test]
+fn corpus_keeps_its_html_and_formats_idempotently() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/corpus");
+    let files: Vec<_> = markdown_files(&dir, true)
+        .into_iter()
+        .filter(|path| path.file_name().is_some_and(|name| name != "README.md"))
+        .collect();
+    assert!(files.len() >= 15, "only {} corpus files", files.len());
+    let configs = [FmtConfig::default(), other_markers(), preserved_numbers()];
+    let mut failures = Vec::new();
+    let mut fixed = Vec::new();
+    for path in &files {
+        let name = path.file_name().unwrap().to_string_lossy().into_owned();
+        let src = fs::read_to_string(path).unwrap();
+        let doc = parse(&src, "gfm");
+        let options = doc.flavor().parse_options();
+        let before = html(&src, options).replace('\r', "");
+        for config in configs.iter().cloned().chain(wrap_modes()) {
+            let once = format(&doc, &config);
+            let reparsed = parse(&once, "gfm");
+            let mut problems = Vec::new();
+            if !same_html(&before, &html(&once, options), config.wrap) {
+                problems.push("HTML differs");
+            }
+            if structure(&doc, config.wrap) != structure(&reparsed, config.wrap) {
+                problems.push("structure differs");
+            }
+            if format(&reparsed, &config) != once {
+                problems.push("not idempotent");
+            }
+            let known = CORPUS_KNOWN.contains(&(name.as_str(), config.wrap));
+            match (problems.is_empty(), known) {
+                (false, false) => failures.push(format!(
+                    "{name} ({:?} {}): {}",
+                    config.wrap,
+                    config.width,
+                    problems.join(", ")
+                )),
+                (true, true) => fixed.push(format!("{name} ({:?})", config.wrap)),
+                _ => {}
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+    assert!(
+        fixed.is_empty(),
+        "{fixed:?} pass now; drop them from the known list"
+    );
+}
+
+/// One line of inline Markdown: words, markup and text that looks like markup.
+fn inline_line() -> impl Strategy<Value = String> {
+    let word = prop_oneof![
+        4 => "[a-z]{1,8}",
+        1 => "[A-Z][a-z]{0,5}[.!?]",
+        2 => prop::sample::select(vec![
+            "`code`", "*em*", "_em_", "**strong**", "~~del~~", "[link](/url)",
+            "[link](</a b> \"title\")", "[ref]", "[text][ref]", "![alt](/img.png)",
+            "<https://x.y>", "https://x.y/z", "<span>", "&amp;", "[^1]", "a_b", "2 * 3", "\\*",
+            "#", "-", "1.", ">", "|", "e.g.", "Dr.", "$x$", "x  ",
+        ])
+        .prop_map(str::to_owned),
+    ];
+    prop::collection::vec(word, 1..12).prop_map(|words| words.join(" "))
+}
+
+/// A paragraph of one to three lines.
+fn paragraph() -> impl Strategy<Value = String> {
+    prop::collection::vec(inline_line(), 1..4).prop_map(|lines| lines.join("\n") + "\n")
+}
+
+/// A leaf block: paragraphs, headings, code, tables, breaks, HTML and definitions.
+fn leaf_block() -> impl Strategy<Value = String> {
+    let heading = (1usize..=6, inline_line())
+        .prop_map(|(level, text)| format!("{} {}\n", "#".repeat(level), text.trim_end()));
+    let setext = (inline_line(), prop::sample::select(vec!["===", "---"]))
+        .prop_map(|(text, line)| format!("{}\n{line}\n", text.trim_end()));
+    let fenced = (
+        prop::sample::select(vec!["```", "~~~", "````"]),
+        prop::sample::select(vec!["", "rust", "sh title=\"x\"", "md"]),
+        prop::collection::vec("[ a-z(){};=`~#>*-]{0,20}", 0..4),
+    )
+        .prop_map(|(fence, info, lines)| {
+            let mut out = format!("{fence}{info}\n");
+            for line in lines {
+                out.push_str(line.trim_end_matches(['`', '~']));
+                out.push('\n');
+            }
+            out + fence + "\n"
+        });
+    let indented = prop::collection::vec("[a-z(){};= ]{1,16}", 1..3).prop_map(|lines| {
+        lines
+            .iter()
+            .map(|line| ["    ", line, "\n"].concat())
+            .collect()
+    });
+    let cell = prop_oneof![
+        "[a-z]{0,6}",
+        prop::sample::select(vec!["`a|b`", "\\|", "*em*", "日本語", "😀", "[l](/u)"])
+            .prop_map(str::to_owned),
+    ];
+    let table = (
+        prop::collection::vec(prop::sample::select(vec!["---", ":--", "--:", ":-:"]), 1..4),
+        prop::collection::vec(prop::collection::vec(cell, 1..5), 1..4),
+    )
+        .prop_map(|(aligns, rows)| {
+            let n = aligns.len();
+            let row = |cells: &[String]| {
+                let cells: Vec<&str> = (0..n)
+                    .map(|i| cells.get(i).map_or("", String::as_str))
+                    .collect();
+                format!("| {} |\n", cells.join(" | "))
+            };
+            let header: Vec<String> = (0..n).map(|i| format!("h{i}")).collect();
+            let mut out = row(&header) + &format!("|{}|\n", aligns.join("|"));
+            for cells in &rows {
+                out.push_str(&row(cells));
+            }
+            out
+        });
+    let other = prop::sample::select(vec![
+        "---\n",
+        "***\n",
+        "<div>\n*html*\n</div>\n",
+        "<!-- comment -->\n",
+        "[ref]: /r \"Title\"\n",
+        "[other]: <https://x.y/a b>\n",
+        "[^1]: A note.\n",
+        "[^long]: A note\n    with more.\n",
+    ])
+    .prop_map(str::to_owned);
+    prop_oneof![
+        5 => paragraph(),
+        2 => heading,
+        1 => setext,
+        2 => fenced,
+        1 => indented,
+        2 => table,
+        2 => other,
+    ]
+}
+
+/// A block: a leaf, or a list or block quote of blocks, nested up to three levels.
+fn block() -> impl Strategy<Value = String> {
+    leaf_block().prop_recursive(3, 24, 4, |inner| {
+        let marker = prop::sample::select(vec!["- ", "* ", "+ ", "1. ", "3) ", "- [ ] ", "- [x] "]);
+        let items = prop::collection::vec(prop::collection::vec(inner.clone(), 1..3), 1..4);
+        let list = (marker, items, any::<bool>()).prop_map(|(marker, items, loose)| {
+            // Task items continue at the width of their bullet, the others at that of
+            // their marker.
+            let indent = " ".repeat(if marker.starts_with("- [") {
+                2
+            } else {
+                marker.len()
+            });
+            let mut out = String::new();
+            for blocks in items {
+                let body = blocks.join("\n");
+                for (i, line) in body.lines().enumerate() {
+                    if i == 0 {
+                        out.push_str(marker);
+                    } else if !line.is_empty() {
+                        out.push_str(&indent);
+                    }
+                    out.push_str(line);
+                    out.push('\n');
+                }
+                if loose {
+                    out.push('\n');
+                }
+            }
+            out
+        });
+        let quote = prop::collection::vec(inner, 1..3).prop_map(|blocks| {
+            blocks
+                .join("\n")
+                .lines()
+                .map(|line| [if line.is_empty() { ">" } else { "> " }, line, "\n"].concat())
+                .collect()
+        });
+        prop_oneof![list, quote]
+    })
+}
+
+/// Whether each list of `doc` without a paragraph in its items is tight, in document
+/// order.
+fn lists_without_paragraphs(doc: &Document) -> Vec<bool> {
+    let ast = doc.ast();
+    ast.descendants(ast.root())
+        .filter_map(|id| match ast.kind(id) {
+            NodeKind::List(list) => Some((id, list.tight)),
+            _ => None,
+        })
+        .filter(|&(id, _)| {
+            ast.children(id).iter().all(|&item| {
+                ast.children(item)
+                    .iter()
+                    .all(|&child| !matches!(ast.kind(child), NodeKind::Paragraph))
+            })
+        })
+        .map(|(_, tight)| tight)
+        .collect()
+}
+
+/// A document of mixed blocks, mostly separated by blank lines, with the definitions
+/// its references use.
+fn document() -> impl Strategy<Value = String> {
+    let gap = prop_oneof![4 => Just("\n"), 1 => Just("")];
+    prop::collection::vec((block(), gap), 1..8).prop_map(|blocks| {
+        let mut out = String::new();
+        for (block, gap) in blocks {
+            out.push_str(&block);
+            out.push_str(gap);
+        }
+        out + "\n[ref]: /r\n\n[^1]: note\n"
+    })
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig { cases: 1024, ..ProptestConfig::default() })]
+
+    /// fmt is idempotent on generated documents, with every marker setting and in every
+    /// wrap mode: formatting the output again changes nothing.
+    #[test]
+    fn generated_documents_format_idempotently(
+        src in document(),
+        markers in prop::sample::select(vec![0, 1, 2]),
+        wrap in prop::sample::select(vec![Wrap::Preserve, Wrap::Never, Wrap::Width, Wrap::Sentence]),
+        width in 1u16..60,
+    ) {
+        // Known limit: comrak opens and closes emphasis next to a `~` (`*a~*a`) where
+        // the `~` makes it punctuation; the printer escapes the `~`, and then it is.
+        prop_assume!(!["~*", "~_", "*~", "_~"].iter().any(|pair| src.contains(pair)));
+        let markers = [FmtConfig::default(), other_markers(), preserved_numbers()][markers].clone();
+        let config = FmtConfig { wrap, width, ..markers };
+        let code = |_: &str, _: &str| None;
+        let doc = parse(&src, "gfm");
+        // Known limit: an HTML block indented right after a list keeps its indent,
+        // which puts it in the list once that is printed with less.
+        let ast = doc.ast();
+        prop_assume!(ast.descendants(ast.root()).all(|id| match ast.kind(id) {
+            NodeKind::HtmlBlock(html) => !html.starts_with(' ')
+                || !ast.prev_sibling(id).is_some_and(|prev| matches!(ast.kind(prev), NodeKind::List(_))),
+            _ => true,
+        }));
+        let once = format_with(&doc, &config, &code).text;
+        let reparsed = parse(&once, "gfm");
+        // Known limit: whether comrak reads a list as loose may hang on a definition at
+        // the end of an item; for a list without paragraphs in its items that makes no
+        // difference to the HTML, and the printer's blank lines follow what was read.
+        prop_assume!(lists_without_paragraphs(&doc) == lists_without_paragraphs(&reparsed));
+        let twice = format_with(&reparsed, &config, &code).text;
+        prop_assert_eq!(&once, &twice, "not idempotent: {:?}", src);
     }
 }

@@ -25,3 +25,14 @@ cc ba4ca5a0884c3926ec25176c3ca132981343cc3c1365b13677ff8c6f050ceb56 # shrinks to
 cc 94386fdffde23d3d59af6f9bd5ea69c51c192be1f70c571f366430e357bfded3 # shrinks to (flavor, src) = ("mkdocs", "- !!! a\na\n:   x\n"), wrap = Preserve, width = 1
 cc 381aa36a1382a9c401818898315f5b5227de24ff0a378dec41e8f790a9ece278 # shrinks to (flavor, src) = ("mkdocs", "- !!! a\n  +\n"), wrap = Preserve, width = 1
 cc 013e5e056616aa7802d1a16c083a197b4a509994b1354d525463abd989d3b779 # shrinks to (flavor, src) = ("mkdocs", "- ---\n  a\n  a\n  -\n"), wrap = Preserve, width = 1
+cc 16b511b7041274e39e07d0dac264991cc577b5b8d7f89b94529e3adb49e4835a # shrinks to src = "- - [ref]: /r \"Title\"\n- a\n\n  a\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1
+cc 843c7e0d8842d9ec37fd4198b28ee29d719a7e42faf93a8b551c2babbf591328 # shrinks to src = "- - a\n\n- * [ref]: /r \"Title\"\n\n    | h0 |\n    |---|\n    |  |\n  * a\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1
+cc 9280f19c32b7e8c78b077116c6fab2aa77e6f0e3e5319f496560d9a4cc99a401 # shrinks to src = "- [ ] a\n\n  [ref]: /r \"Title\"\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1
+cc ecbca67f9df0dbe5a1cefdc05abc5ed4487ef311c21811f247a6ec54a0ab9017 # shrinks to src = "- [ ]      \n\n  # a\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1
+cc 60bb17cd1a39756b8dc0397006ee2f1cc8b8f2cbde112fc88aac0e3698bcce99 # shrinks to src = "- [ ] ```\n  *a~*a\n  ```\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1
+cc 97d0f7aac8234da46f9fbc59d535343bdb688e6349fdea46b7b0b0ef2163b9ae # shrinks to src = "- * # a\n\n    [ref]: /r \"Title\"\n  * ***\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1
+cc d4e58db69374bb5afb75029f8803417c61bfbc18714cb065eb166323d380f3f4 # shrinks to src = "- [ref]: /r \"Title\"\n\n  3) a\n- a\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1
+cc e3cc05705e6c9cee8ff938e961b0c167e4bd255e24616070f9e9b391cece187e # shrinks to src = "- - [ ] ```\n    a*~a\n    ;*-\n    ```\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1
+cc ba84b243066bd00af09ca8ca2d2ca62155a394c5861dcdba411920034b1862f7 # shrinks to src = "- [ ] - [ ] - a\n    - a\n\n    <div>\n    *html*\n    </div>\n  - [ ] a\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1
+cc 6cd0ed2c3bced226abb242bfa670dd91f3abec5b21409bdf5cddee57d7ff1281 # shrinks to src = "* a\n\n- a\n- [ref]: /r \"Title\"\n\n  ---\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1
+cc 32fe28d6d98534d6fa0ad299b27688c1ae26219d1839f176fe991300db93fe58 # shrinks to src = "- - [ ] ```\n\n    ```\n\n    [ref]: /r \"Title\"\n\n- a\n\n\n[ref]: /r\n\n[^1]: note\n", wrap = Preserve, width = 1

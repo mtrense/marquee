@@ -330,3 +330,23 @@ proptest! {
         prop_assert!(errors.is_empty(), "{src:?}:\n{}\n{}", errors.join("\n"), ast.dump(ast.root()));
     }
 }
+
+/// An unclosed fence in a list item, ended by a blank line and the next item: comrak
+/// ends it at its opening fence, the span covers its code.
+#[test]
+fn unclosed_fences_in_list_items_cover_their_code() {
+    for (src, code) in [
+        ("- x\n\n  ```\n  y\n\n- a\n", "```\n  y"),
+        ("- x\n\n  ```\n\n  [r]: /x\n\n- a\n", "```\n\n  [r]: /x"),
+        ("- ```\n  a\n  b\n- c\n", "```\n  a\n  b"),
+    ] {
+        let ast = ComrakParser::new(ParseOptions::gfm()).parse(src);
+        let block = ast
+            .descendants(ast.root())
+            .find(|&id| matches!(ast.kind(id), NodeKind::CodeBlock(_)))
+            .unwrap();
+        let span = ast.span(block);
+        assert_eq!(&src[span.start..span.end], code, "{src:?}");
+        assert!(span_violations(&ast, src).is_empty(), "{src:?}");
+    }
+}

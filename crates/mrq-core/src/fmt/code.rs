@@ -4,12 +4,13 @@
 
 use std::collections::BTreeMap;
 use std::io::{Read, Write};
+use std::path::Path;
 use std::process::{Child, Command, ExitStatus, Stdio};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use crate::config::FmtConfig;
+use crate::config::{FmtConfig, LoadedConfig, Origin};
 
 /// Formats the code of fenced blocks for [`format_with`](super::format_with).
 ///
@@ -69,9 +70,35 @@ impl CommandFormatter {
         }
     }
 
-    /// Runs the `code_formatters` of `config`.
+    /// Runs the `code_formatters` of `config`. Relative program paths are relative to
+    /// the current directory; [`from_loaded`](Self::from_loaded) resolves them against
+    /// their config file.
     pub fn from_config(config: &FmtConfig) -> Self {
         Self::new(&config.code_formatters)
+    }
+
+    /// Runs the `fmt.code_formatters` of `loaded`, with a relative program path that
+    /// names a directory (`./tools/fmt.sh`, not `rustfmt`) resolved against the
+    /// directory of the config file that declares it. Bare names are looked up on
+    /// `PATH`, and arguments are passed as written.
+    pub fn from_loaded(loaded: &LoadedConfig) -> Self {
+        let mut commands = loaded.config().fmt.code_formatters.clone();
+        for (lang, argv) in &mut commands {
+            let Some(program) = argv.first_mut() else {
+                continue;
+            };
+            let path = Path::new(program.as_str());
+            if path.is_absolute() || path.components().count() < 2 {
+                continue;
+            }
+            if let Some(Origin::File { path: file, .. }) =
+                loaded.origin(&["fmt", "code_formatters", lang.as_str()])
+                && let Some(dir) = file.parent()
+            {
+                *program = dir.join(path).to_string_lossy().into_owned();
+            }
+        }
+        Self::new(&commands)
     }
 
     /// Kills commands that run longer than `timeout`.

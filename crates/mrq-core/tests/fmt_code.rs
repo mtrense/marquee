@@ -254,3 +254,37 @@ fn formatted_fences_are_recomputed_from_command_output() {
         "```rust\nformatted\n```\n"
     );
 }
+
+/// A relative program path in a config file is relative to that file's directory, so a
+/// formatter checked in next to `.mrq.yaml` runs from any directory; bare names are
+/// looked up on `PATH` and arguments are passed as written.
+#[cfg(unix)]
+#[test]
+fn relative_programs_resolve_against_their_config_file() {
+    use std::os::unix::fs::PermissionsExt as _;
+
+    let root = tempfile::tempdir().unwrap();
+    let tools = root.path().join("tools");
+    std::fs::create_dir_all(&tools).unwrap();
+    std::fs::create_dir_all(root.path().join("docs/deep")).unwrap();
+    let script = tools.join("upper.sh");
+    std::fs::write(&script, "#!/bin/sh\nprintf '%s\\n' \"$@\"\ntr a-z A-Z\n").unwrap();
+    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::write(
+        root.path().join(".mrq.yaml"),
+        "fmt:\n  code_formatters:\n    rust: [\"./tools/upper.sh\", \"./arg\"]\n    sh: [\"sh\", \"-c\", \"tr a-z A-Z\"]\n",
+    )
+    .unwrap();
+    let loaded = mrq_core::config::ConfigLoader::new(root.path().join("docs/deep"))
+        .load()
+        .unwrap();
+    let formatter = CommandFormatter::from_loaded(&loaded);
+    assert_eq!(
+        formatter.format("rust", "fn\n"),
+        Some(Ok("./arg\nFN\n".to_owned()))
+    );
+    assert_eq!(
+        formatter.format("sh", "echo\n"),
+        Some(Ok("ECHO\n".to_owned()))
+    );
+}

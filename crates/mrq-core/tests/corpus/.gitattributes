@@ -1,0 +1,3 @@
+# The corpus is kept byte for byte as published.
+*.md -text
+README.md text eol=lf

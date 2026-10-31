@@ -1,0 +1,5 @@
+# Code
+
+```rust
+fn main() {}
+```

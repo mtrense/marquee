@@ -52,7 +52,8 @@
 //!   as written, leading zeros included (`preserve`). A number past nine digits repeats
 //!   the start number. All content of an item is indented by the width of its own
 //!   marker (so `10.` indents by four where `9.` indents by three), tight lists stay
-//!   tight and loose ones loose, and task markers are `[ ]` and `[x]`.
+//!   tight and loose ones loose, and task markers are `[ ]` and `[x]`, on a line of
+//!   their own unless the item starts with a paragraph.
 //! - Tables are pipe tables with leading and trailing pipes. Every column is padded to
 //!   its widest cell (at least three), measured in display columns so CJK text and emoji
 //!   line up; cells are padded on the side their alignment leaves open, the delimiter row
@@ -64,6 +65,11 @@
 //!   to. A label that links use but whose definition was not found gets a definition at
 //!   the end of the document. A shortcut or collapsed reference whose printed text no
 //!   longer equals its label (whitespace runs aside) becomes a full reference.
+//!   In a tight list too, a blank line separates definitions from a block before them
+//!   that would take them in (anything but a heading, a thematic break or a code
+//!   block; the source had one there) and from a block after them that would be read
+//!   as part of them (anything but a heading, a code block or a block quote; it does
+//!   not make the list loose).
 //! - Raw HTML and `mrq:` directives are printed verbatim, and so is frontmatter unless
 //!   `fmt.frontmatter` is `normalize` (see [Frontmatter](#frontmatter)).
 //! - Fenced code is printed as written, unless there is a [`CodeFormatter`] for its
@@ -152,6 +158,20 @@
 //! - A paragraph right after a table in a tight list item becomes rows of the table,
 //!   since the printed table has pipes.
 //! - A paragraph inside raw HTML `<pre>` is wrapped like any other.
+//!
+//! Beyond those (found by the generated documents proptest; `tests/fmt.rs` skips them):
+//!
+//! - With strikethrough on, comrak opens or closes emphasis next to a `~` where the
+//!   `~` would make that impossible (`*a~*a`); the printer escapes the `~`, and the
+//!   emphasis is gone.
+//! - An HTML block indented by one to three spaces right after a list keeps its
+//!   indentation, which puts it into the last item once the list is printed with less.
+//! - Whether comrak reads a list as loose can hang on a reference definition at the end
+//!   of an item; for a list without paragraphs in its items, where it makes no
+//!   difference to the HTML, a second run may then change the blank lines once more.
+//!
+//! The real-world READMEs in `tests/corpus/` keep their HTML and structure, in every
+//! wrap mode, and format idempotently.
 //!
 //! Flavor syntax keeps its structure (the JSON projection without positions; fixtures
 //! and a proptest in `tests/fmt.rs`), except:

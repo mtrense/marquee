@@ -238,6 +238,8 @@ mrq fmt --check .            # exit 1 and show a diff if anything would change
 cat notes.md | mrq fmt -     # stdin → stdout
 ```
 
+With no path, `fmt` formats the current directory. Files are rewritten atomically, and only when their formatting changes; stdin is never written back, its formatted text goes to stdout. `--check` writes nothing, prints a unified diff for each input that is not formatted and exits 1 if there is one. The `fmt` settings come from the configuration (see [Configuration](#configuration)); a relative program path in `code_formatters` (`./tools/fmt.sh`) is relative to the config file that sets it. Code left unformatted and frontmatter left as written are reported as warnings on stderr in the `--format`, and never change the exit code.
+
 Formatting is idempotent and never changes the rendered meaning of a document.
 
 ### `mrq query`

@@ -1,0 +1,3 @@
+# Settings for the mrq fmt fixtures: lists are written with `*`.
+fmt:
+  list_marker: "*"

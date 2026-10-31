@@ -1,0 +1,4 @@
+# Paragraphs on one line; `--config` replaces the fixtures' `.mrq.yaml`.
+fmt:
+  list_marker: "*"
+  wrap: never
