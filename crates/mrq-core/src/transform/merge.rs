@@ -500,20 +500,29 @@ fn frontmatter(docs: &[Document], options: &MergeOptions) -> Option<String> {
             if first.value() == Some(&Value::Object(merged.clone())) {
                 return Some(written(blocks[0]));
             }
-            if first.format() == FrontMatterFormat::Toml
-                && let Some(toml) = toml(&merged)
-            {
-                return Some(format!("+++\n{toml}+++\n"));
-            }
-            let yaml = serde_saphyr::to_string(&Value::Object(merged)).ok()?;
-            let newline = if yaml.ends_with('\n') { "" } else { "\n" };
-            Some(format!("---\n{yaml}{newline}---\n"))
+            frontmatter_block(first.format(), merged)
         }
     }
 }
 
+/// `value` as a frontmatter block ending with a newline: TOML if `format` is and TOML
+/// can hold the data, else YAML; `None` if it cannot be serialized.
+pub(super) fn frontmatter_block(
+    format: FrontMatterFormat,
+    value: Map<String, Value>,
+) -> Option<String> {
+    if format == FrontMatterFormat::Toml
+        && let Some(toml) = toml(&value)
+    {
+        return Some(format!("+++\n{toml}+++\n"));
+    }
+    let yaml = serde_saphyr::to_string(&Value::Object(value)).ok()?;
+    let newline = if yaml.ends_with('\n') { "" } else { "\n" };
+    Some(format!("---\n{yaml}{newline}---\n"))
+}
+
 /// Adds the keys of `from` that `into` lacks, recursively in mappings both have.
-fn merge_into(into: &mut Map<String, Value>, from: &Map<String, Value>) {
+pub(super) fn merge_into(into: &mut Map<String, Value>, from: &Map<String, Value>) {
     for (key, value) in from {
         match (into.get_mut(key), value) {
             (Some(Value::Object(into)), Value::Object(from)) => merge_into(into, from),

@@ -1,0 +1,6 @@
+missing.md:3:18 missing-include: included file `parts/gone.md` does not exist
+missing.md:7:1 missing-include: `mrq:include` has no `path`
+missing.md:9:40 include: no section `Nowhere` in `parts/guide.md`
+missing.md:12:62 query: invalid query: expected `)`
+missing.md:15:39 include: `shift` must be a whole number of levels, not `one`
+missing.md:15:49 include: unknown `mrq:include` attribute `colour` is ignored

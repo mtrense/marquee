@@ -18,8 +18,9 @@ use crate::{Document, Workspace};
 /// current directory); missing files (`mrq validate` reports them) and remote ones are
 /// skipped. A bare start marker without `mrq:end` is not stale: `mrq interpolate`
 /// expands it to stdout, and only `--in-place` adds the end marker. No fix yet.
-// TODO(M7.4, M7.8): compare every region's content with the include resolver's
-// expansion, as `mrq validate` will for `stale-include`, and fix by replacing the content.
+// TODO(M7.8): compare every region's content with what `mrq interpolate --in-place`
+// writes from `transform::Includer::include`, as `mrq validate` will for
+// `stale-include`, and fix by replacing the content.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Mrq004;
 

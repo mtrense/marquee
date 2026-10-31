@@ -87,13 +87,7 @@ impl Workspace {
     /// or to the [root](Self::root) if `target` starts with `/` or `from` is `None`
     /// (stdin). The result is normalized; `..` beyond the start is kept.
     pub fn resolve(&self, from: Option<&Path>, target: impl AsRef<Path>) -> PathBuf {
-        let target = target.as_ref();
-        let (base, rest) = match (target.strip_prefix("/"), from) {
-            (Ok(rest), _) => (self.root.as_path(), rest),
-            (Err(_), Some(from)) => (from.parent().unwrap_or(Path::new("")), target),
-            (Err(_), None) => (self.root.as_path(), target),
-        };
-        normalize(&base.join(rest))
+        resolve(&self.root, from, target.as_ref())
     }
 
     /// The document at `path`, read and parsed if it is not in the workspace yet.
@@ -160,6 +154,16 @@ impl Workspace {
     pub fn is_empty(&self) -> bool {
         self.documents.is_empty()
     }
+}
+
+/// [`Workspace::resolve`] for the root `root`.
+pub(crate) fn resolve(root: &Path, from: Option<&Path>, target: &Path) -> PathBuf {
+    let (base, rest) = match (target.strip_prefix("/"), from) {
+        (Ok(rest), _) => (root, rest),
+        (Err(_), Some(from)) => (from.parent().unwrap_or(Path::new("")), target),
+        (Err(_), None) => (root, target),
+    };
+    normalize(&base.join(rest))
 }
 
 /// `path` with `.` components dropped and `..` folded into a preceding normal component;

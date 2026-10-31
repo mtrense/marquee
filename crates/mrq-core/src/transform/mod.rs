@@ -10,6 +10,8 @@
 //! - [`merge`]: combine documents into one, each file a section, with headings shifted,
 //!   links rebased and cross-file links turned into anchors of the merged document
 //!   (`mrq merge`).
+//! - [`Includer`]: resolve `mrq:include` directives, recursively, with `section`,
+//!   `select`, `shift`, `dedent` and `frontmatter` (`mrq interpolate`).
 //!
 //! ```
 //! use mrq_core::Document;
@@ -43,10 +45,12 @@
 //! );
 //! ```
 
+mod include;
 mod links;
 mod merge;
 mod shift;
 
+pub use include::{Expanded, FileLoader, INCLUDE_CODE, IncludeTarget, Includer, Inclusion, Loader};
 pub use links::{LinkMap, LinkRewrite, Location, rewrite_links};
 pub use merge::{FrontmatterMerge, MERGE_ANCHORS_CODE, MergeOptions, Merged, merge};
 pub use shift::{HEADING_CLAMP_CODE, Overflow, ShiftOptions, Shifted, shift_headings};

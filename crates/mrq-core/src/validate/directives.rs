@@ -68,13 +68,12 @@ impl Checker<'_> {
                                 .with_help(describe_cycle(document.name(), &chain)),
                         );
                     } else {
-                        // TODO(M7.4, M7.8): stale include regions. Telling whether the
-                        // content between the markers matches the expansion needs the
-                        // include resolver (`shift`, `section`, `select`, `dedent`, link
-                        // rewriting), which does not exist yet. Until then nothing is
-                        // reported here, rather than a placeholder on every include; once
-                        // it does, compare its expansion with `region.content` and report
-                        // a `stale-include` warning, as `check_toc` does for tocs.
+                        // TODO(M7.8): stale include regions. The resolver exists
+                        // (`transform::Includer::include` gives a region's content), but
+                        // how `mrq interpolate --in-place` writes it between the markers
+                        // (framing, container prefixes) is decided there. Once it is,
+                        // compare that with `region.content` and report a
+                        // `stale-include` warning, as `check_toc` does for tocs.
                     }
                 }
             }
