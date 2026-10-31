@@ -9,8 +9,8 @@
 //! | Language | Renderers |
 //! | --- | --- |
 //! | any with a `render.diagrams.commands` entry | that command first |
-//! | `mermaid` | built in (M8.5) → `mmdc` → Kroki |
-//! | `dot`, `graphviz` | `dot` → built in (M8.5) → Kroki |
+//! | `mermaid` | built in ([`MermaidRenderer`], feature `mermaid`) → `mmdc` → Kroki |
+//! | `dot`, `graphviz` | `dot` → built in ([`DotRenderer`], feature `dot`) → Kroki |
 //! | `d2` | `d2` → Kroki |
 //! | `plantuml` | `plantuml` → Kroki |
 //! | other Kroki types ([`KROKI_LANGUAGES`]) | Kroki |
@@ -27,6 +27,15 @@
 //! formats it [offers](DiagramRenderer::formats), in the caller's order. Outputs are
 //! checked before use: SVG must be UTF-8 and contain `<svg`, PNG must start with the PNG
 //! signature, text must be UTF-8 and not empty.
+//!
+//! # Rasterization
+//!
+//! With the `png` feature, any renderer that offers SVG but not PNG can satisfy a PNG
+//! request: the registry renders the SVG (cached like any SVG render) and
+//! [rasterizes](rasterize) it with resvg at scale 1. The result has the renderer's id
+//! with `+resvg` appended, and is cached under its fingerprint plus the resvg version.
+//! PNG still comes in the caller's order: when SVG was accepted first and failed, it is
+//! not rendered again for PNG. Without the feature, such a renderer renders no PNG.
 //!
 //! # Cache
 //!
@@ -48,9 +57,15 @@
 
 mod cache;
 mod command;
+#[cfg(feature = "dot")]
+mod dot;
 mod html;
 #[cfg(feature = "kroki")]
 mod kroki;
+#[cfg(feature = "mermaid")]
+mod mermaid;
+#[cfg(feature = "png")]
+mod raster;
 
 use std::fmt;
 use std::sync::Arc;
@@ -59,9 +74,15 @@ use mrq_core::config::{DiagramsConfig, LoadedConfig};
 
 pub use cache::DiagramCache;
 pub use command::CommandRenderer;
+#[cfg(feature = "dot")]
+pub use dot::DotRenderer;
 pub use html::DiagramHook;
 #[cfg(feature = "kroki")]
 pub use kroki::KrokiRenderer;
+#[cfg(feature = "mermaid")]
+pub use mermaid::MermaidRenderer;
+#[cfg(feature = "png")]
+pub use raster::rasterize;
 
 /// Diagnostic codes of the diagram framework.
 pub mod codes {
@@ -101,6 +122,9 @@ pub const KROKI_LANGUAGES: &[&str] = &[
     "wavedrom",
     "wireviz",
 ];
+
+/// Whether the registry rasterizes SVG for PNG requests (feature `png`).
+const RASTERIZE: bool = cfg!(feature = "png");
 
 /// What a diagram is rendered to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -225,7 +249,7 @@ pub enum DiagramError {
 
 /// Renders diagrams of some languages to some formats.
 ///
-/// Built-in renderers, external commands ([`CommandRenderer`]) and Kroki
+/// Built-in renderers (`MermaidRenderer`, `DotRenderer`), external commands ([`CommandRenderer`]) and Kroki
 /// (`KrokiRenderer`, feature `kroki`) implement it; a [`Registry`] tries them in order.
 pub trait DiagramRenderer: Send + Sync {
     /// A short name for messages, such as `command:dot` or `kroki`.
@@ -327,10 +351,16 @@ impl Registry {
         for (lang, argv) in &config.commands {
             registry = registry.with_renderer(CommandRenderer::configured(lang, argv.clone()));
         }
-        // M8.5: the built-in Mermaid renderer (merman, feature `mermaid`) goes here.
+        #[cfg(feature = "mermaid")]
+        {
+            registry = registry.with_renderer(MermaidRenderer::new());
+        }
         registry = registry.with_renderer(CommandRenderer::mmdc());
         registry = registry.with_renderer(CommandRenderer::dot());
-        // M8.5: the built-in DOT renderer (layout-rs) goes here.
+        #[cfg(feature = "dot")]
+        {
+            registry = registry.with_renderer(DotRenderer::new());
+        }
         registry = registry.with_renderer(CommandRenderer::d2());
         registry = registry.with_renderer(CommandRenderer::plantuml());
         if config.kroki.enabled {
@@ -405,10 +435,22 @@ impl Registry {
         let mut attempts = Vec::new();
         for renderer in candidates {
             let offered = renderer.formats(&lang);
-            let formats: Vec<DiagramFormat> = accept
+            // Each accepted format it offers, and PNG rasterized from its SVG (`true`).
+            let formats: Vec<(DiagramFormat, bool)> = accept
                 .iter()
                 .copied()
-                .filter(|format| offered.contains(format))
+                .filter_map(|format| {
+                    if offered.contains(&format) {
+                        Some((format, false))
+                    } else if RASTERIZE
+                        && format == DiagramFormat::Png
+                        && offered.contains(&DiagramFormat::Svg)
+                    {
+                        Some((format, true))
+                    } else {
+                        None
+                    }
+                })
                 .collect();
             if formats.is_empty() {
                 let wanted: Vec<&str> = accept.iter().map(|format| format.as_str()).collect();
@@ -418,39 +460,127 @@ impl Registry {
                 });
                 continue;
             }
-            for format in formats {
-                let key = self
-                    .cache
-                    .as_ref()
-                    .map(|_| cache::key(&renderer.fingerprint(), &lang, format, src));
-                if let (Some(cache), Some(key)) = (&self.cache, &key)
-                    && let Some(output) = cache.get(key, format)
-                {
-                    return Some(Ok(Rendered {
-                        output,
-                        renderer: renderer.id().to_owned(),
-                        cached: true,
-                    }));
-                }
-                match renderer.render(&lang, src, format) {
-                    Ok(output) => {
-                        if let (Some(cache), Some(key)) = (&self.cache, &key) {
-                            cache.put(key, &output);
-                        }
-                        return Some(Ok(Rendered {
-                            output,
-                            renderer: renderer.id().to_owned(),
-                            cached: false,
-                        }));
+            let mut svg_failed = false;
+            for (format, rasterized) in formats {
+                let result = if rasterized {
+                    if svg_failed {
+                        continue;
                     }
-                    Err(error) => attempts.push(Attempt {
-                        renderer: renderer.id().to_owned(),
-                        error,
-                    }),
+                    self.rasterized(renderer, &lang, src)
+                } else {
+                    self.render_with(renderer, &lang, src, format)
+                };
+                match result {
+                    Ok(rendered) => return Some(Ok(rendered)),
+                    Err(attempt) => {
+                        svg_failed |= format == DiagramFormat::Svg;
+                        attempts.push(attempt);
+                    }
                 }
             }
         }
         Some(Err(RenderFailure { lang, attempts }))
+    }
+
+    /// `src` rendered to `format` by `renderer`, from the cache if it is there.
+    fn render_with(
+        &self,
+        renderer: &dyn DiagramRenderer,
+        lang: &str,
+        src: &str,
+        format: DiagramFormat,
+    ) -> Result<Rendered, Attempt> {
+        let key = self
+            .cache
+            .as_ref()
+            .map(|_| cache::key(&renderer.fingerprint(), lang, format, src));
+        if let (Some(cache), Some(key)) = (&self.cache, &key)
+            && let Some(output) = cache.get(key, format)
+        {
+            return Ok(Rendered {
+                output,
+                renderer: renderer.id().to_owned(),
+                cached: true,
+            });
+        }
+        match renderer.render(lang, src, format) {
+            Ok(output) => {
+                if let (Some(cache), Some(key)) = (&self.cache, &key) {
+                    cache.put(key, &output);
+                }
+                Ok(Rendered {
+                    output,
+                    renderer: renderer.id().to_owned(),
+                    cached: false,
+                })
+            }
+            Err(error) => Err(Attempt {
+                renderer: renderer.id().to_owned(),
+                error,
+            }),
+        }
+    }
+
+    /// `src` rendered to SVG by `renderer` and rasterized to PNG (see the
+    /// [module docs](self#rasterization)), from the cache if it is there. A failed SVG is
+    /// the renderer's attempt, a failed rasterization one of `<id>+resvg`.
+    #[cfg(feature = "png")]
+    fn rasterized(
+        &self,
+        renderer: &dyn DiagramRenderer,
+        lang: &str,
+        src: &str,
+    ) -> Result<Rendered, Attempt> {
+        let id = format!("{}+resvg", renderer.id());
+        let key = self.cache.as_ref().map(|_| {
+            let fingerprint = format!("{} resvg {}", renderer.fingerprint(), raster::RESVG);
+            cache::key(&fingerprint, lang, DiagramFormat::Png, src)
+        });
+        if let (Some(cache), Some(key)) = (&self.cache, &key)
+            && let Some(output) = cache.get(key, DiagramFormat::Png)
+        {
+            return Ok(Rendered {
+                output,
+                renderer: id,
+                cached: true,
+            });
+        }
+        let svg = self.render_with(renderer, lang, src, DiagramFormat::Svg)?;
+        let DiagramOutput::Svg(svg) = svg.output else {
+            return Err(Attempt {
+                renderer: renderer.id().to_owned(),
+                error: DiagramError::Failed("the output is not SVG".to_owned()),
+            });
+        };
+        let output = rasterize(&svg, 1.0)
+            .map(DiagramOutput::Png)
+            .map_err(|error| Attempt {
+                renderer: id.clone(),
+                error,
+            })?;
+        if let (Some(cache), Some(key)) = (&self.cache, &key) {
+            cache.put(key, &output);
+        }
+        Ok(Rendered {
+            output,
+            renderer: id,
+            cached: false,
+        })
+    }
+
+    /// Never called: without the `png` feature nothing is rasterized.
+    #[cfg(not(feature = "png"))]
+    #[allow(clippy::unused_self)]
+    fn rasterized(
+        &self,
+        renderer: &dyn DiagramRenderer,
+        _lang: &str,
+        _src: &str,
+    ) -> Result<Rendered, Attempt> {
+        Err(Attempt {
+            renderer: renderer.id().to_owned(),
+            error: DiagramError::Unavailable("mrq was built without the `png` feature".to_owned()),
+        })
     }
 
     /// The renderers for `lang` (lowercase), in order.

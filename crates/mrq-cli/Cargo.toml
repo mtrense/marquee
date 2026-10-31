@@ -29,6 +29,9 @@ remote-include = ["mrq-core/remote-include"]
 # Symbol code includes (`function="main"`) via tree-sitter grammars. On by default; without
 # it, an include selecting a symbol fails with a diagnostic.
 tree-sitter = ["mrq-core/tree-sitter"]
+# The built-in Mermaid renderer (merman), so `mermaid` diagrams need no Node.js `mmdc`.
+# The built-in DOT renderer and PNG rasterization are always on (mrq-render's defaults).
+mermaid = ["mrq-render/mermaid"]
 
 [dependencies]
 mrq-core.workspace = true

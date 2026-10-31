@@ -103,13 +103,27 @@ impl DiagramRenderer for Fixed {
 
 // --- Registry ---------------------------------------------------------------------------
 
+/// `ids` without the built-in renderers whose feature is off.
+fn built(ids: &[&'static str]) -> Vec<&'static str> {
+    ids.iter()
+        .copied()
+        .filter(|&id| {
+            (id != "builtin:mermaid" || cfg!(feature = "mermaid"))
+                && (id != "builtin:dot" || cfg!(feature = "dot"))
+        })
+        .collect()
+}
+
 #[test]
 fn default_order_follows_the_readme() {
     let registry = Registry::from_config(&DiagramsConfig::default());
-    // The built-in Mermaid and DOT renderers (M8.5) are not there yet.
-    assert_eq!(registry.renderers_for("mermaid"), ["command:mmdc"]);
-    assert_eq!(registry.renderers_for("dot"), ["command:dot"]);
-    assert_eq!(registry.renderers_for("Graphviz"), ["command:dot"]);
+    assert_eq!(
+        registry.renderers_for("mermaid"),
+        built(&["builtin:mermaid", "command:mmdc"])
+    );
+    let dot = built(&["command:dot", "builtin:dot"]);
+    assert_eq!(registry.renderers_for("dot"), dot);
+    assert_eq!(registry.renderers_for("Graphviz"), dot);
     assert_eq!(registry.renderers_for("d2"), ["command:d2"]);
     assert_eq!(registry.renderers_for("plantuml"), ["command:plantuml"]);
     assert_eq!(registry.renderers_for("bob"), Vec::<&str>::new());
@@ -132,11 +146,16 @@ fn configured_commands_come_first_and_kroki_last() {
     assert_eq!(registry.renderers_for("svgbob"), ["kroki"]);
     assert_eq!(
         registry.renderers_for("mermaid"),
-        ["command:my-mermaid", "command:mmdc", "kroki"]
+        built(&[
+            "command:my-mermaid",
+            "builtin:mermaid",
+            "command:mmdc",
+            "kroki"
+        ])
     );
     assert_eq!(
         registry.renderers_for("dot"),
-        ["command:dot", "kroki"],
+        built(&["command:dot", "builtin:dot", "kroki"]),
         "dot is graphviz on Kroki"
     );
     // Kroki knows its diagram types; a language it does not know is not a diagram.
@@ -241,16 +260,21 @@ fn accepted_formats_are_tried_in_order() {
         .unwrap()
         .unwrap();
     assert_eq!(text.renderer, "text-only");
+    // The first renderer wins with its best format, before a later one's better format.
     let first = registry
-        .render("x", "src", &[DiagramFormat::Png, DiagramFormat::Svg])
+        .render("x", "src", &[DiagramFormat::Text, DiagramFormat::Svg])
         .unwrap()
         .unwrap();
     assert_eq!(first.renderer, "svg-only");
-    let failure = registry
-        .render("x", "src", &[DiagramFormat::Png])
-        .unwrap()
-        .unwrap_err();
-    assert!(failure.to_string().contains("png"), "{failure}");
+    // With the `png` feature, SVG renderers rasterize for PNG (tests/diagram_builtin.rs).
+    #[cfg(not(feature = "png"))]
+    {
+        let failure = registry
+            .render("x", "src", &[DiagramFormat::Png])
+            .unwrap()
+            .unwrap_err();
+        assert!(failure.to_string().contains("png"), "{failure}");
+    }
 }
 
 // --- External commands ------------------------------------------------------------------

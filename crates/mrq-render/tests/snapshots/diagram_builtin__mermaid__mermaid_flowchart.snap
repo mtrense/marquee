@@ -1,0 +1,175 @@
+---
+source: crates/mrq-render/tests/diagram_builtin.rs
+expression: normalize(&svg)
+---
+<svg id="mrq-ID" width="100%" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="flowchart" style="max-width: 817.9px;" viewBox="0 0 817.9 187" role="graphics-document document" aria-roledescription="flowchart-v2">
+<style>…</style>
+<defs>
+<filter id="mrq-ID-drop-shadow" height="130%" width="130%">
+<feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.1" flood-color="#000000"/>
+</filter>
+</defs>
+<defs>
+<filter id="mrq-ID-drop-shadow-small" height="150%" width="150%">
+<feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.1" flood-color="#000000"/>
+</filter>
+</defs>
+<g>
+<marker id="mrq-ID_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto">
+<path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto">
+<path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto">
+<path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto">
+<polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto">
+<circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto">
+<circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.2" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto">
+<circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto">
+<circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto">
+<path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto">
+<path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto">
+<path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"/>
+</marker>
+<marker id="mrq-ID_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto">
+<path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"/>
+</marker>
+<g class="root">
+<g class="clusters"/>
+<g class="edgePaths">
+<path d="M160,93.5L164.2,93.5C168.3,93.5,176.7,93.5,184.4,93.6C192.2,93.6,199.3,93.8,202.9,93.9L206.5,93.9" id="mrq-ID-L_A_B_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 42.5 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_A_B_0" data-points="W3sieCI6MTYwLCJ5Ijo5My41fSx7IngiOjE4NSwieSI6OTMuNX0seyJ4IjoyMTAuNSwieSI6OTR9XQ==" data-look="neo" marker-end="url(#mrq-ID_flowchart-v2-pointEnd-margin)" />
+<path d="M360.5,94L364.6,93.9C368.7,93.8,376.8,93.7,384.4,93.6C392,93.5,399,93.5,402.5,93.5L406,93.5" id="mrq-ID-L_B_C_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 41.5 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_B_C_0" data-points="W3sieCI6MzYwLjUsInkiOjk0fSx7IngiOjM4NSwieSI6OTMuNX0seyJ4Ijo0MTAsInkiOjkzLjV9XQ==" data-look="neo" marker-end="url(#mrq-ID_flowchart-v2-pointEnd-margin)" />
+<path d="M557.3,69.8L567.7,65.8C578.0,61.9,598.7,53.9,614.8,50.0C630.9,46,642.4,46,648.1,46L653.9,46" id="mrq-ID-L_C_D_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 96.3 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_C_D_0" data-points="W3sieCI6NTU3LjMxMDk1NDI2OTcxNTQsInkiOjY5LjgxMDk1NDI2OTcxNTM1fSx7IngiOjYxOS40NCwieSI6NDZ9LHsieCI6NjU3Ljg4LCJ5Ijo0Nn1d" data-look="neo" marker-end="url(#mrq-ID_flowchart-v2-pointEnd-margin)" />
+<path d="M557.3,117.2L567.7,121.2C578.0,125.1,598.7,133.1,614.8,137.0C630.9,141,642.4,141,648.1,141L653.9,141" id="mrq-ID-L_C_E_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style="stroke-dasharray: 0 0 96.3 4; stroke-dashoffset: 0;;" data-edge="true" data-et="edge" data-id="L_C_E_0" data-points="W3sieCI6NTU3LjMxMDk1NDI2OTcxNTQsInkiOjExNy4xODkwNDU3MzAyODQ2NX0seyJ4Ijo2MTkuNDQsInkiOjE0MX0seyJ4Ijo2NTcuODgsInkiOjE0MX1d" data-look="neo" marker-end="url(#mrq-ID_flowchart-v2-pointEnd-margin)" />
+</g>
+<g class="edgeLabels">
+<g class="edgeLabel">
+<g class="label" data-id="L_A_B_0" transform="translate(0,0)">
+<foreignObject width="0" height="0">
+<div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;">
+<span class="edgeLabel">
+</span>
+</div>
+</foreignObject>
+</g>
+</g>
+<g class="edgeLabel">
+<g class="label" data-id="L_B_C_0" transform="translate(0,0)">
+<foreignObject width="0" height="0">
+<div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;">
+<span class="edgeLabel">
+</span>
+</div>
+</foreignObject>
+</g>
+</g>
+<g class="edgeLabel" transform="translate(619.4,46)">
+<g class="label" data-id="L_C_D_0" transform="translate(-13.4,-10.5)">
+<foreignObject width="26.9" height="21" style="overflow: visible;">
+<div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;">
+<span class="edgeLabel">
+<p>html</p>
+</span>
+</div>
+</foreignObject>
+</g>
+</g>
+<g class="edgeLabel" transform="translate(619.4,141)">
+<g class="label" data-id="L_C_E_0" transform="translate(-9.0,-10.5)">
+<foreignObject width="18.1" height="21" style="overflow: visible;">
+<div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;">
+<span class="edgeLabel">
+<p>pdf</p>
+</span>
+</div>
+</foreignObject>
+</g>
+</g>
+</g>
+<g class="nodes">
+<g class="node default" id="mrq-ID-flowchart-A-0" transform="translate(84,93.5)" data-look="neo">
+<rect class="basic label-container" style="" x="-76" y="-22.5" width="152" height="45" />
+<g class="label" style="" transform="translate(-60,-10.5)">
+<rect/>
+<foreignObject width="120" height="21" style="overflow: visible;">
+<div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;">
+<span class="nodeLabel">
+<p>Markdown</p>
+</span>
+</div>
+</foreignObject>
+</g>
+</g>
+<g class="node default" id="mrq-ID-flowchart-B-1" transform="translate(285,93.5)" data-look="neo">
+<rect class="basic label-container" style="" x="-75" y="-25.5" width="150" height="51" rx="12" ry="12"/>
+<g class="label" style="" transform="translate(-60,-10.5)">
+<rect/>
+<foreignObject width="120" height="21" style="overflow: visible;">
+<div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;">
+<span class="nodeLabel">
+<p>mrq</p>
+</span>
+</div>
+</foreignObject>
+</g>
+</g>
+<g class="node default" id="mrq-ID-flowchart-C-3" transform="translate(495.5,93.5)" data-look="neo">
+<polygon points="85.5,0 171,-85.5 85.5,-171 0,-85.5" class="label-container" transform="translate(-85,85.5)" />
+<g class="label" style="" transform="translate(-60,-10.5)">
+<rect/>
+<foreignObject width="120" height="21" style="overflow: visible;">
+<div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;">
+<span class="nodeLabel">
+<p>Format?</p>
+</span>
+</div>
+</foreignObject>
+</g>
+</g>
+<g class="node default" id="mrq-ID-flowchart-D-5" transform="translate(733.9,46)" data-look="neo">
+<rect class="basic label-container" style="" x="-76" y="-22.5" width="152" height="45" />
+<g class="label" style="" transform="translate(-60,-10.5)">
+<rect/>
+<foreignObject width="120" height="21" style="overflow: visible;">
+<div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;">
+<span class="nodeLabel">
+<p>Page</p>
+</span>
+</div>
+</foreignObject>
+</g>
+</g>
+<g class="node default" id="mrq-ID-flowchart-E-7" transform="translate(733.9,141)" data-look="neo">
+<rect class="basic label-container" style="" x="-76" y="-22.5" width="152" height="45" />
+<g class="label" style="" transform="translate(-60,-10.5)">
+<rect/>
+<foreignObject width="120" height="21" style="overflow: visible;">
+<div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: nowrap; line-height: 1.5; max-width: 120px; text-align: center; width: 120px;">
+<span class="nodeLabel">
+<p>Document</p>
+</span>
+</div>
+</foreignObject>
+</g>
+</g>
+</g>
+</g>
+</g>
+</svg>
