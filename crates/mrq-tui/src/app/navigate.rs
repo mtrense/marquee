@@ -23,7 +23,7 @@ use mrq_core::document::normalize_path;
 use mrq_core::input::has_markdown_extension;
 use mrq_core::validate::{self, DocumentLink, Target, Vault, anchor_offset};
 
-use super::{App, FileView, Location, Panel};
+use super::{App, Location, Panel};
 
 impl App {
     /// The index of the chosen link among the selected block's, `None` if it has none.
@@ -123,10 +123,7 @@ impl App {
         let index = match open {
             Some(index) => index,
             None => match self.workspace.options().load(normalize_path(path)) {
-                Ok(document) => {
-                    self.files.push(FileView::new(document));
-                    self.files.len() - 1
-                }
+                Ok(document) => self.add_file(document),
                 Err(err) => {
                     self.status = Some(format!("cannot open `{shown}`: {err}"));
                     return;
@@ -145,7 +142,7 @@ impl App {
     }
 
     /// The index of the open file at `path`.
-    fn open_index(&self, path: &Path) -> Option<usize> {
+    pub(super) fn open_index(&self, path: &Path) -> Option<usize> {
         let path = normalize_path(path);
         self.files.iter().position(|file| {
             file.document

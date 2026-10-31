@@ -372,7 +372,7 @@ flowchart LR
 - [x] **M10.3 Navigation.** `Enter` follows a link (anchor, other file, external via the OS opener), `Backspace` goes back through a history stack, outline jump. **AC:** tests on navigation state.
 - [x] **M10.4 Search and query.** `/` search (incremental highlighting, `n`/`N`), `>` query prompt (DSL with `css:` and `jq:` prefixes), result list navigation. **AC:** state tests.
 - [x] **M10.5 Structural editing.** Promote/demote section (`Shift-←/→`, reusing M7.1), move section (`Alt-↑/↓`), delete section, all as TextEdits on an undo/redo stack. Dirty indicator, `w` save (atomic), and a confirmation on quit. **AC:** a round trip of edit, undo and redo gives identical bytes.
-- [ ] **M10.6 External editor and live reload.** `e` suspends the TUI and opens `$EDITOR +line file`, then reloads afterwards. `notify` watches files and reloads on external change, warning if there are unsaved edits. **AC:** manual test checklist in `docs/testing.md`, plus a unit test for the reload state machine.
+- [x] **M10.6 External editor and live reload.** `e` suspends the TUI and opens `$EDITOR +line file`, then reloads afterwards. `notify` watches files and reloads on external change, warning if there are unsaved edits. **AC:** manual test checklist in `docs/testing.md`, plus a unit test for the reload state machine.
 - [ ] **M10.7 Images and diagrams.** ratatui-image for inline images and diagrams, with protocol detection and a halfblock fallback. **AC:** works in kitty and WezTerm (manual), and falls back cleanly otherwise.
 
 ### M11: LSP (`mrq lsp`)

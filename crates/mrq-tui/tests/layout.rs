@@ -55,7 +55,7 @@ fn other_file_opened() {
 
 #[test]
 fn help_overlay() {
-    let mut app = several(100, 24);
+    let mut app = several(100, 26);
     press(&mut app, [key(KeyCode::Char('?'))]);
     insta::assert_snapshot!(draw(&app));
 }

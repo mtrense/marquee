@@ -10,7 +10,8 @@ use crate::cli::{GlobalArgs, ShowArgs};
 /// directory holds no Markdown file, the theme cannot be loaded or stdout is not a
 /// terminal; also if the terminal fails, or without the `tui` feature. The document's
 /// colours follow `--color`, `NO_COLOR` and `COLORTERM` as for `render -o ansi`. Links
-/// open other files with the same options, and web links in the system's opener.
+/// open other files with the same options, and web links in the system's opener; `e`
+/// runs `$VISUAL` or `$EDITOR`, and the files are reloaded when they change on disk.
 #[cfg(feature = "tui")]
 pub fn command(args: &ShowArgs, global: &GlobalArgs) -> ExitCode {
     use std::io::IsTerminal;

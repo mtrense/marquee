@@ -18,12 +18,16 @@
 //!   are [`TextEdit`](mrq_core::source::TextEdit)s on the source, planned in [`edit`]
 //!   and kept per file on an [`UndoStack`](edit::UndoStack) for `u`/`Ctrl-r`; `w` saves,
 //!   and `q` asks before dropping unsaved edits.
+//! - `e` hands the shown file to the injectable [`Editor`] ([`SystemEditor`] runs
+//!   `$VISUAL` or `$EDITOR` on the suspended terminal) and reloads it afterwards. Files
+//!   changed on disk come in as [`Event::Changed`] from a [`Watch`]
+//!   ([`watch::FileWatcher`]) and are reloaded, unless that would drop unsaved edits.
 //! - [`ui::draw`] renders an [`App`] into a ratatui [`Frame`](ratatui::Frame), so tests
 //!   draw to a `TestBackend` and snapshot the text. The document panel draws only its
 //!   visible lines.
 //! - [`run_on`] is the event loop over any backend and any source of events; [`run`]
-//!   drives it on the real terminal with crossterm, restoring the terminal when it ends,
-//!   fails or panics.
+//!   drives it on the real terminal with crossterm and the file watcher's changes,
+//!   restoring the terminal when it ends, fails or panics.
 //!
 //! ```
 //! use mrq_core::Document;
@@ -40,38 +44,78 @@
 
 use std::io;
 use std::iter;
+use std::time::{Duration, Instant};
 
 use ratatui::Terminal;
 use ratatui::backend::Backend;
+use ratatui::crossterm::event as crossterm;
 
 mod app;
 pub mod edit;
+pub mod editor;
 pub mod event;
 pub mod find;
 pub mod open;
 pub mod prompt;
 pub mod ui;
 pub mod view;
+pub mod watch;
 
 pub use app::{App, FileView, Location, Overlay, Panel};
+pub use editor::{Editor, SystemEditor};
 pub use event::{Action, Event};
 pub use open::{Opener, SystemOpener};
 pub use view::{Block, DocumentView};
+pub use watch::Watch;
+
+/// How often [`run`] looks for changed files while waiting for a key.
+const POLL: Duration = Duration::from_millis(50);
 
 /// Runs `app` on the terminal until it quits: raw mode on the alternate screen, events
-/// from crossterm. The terminal is restored afterwards, also on an error or a panic.
+/// from crossterm, and the open files watched for changes (if the file system can be
+/// watched; else the status line says why not). The terminal is restored afterwards,
+/// also on an error or a panic.
 pub fn run(app: &mut App) -> io::Result<()> {
     // Also installs a panic hook that restores the terminal before the panic message.
     let mut terminal = ratatui::try_init()?;
     let _restore = Restore;
-    let events = iter::repeat_with(ratatui::crossterm::event::read)
-        .filter_map(|read| read.map(|event| Event::from_crossterm(&event)).transpose());
+    let mut changes = match watch::FileWatcher::new() {
+        Ok((watcher, changes)) => {
+            app.set_watcher(watcher);
+            Some(changes)
+        }
+        Err(err) => {
+            app.say(format!("files are not reloaded on changes: {err}"));
+            None
+        }
+    };
+    // Keys are read on this thread, between events only, so none are taken from the
+    // editor while it runs.
+    let events =
+        iter::repeat_with(move || next_event(changes.as_mut())).filter_map(Result::transpose);
     run_on(&mut terminal, app, events)
 }
 
+/// The next event from crossterm or, between keys, from `changes`; `None` for a
+/// crossterm event the app ignores.
+fn next_event(changes: Option<&mut watch::Changes>) -> io::Result<Option<Event>> {
+    let Some(changes) = changes else {
+        return Ok(Event::from_crossterm(&crossterm::read()?));
+    };
+    loop {
+        if let Some(path) = changes.next(Instant::now()) {
+            return Ok(Some(Event::Changed(path)));
+        }
+        if crossterm::poll(POLL)? {
+            return Ok(Event::from_crossterm(&crossterm::read()?));
+        }
+    }
+}
+
 /// The event loop: syncs `app` with the terminal size, draws it, and hands it the next
-/// event, until it quits or `events` ends. An error from the backend or from `events`
-/// stops the loop and is returned.
+/// event, until it quits or `events` ends. After the app handed the terminal to the
+/// editor, the screen is cleared so that it is drawn afresh. An error from the backend
+/// or from `events` stops the loop and is returned.
 pub fn run_on<B, E>(
     terminal: &mut Terminal<B>,
     app: &mut App,
@@ -93,6 +137,9 @@ where
             return Ok(());
         };
         app.handle(event?);
+        if app.take_repaint() {
+            terminal.clear()?;
+        }
     }
 }
 

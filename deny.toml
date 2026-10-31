@@ -79,6 +79,10 @@ exceptions = [
   { allow = ["0BSD"], crate = "roman-numerals-rs" },
   # flate2's pure-Rust zlib backend; compresses typst-pdf's streams.
   { allow = ["Zlib"], crate = "zlib-rs" },
+  # File watching for the TUI's live reload, and its Linux backend (inotify bindings).
+  { allow = ["CC0-1.0"], crate = "notify" },
+  { allow = ["ISC"], crate = "inotify" },
+  { allow = ["ISC"], crate = "inotify-sys" },
 ]
 
 [licenses.private]

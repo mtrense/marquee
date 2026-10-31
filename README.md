@@ -409,7 +409,8 @@ An interactive viewer for one or more files, or a directory, with colors, syntax
 | `Esc`                   | clear the search or query highlighting                |
 | `u` / `Ctrl-r`          | undo / redo                                           |
 | `w`                     | save                                                  |
-| `e`                     | open `$EDITOR` at the current line                    |
+| `e`                     | edit the file in `$VISUAL` / `$EDITOR` at the selected line, then reload it |
+| `R`                     | reload the file from disk                             |
 | `?`                     | help                                                  |
 | `q`                     | quit (asks if there are unsaved changes; `Ctrl-c` does not ask) |
 
@@ -419,7 +420,9 @@ An interactive viewer for one or more files, or a directory, with colors, syntax
 
 The editing keys act on a section: the selected heading with everything up to the next heading of the same or a higher level, or, if the selection is not on a heading, the innermost section it is in (with the outline focused, the section of the outline entry). `Shift-←`/`Shift-→` move the heading and all its subheadings one level up or down, the way `mrq merge --shift` does (a setext heading becomes ATX); they refuse, with a message in the status line, when a heading would go above level 1 or below level 6. `Alt-↑`/`Alt-↓` swap the section with the previous or next section that has the same parent, and `d` deletes it with the blank lines after it (before it, for the last section), without asking, since `u` brings it back. Every edit changes only the bytes of the section, and `u` and `Ctrl-r` undo and redo them byte for byte; after an edit the selection stays on the edited section. A file with unsaved edits has `[+]` after its name in the status line and the file list. `w` writes the shown file atomically (a temporary file renamed over it, keeping its permissions); stdin input cannot be written. `q` asks before quitting while any file has unsaved edits: `y` quits, any other key goes back.
 
-Files are reloaded when they change on disk.
+`e` hands the terminal to `$VISUAL`, else `$EDITOR`, else `vi`, as `$EDITOR +line file` with the line of the selected block (the command is split at spaces, so `code --wait` works), and reloads the file when the editor exits. It refuses stdin input, and a file with unsaved edits: write them with `w` or drop them with `R` first, so that neither the editor nor the reload loses them.
+
+Open files are watched (through their directories, so saves that rename a temporary file over the original are seen) and reloaded when they change on disk, with the selection kept on the same line of text. Our own `w` and changes that leave the text as it was are ignored. A file with unsaved edits is not reloaded: the status line says it changed, `w` writes the edits over it, and `R` reloads it, which `u` takes back to the edits. A file deleted on disk keeps its content in the viewer, and `w` writes it back. `R` also reloads a file without edits by hand, e.g. where the file system cannot be watched.
 
 ### `mrq lsp`
 

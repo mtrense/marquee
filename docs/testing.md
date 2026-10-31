@@ -60,3 +60,21 @@ Paths in the log are relative to the current directory (`docs/broken.md`), which
    - the table has a bold header with a rule under it, and long cells wrap within their column;
    - footnotes are listed under `NOTES` in the order of their references.
 3. `mandoc -T lint -W warning /tmp/mrq.1` reports nothing but a missing date (the fixture has none). `cargo test -p mrq-render --test man -- --ignored` runs this lint for both fixtures, with a date.
+
+### `mrq show` hands the terminal to the editor and reloads changed files
+
+`crates/mrq-tui/tests/reload.rs` drives the reload state machine with a scripted editor and change events (`e`, `R`, changes with and without unsaved edits, deleted files, our own saves), and checks the notify watcher against the real file system (an atomic save is reported once; on macOS the test skips itself where a sandbox does not let FSEvents start). Leaving and restoring the terminal around a real editor, and the watcher inside the running viewer, can only be checked by hand:
+
+1. Copy a few files to a scratch directory, e.g. `cp README.md PLAN.md /tmp/mrq-reload/`, and run `mrq show /tmp/mrq-reload/` (built with `cargo run --` or installed).
+2. With `EDITOR=vi` (and `VISUAL` unset), select a heading far down and press `e`. Check that:
+   - vi shows the file with the cursor on the selected heading's line, on the normal screen (not over the viewer);
+   - after a change and `:wq`, the viewer comes back fully redrawn (no leftovers of vi), shows the change, says `reloaded …` and keeps the selection on the same heading;
+   - `:q` without a change says `… is unchanged`, and `:cq` says `editor: \`vi\` exited with exit status: 1`;
+   - `EDITOR='code --wait'` (or another editor with arguments) opens it, and the viewer waits until its tab is closed; `EDITOR=no-such-editor` says `editor: cannot run \`no-such-editor\`: …` and the viewer is usable afterwards. `VISUAL` wins over `EDITOR`.
+3. Make an edit (`d`), then press `e`: the status line says to write or drop the edits first and no editor starts. `mrq show - < README.md` refuses `e` for `<stdin>`.
+4. In another terminal, change the shown file with an editor that saves atomically (vim with `backupcopy=no`, or `mrq fmt`), and with one that writes in place (`echo >> file`). Check that each change shows up within a moment, once, with the selection kept where it was, and that a change to a file in the file list that is not shown is there when it is opened.
+5. Press `w` after an edit (`d`): the file is written and no `reloaded` or `changed on disk` message follows.
+6. Make an edit, then change the file in the other terminal. Check that the edit stays and the status line says `… changed on disk; your edits are kept: w writes them over it, R reloads it`. `R` shows the file on disk and `u` brings the edit back; alternatively `w` writes the edit over the change.
+7. Delete the shown file in the other terminal (`rm`): the status line says it was deleted and its content is kept; `w` writes it back. Recreate it with other text and check that it reloads.
+8. Follow a link to a file that was not open yet, change that file in the other terminal and check that it reloads too.
+9. On Linux, repeat 4–7 once (inotify instead of FSEvents), and on a file reached through a symlinked directory.

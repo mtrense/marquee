@@ -20,6 +20,8 @@ expression: draw(&app)
 "│             ┃ d / Delete       delete the section                                  ┃             ┃"
 "│             ┃ u / Ctrl-r       undo / redo                                         ┃             ┃"
 "│             ┃ w                save                                                ┃             ┃"
+"│             ┃ e                edit in $VISUAL / $EDITOR                           ┃             ┃"
+"│             ┃ R                reload from disk (u undoes it)                      ┃             ┃"
 "│             ┃ o                toggle the outline                                  ┃             ┃"
 "│             ┃ ?                toggle this help                                    ┃             ┃"
 "│             ┃ Esc              close this help / clear the matches                 ┃             ┃"

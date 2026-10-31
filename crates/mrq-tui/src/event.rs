@@ -1,17 +1,22 @@
 //! Input: the [`Event`]s the app reacts to, the [`Action`]s keys stand for, and the key
 //! bindings ([`action`], listed for the help overlay in [`KEYS`]).
 
+use std::path::PathBuf;
+
 use ratatui::crossterm::event::{self as crossterm, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
 use crate::app::{App, Overlay};
 
 /// Something that happened outside the app.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
     /// A key press, repeat or release; only presses and repeats do anything.
     Key(KeyEvent),
     /// The terminal is now this many columns and rows.
     Resize(u16, u16),
+    /// The file at this path (as the app knows it) changed on disk, or was deleted; see
+    /// [`watch`](crate::watch).
+    Changed(PathBuf),
 }
 
 impl Event {
@@ -81,8 +86,13 @@ pub enum Action {
     Undo,
     /// Redo the last undone edit of the shown file.
     Redo,
-    /// Write the shown file, if it has unsaved edits.
+    /// Write the shown file, if it has unsaved edits (or was deleted on disk).
     Save,
+    /// Edit the shown file in the external [`Editor`](crate::Editor) at the selected
+    /// block, then reload it; refused while it has unsaved edits.
+    Edit,
+    /// Reload the shown file from disk, also over unsaved edits (undoably).
+    Reload,
 }
 
 /// The key bindings for the help overlay: keys and what they do.
@@ -105,6 +115,8 @@ pub const KEYS: &[(&str, &str)] = &[
     ("d / Delete", "delete the section"),
     ("u / Ctrl-r", "undo / redo"),
     ("w", "save"),
+    ("e", "edit in $VISUAL / $EDITOR"),
+    ("R", "reload from disk (u undoes it)"),
     ("o", "toggle the outline"),
     ("?", "toggle this help"),
     ("Esc", "close this help / clear the matches"),
@@ -173,6 +185,8 @@ pub fn action(key: &KeyEvent, app: &App) -> Option<Action> {
         KeyCode::Char('d') | KeyCode::Delete => Action::DeleteSection,
         KeyCode::Char('u') => Action::Undo,
         KeyCode::Char('w') => Action::Save,
+        KeyCode::Char('e') => Action::Edit,
+        KeyCode::Char('R') => Action::Reload,
         _ => return None,
     })
 }

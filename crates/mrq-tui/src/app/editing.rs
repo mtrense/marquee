@@ -5,8 +5,8 @@
 //! [`UndoStack`](crate::edit::UndoStack), then the document is parsed again and laid
 //! out, with the selection on the edited section at the row it was on. The search or
 //! query is run again, the remembered locations in the file move with the edits, and the
-//! chosen link is forgotten. `w` writes the file atomically; `q` asks before quitting
-//! while a file has unsaved edits.
+//! chosen link is forgotten. `w` writes the file atomically (also when it has no edits
+//! but was deleted on disk); `q` asks before quitting while a file has unsaved edits.
 
 use mrq_core::source::write_atomic;
 
@@ -85,16 +85,19 @@ impl App {
         file.sync_outline();
     }
 
-    /// Writes the shown file if it has unsaved edits.
+    /// Writes the shown file if it has unsaved edits, or was deleted on disk.
     pub(super) fn save(&mut self) {
         let file = &mut self.files[self.current];
         let name = file.document.name().display().to_string();
-        self.status = Some(if !file.is_dirty() {
+        self.status = Some(if !file.is_dirty() && !file.deleted {
             "no changes to write".to_owned()
         } else if let Some(path) = file.document.path() {
             match write_atomic(path, file.document.text()) {
                 Ok(()) => {
                     file.undo.mark_saved();
+                    file.disk = file.document.text().to_owned();
+                    file.deleted = false;
+                    file.changed_on_disk = false;
                     format!("wrote {name}")
                 }
                 Err(err) => format!("cannot write {name}: {err}"),

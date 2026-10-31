@@ -13,6 +13,8 @@ repository.workspace = true
 mrq-core.workspace = true
 mrq-render.workspace = true
 ratatui.workspace = true
+notify.workspace = true
+similar.workspace = true
 
 [dev-dependencies]
 insta.workspace = true

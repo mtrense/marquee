@@ -1,8 +1,8 @@
 //! The app state: the open files, which one is shown, the focused panel, the outline
 //! toggle, the overlay, the terminal size and colour level, and the navigation state
 //! (history, chosen link, status message) with link following in `navigate`, the
-//! prompt with search and query in `search`, and structural editing, saving and the
-//! question on quit in `editing`.
+//! prompt with search and query in `search`, structural editing, saving and the
+//! question on quit in `editing`, and the external editor and live reload in `reload`.
 
 use std::path::PathBuf;
 
@@ -16,15 +16,18 @@ use ratatui::crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::layout::Rect;
 
 use crate::edit::{Structural, UndoStack};
+use crate::editor::{Editor, SystemEditor};
 use crate::event::{self, Action, Event};
 use crate::find::Find;
 use crate::open::{Opener, SystemOpener};
 use crate::prompt::Prompt;
 use crate::ui;
 use crate::view::DocumentView;
+use crate::watch::Watch;
 
 mod editing;
 mod navigate;
+mod reload;
 mod search;
 
 /// A panel that can have the focus.
@@ -54,7 +57,7 @@ pub struct Location {
 }
 
 /// One open file: the document, its outline, its layout and view (selection and scroll
-/// position) for the document panel, and its edits.
+/// position) for the document panel, its edits, and what is known of it on disk.
 #[derive(Debug)]
 pub struct FileView {
     document: Document,
@@ -66,19 +69,28 @@ pub struct FileView {
     styled: Option<(usize, StyledDocument)>,
     view: DocumentView,
     undo: UndoStack,
+    /// The text last read from or written to the file, to tell news from our own saves.
+    disk: String,
+    /// The file was deleted on disk.
+    deleted: bool,
+    /// The file changed on disk while it had unsaved edits, which were kept.
+    changed_on_disk: bool,
 }
 
 impl FileView {
     fn new(document: Document) -> Self {
         let (outline, outline_text) = outline(&document);
         Self {
+            disk: document.text().to_owned(),
             outline,
             outline_text,
-            document,
             outline_cursor: 0,
             styled: None,
             view: DocumentView::default(),
             undo: UndoStack::default(),
+            deleted: false,
+            changed_on_disk: false,
+            document,
         }
     }
 
@@ -118,6 +130,18 @@ impl FileView {
     /// Whether the document has edits that are not saved.
     pub fn is_dirty(&self) -> bool {
         self.undo.is_dirty()
+    }
+
+    /// Whether the file was deleted on disk (its content is kept, and `w` writes it
+    /// back).
+    pub fn is_deleted(&self) -> bool {
+        self.deleted
+    }
+
+    /// Whether the file changed on disk while it had unsaved edits, which were kept: `w`
+    /// writes them over it, `R` reloads it.
+    pub fn changed_on_disk(&self) -> bool {
+        self.changed_on_disk
     }
 
     /// The styled lines for the document panel's current width; empty until the file
@@ -168,6 +192,11 @@ pub struct App {
     /// The files wikilinks name, listed on the first wikilink followed.
     vault: Option<Vault>,
     opener: Box<dyn Opener>,
+    editor: Box<dyn Editor>,
+    /// Told about every open file, for live reload.
+    watcher: Option<Box<dyn Watch>>,
+    /// The terminal was handed to the editor: clear it before the next draw.
+    repaint: bool,
     /// Where each jump came from, the latest last.
     history: Vec<Location>,
     /// The link of the selected block chosen with `←`/`→`: file, block node and index.
@@ -184,7 +213,9 @@ impl App {
     /// An app showing the first of `documents`, laid out by `renderer` (whose width is
     /// replaced by the document panel's), for an 80×24 terminal until [`resize`d]. Links
     /// resolve from the current directory ([`with_root`](Self::with_root)), and the
-    /// [`SystemOpener`] opens what the viewer does not show ([`with_opener`](Self::with_opener)).
+    /// [`SystemOpener`] opens what the viewer does not show ([`with_opener`](Self::with_opener)),
+    /// and `e` runs the [`SystemEditor`] ([`with_editor`](Self::with_editor)). Nothing
+    /// is watched for changes until [`set_watcher`](Self::set_watcher).
     ///
     /// [`resize`d]: Self::resize
     ///
@@ -207,6 +238,9 @@ impl App {
             workspace: Workspace::new("."),
             vault: None,
             opener: Box::new(SystemOpener),
+            editor: Box::new(SystemEditor::default()),
+            watcher: None,
+            repaint: false,
             history: Vec::new(),
             link: None,
             status: None,
@@ -242,6 +276,28 @@ impl App {
         self
     }
 
+    /// This app editing files with `editor` on `e`.
+    #[must_use]
+    pub fn with_editor(mut self, editor: impl Editor + 'static) -> Self {
+        self.editor = Box::new(editor);
+        self
+    }
+
+    /// Watches every open file with `watcher`, and the files opened later. A file that
+    /// cannot be watched says so in the status line.
+    pub fn set_watcher(&mut self, watcher: impl Watch + 'static) {
+        self.watcher = Some(Box::new(watcher));
+        for index in 0..self.files.len() {
+            self.watch(index);
+        }
+    }
+
+    /// Whether the terminal was handed to the editor since the last call, so the screen
+    /// must be cleared before the next draw.
+    pub fn take_repaint(&mut self) -> bool {
+        std::mem::take(&mut self.repaint)
+    }
+
     /// How the document's colours are drawn; see [`with_color_level`](Self::with_color_level).
     pub fn color_level(&self) -> ColorLevel {
         self.color_level
@@ -264,6 +320,7 @@ impl App {
                 }
             }
             Event::Resize(width, height) => self.resize(width, height),
+            Event::Changed(path) => self.file_changed(&path),
         }
     }
 
@@ -312,6 +369,8 @@ impl App {
             Action::Undo => self.undo(false),
             Action::Redo => self.undo(true),
             Action::Save => self.save(),
+            Action::Edit => self.edit_externally(),
+            Action::Reload => self.reload_current(),
         }
     }
 
@@ -383,6 +442,11 @@ impl App {
     /// the next key.
     pub fn status(&self) -> Option<&str> {
         self.status.as_deref()
+    }
+
+    /// Shows `message` in the status line, until the next key.
+    pub(crate) fn say(&mut self, message: impl Into<String>) {
+        self.status = Some(message.into());
     }
 
     /// The open prompt (search, query, or the question on quit), which takes the keys.

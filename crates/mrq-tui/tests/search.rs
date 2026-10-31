@@ -84,7 +84,7 @@ fn slash_opens_a_prompt_that_searches_as_you_type() {
     assert_eq!(hits(&app), 1);
     assert_eq!(selected(&app), "Run the installer.");
     // Deleting characters searches again from where the search started.
-    press(&mut app, [key(KeyCode::Backspace); 5]);
+    press(&mut app, vec![key(KeyCode::Backspace); 5]);
     assert_eq!(selected(&app), "## Install");
     press(&mut app, typed("zz"));
     assert_eq!(hits(&app), 0);
@@ -157,7 +157,7 @@ fn enter_confirms_and_backspace_goes_back_to_where_the_search_started() {
 #[test]
 fn the_search_starts_at_the_selection_and_wraps_around() {
     let mut app = guide(80, 16);
-    press(&mut app, [key(KeyCode::Down); 4]);
+    press(&mut app, vec![key(KeyCode::Down); 4]);
     assert_eq!(selected(&app), "## Usage");
     ask(&mut app, '/', "install");
     assert_eq!(selected(&app), "## Install");
