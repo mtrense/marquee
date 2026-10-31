@@ -55,10 +55,14 @@ pub fn doc(name: &str, text: &str) -> Document {
         .unwrap()
 }
 
+/// The ANSI renderer with the default theme.
+pub fn renderer() -> AnsiRenderer {
+    AnsiRenderer::new(&Theme::default(), AnsiOptions::default()).unwrap()
+}
+
 /// An app over `docs` with the default theme, sized `width`×`height`.
 pub fn app(docs: Vec<Document>, width: u16, height: u16) -> App {
-    let renderer = AnsiRenderer::new(&Theme::default(), AnsiOptions::default()).unwrap();
-    let mut app = App::new(docs, renderer);
+    let mut app = App::new(docs, renderer());
     app.handle(Event::Resize(width, height));
     app
 }
@@ -105,6 +109,13 @@ pub fn press(app: &mut App, events: impl IntoIterator<Item = Event>) {
     for event in events {
         app.handle(event);
     }
+}
+
+/// The first line of the selected block of the shown file, without trailing blanks.
+pub fn selected(app: &App) -> String {
+    let file = app.file();
+    let block = file.view().selected().unwrap();
+    file.lines()[block.lines.start].text().trim_end().to_owned()
 }
 
 /// `app` drawn on a terminal of its size, as text.

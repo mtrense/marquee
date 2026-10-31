@@ -54,10 +54,12 @@
 //!   `.markdown`); files outside the workspace are loaded for that. An empty fragment
 //!   (`#`) is the top of the document.
 //! - **Anchors** are the [heading anchors](crate::Document::anchors) only, so links to
-//!   HTML `id`s or to footnotes are reported as missing.
+//!   HTML `id`s or to footnotes are reported as missing. [`anchor_offset`] finds where one
+//!   points.
 //! - **Wikilinks** name a file of the vault, the workspace root: the shortest path that
 //!   ends with the name, or with the name plus `.md`, in whole path components and
-//!   ignoring case (`[[Note]]`, `[[folder/Note]]`, `[[Note.md]]`, `[[pic.png]]`). A
+//!   ignoring case (`[[Note]]`, `[[folder/Note]]`, `[[Note.md]]`, `[[pic.png]]`), as
+//!   [`Vault::find`] looks them up. A
 //!   heading anchor is compared with the note's anchors after the same normalization
 //!   (only the last part of `#A#B` counts); `#^id` needs a line ending in `^id`.
 //! - **Footnotes and references** that have no definition are not links in the tree;
@@ -140,7 +142,7 @@ mod refdefs;
 #[cfg(feature = "frontmatter-schema")]
 mod schema;
 
-pub use check::{Checker, codes};
+pub use check::{Checker, Vault, anchor_offset, codes};
 pub(crate) use directives::is_remote;
 pub use external::{
     ExcludeError, ExternalChecker, ExternalExclude, ExternalOptions, ExternalStatus,

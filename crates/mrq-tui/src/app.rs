@@ -1,14 +1,24 @@
 //! The app state: the open files, which one is shown, the focused panel, the outline
-//! toggle, the overlay, the terminal size and colour level.
+//! toggle, the overlay, the terminal size and colour level, and the navigation state
+//! (history, chosen link, status message) with link following in `navigate`.
+
+use std::path::PathBuf;
 
 use mrq_core::Document;
+use mrq_core::ast::NodeId;
+use mrq_core::document::{DocumentOptions, Workspace};
 use mrq_core::toc::TocEntry;
+use mrq_core::validate::Vault;
 use mrq_render::ansi::{AnsiRenderer, ColorLevel, Line, StyledDocument};
+use ratatui::crossterm::event::KeyEventKind;
 use ratatui::layout::Rect;
 
 use crate::event::{self, Action, Event};
+use crate::open::{Opener, SystemOpener};
 use crate::ui;
 use crate::view::DocumentView;
+
+mod navigate;
 
 /// A panel that can have the focus.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -25,6 +35,15 @@ pub enum Panel {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Overlay {
     Help,
+}
+
+/// A place to go back to: a file and the selected block in it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Location {
+    /// The index of the file.
+    pub file: usize,
+    /// The source offset of the selected block's start (0 without blocks).
+    pub offset: usize,
 }
 
 /// One open file: the document, its outline, and its layout and view (selection and
@@ -127,11 +146,24 @@ pub struct App {
     renderer: AnsiRenderer,
     color_level: ColorLevel,
     quit: bool,
+    /// Where links resolve and how linked files are loaded; its documents are unused.
+    workspace: Workspace,
+    /// The files wikilinks name, listed on the first wikilink followed.
+    vault: Option<Vault>,
+    opener: Box<dyn Opener>,
+    /// Where each jump came from, the latest last.
+    history: Vec<Location>,
+    /// The link of the selected block chosen with `←`/`→`: file, block node and index.
+    link: Option<(usize, NodeId, usize)>,
+    /// A message for the status line, until the next key.
+    status: Option<String>,
 }
 
 impl App {
     /// An app showing the first of `documents`, laid out by `renderer` (whose width is
-    /// replaced by the document panel's), for an 80×24 terminal until [`resize`d].
+    /// replaced by the document panel's), for an 80×24 terminal until [`resize`d]. Links
+    /// resolve from the current directory ([`with_root`](Self::with_root)), and the
+    /// [`SystemOpener`] opens what the viewer does not show ([`with_opener`](Self::with_opener)).
     ///
     /// [`resize`d]: Self::resize
     ///
@@ -151,6 +183,12 @@ impl App {
             renderer,
             color_level: ColorLevel::TrueColor,
             quit: false,
+            workspace: Workspace::new("."),
+            vault: None,
+            opener: Box::new(SystemOpener),
+            history: Vec::new(),
+            link: None,
+            status: None,
         };
         app.relayout();
         app
@@ -164,6 +202,23 @@ impl App {
         self
     }
 
+    /// This app resolving links against the workspace root `root` (for paths starting
+    /// with `/`, and the vault of wikilinks) and loading linked files with `options`.
+    #[must_use]
+    pub fn with_root(mut self, root: impl Into<PathBuf>, options: DocumentOptions) -> Self {
+        self.workspace = Workspace::with_options(root, options);
+        self.vault = None;
+        self
+    }
+
+    /// This app handing web links, `mailto:` addresses and local files other than
+    /// Markdown to `opener`.
+    #[must_use]
+    pub fn with_opener(mut self, opener: impl Opener + 'static) -> Self {
+        self.opener = Box::new(opener);
+        self
+    }
+
     /// How the document's colours are drawn; see [`with_color_level`](Self::with_color_level).
     pub fn color_level(&self) -> ColorLevel {
         self.color_level
@@ -173,6 +228,9 @@ impl App {
     pub fn handle(&mut self, event: Event) {
         match event {
             Event::Key(key) => {
+                if key.kind != KeyEventKind::Release {
+                    self.status = None;
+                }
                 if let Some(action) = event::action(&key, self) {
                     self.apply(action);
                 }
@@ -204,12 +262,14 @@ impl App {
             Action::PageDown => self.step(Step::PageDown),
             Action::Home => self.step(Step::Home),
             Action::End => self.step(Step::End),
-            Action::Open => {
-                if self.focus == Panel::Files {
-                    self.current = self.file_cursor;
-                    self.relayout();
-                }
-            }
+            Action::Open => match self.focus {
+                Panel::Files => self.open_file_cursor(),
+                Panel::Outline => self.open_outline_cursor(),
+                Panel::Document => self.follow(),
+            },
+            Action::NextLink => self.choose_link(1),
+            Action::PreviousLink => self.choose_link(-1),
+            Action::Back => self.back(),
         }
     }
 
@@ -277,6 +337,17 @@ impl App {
         self.quit
     }
 
+    /// The message for the status line: what a key did or why it could not, shown until
+    /// the next key.
+    pub fn status(&self) -> Option<&str> {
+        self.status.as_deref()
+    }
+
+    /// Where `Backspace` goes, the latest jump last.
+    pub fn history(&self) -> &[Location] {
+        &self.history
+    }
+
     /// The width of the document panel's content in columns.
     pub fn document_width(&self) -> u16 {
         ui::inner(self.layout().document)
@@ -313,6 +384,7 @@ impl App {
                 (&mut file.outline_cursor, file.outline.len(), layout.outline)
             }
             Panel::Document => {
+                self.link = None;
                 let file = &mut self.files[self.current];
                 let view = &mut file.view;
                 match step {

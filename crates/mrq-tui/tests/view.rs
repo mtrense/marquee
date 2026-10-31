@@ -268,6 +268,22 @@ fn the_selection_can_be_set_by_node_or_offset() {
 }
 
 #[test]
+fn jump_selects_by_offset_and_scrolls_the_block_to_the_top() {
+    let text = paragraphs(0..40);
+    let (_, lines, mut view) = laid_out(&text, 40, 10);
+    assert!(view.jump(text.find("Paragraph 20.").unwrap()));
+    assert_eq!(selected(&lines, &view), "Paragraph 20.");
+    assert_eq!(view.top(), view.selected().unwrap().lines.start);
+    // Back up as well.
+    assert!(view.jump(text.find("Paragraph 5.").unwrap()));
+    assert_eq!(view.top(), view.selected().unwrap().lines.start);
+    // Near the end only as far as the end allows.
+    assert!(view.jump(text.find("Paragraph 39.").unwrap()));
+    assert_eq!(selected(&lines, &view), "Paragraph 39.");
+    assert_eq!(view.visible().end, view.line_count());
+}
+
+#[test]
 fn the_height_keeps_the_selection_in_view() {
     let (_, _, mut view) = laid_out(MIXED, 40, 100);
     view.select(9);

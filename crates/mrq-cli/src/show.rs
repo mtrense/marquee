@@ -9,7 +9,8 @@ use crate::cli::{GlobalArgs, ShowArgs};
 /// until it quits. Exits 2, before the screen is touched, if an input cannot be read, a
 /// directory holds no Markdown file, the theme cannot be loaded or stdout is not a
 /// terminal; also if the terminal fails, or without the `tui` feature. The document's
-/// colours follow `--color`, `NO_COLOR` and `COLORTERM` as for `render -o ansi`.
+/// colours follow `--color`, `NO_COLOR` and `COLORTERM` as for `render -o ansi`. Links
+/// open other files with the same options, and web links in the system's opener.
 #[cfg(feature = "tui")]
 pub fn command(args: &ShowArgs, global: &GlobalArgs) -> ExitCode {
     use std::io::IsTerminal;
@@ -50,7 +51,10 @@ pub fn command(args: &ShowArgs, global: &GlobalArgs) -> ExitCode {
     }
     // `--color` and `NO_COLOR` decide the document's colours, `COLORTERM` their depth.
     let colors = Capabilities::from_env(crate::render::color_choice(global.color), true).color;
-    let mut app = mrq_tui::App::new(documents, renderer).with_color_level(colors);
+    // Links resolve as for `validate`: from the current directory, where the inputs are.
+    let mut app = mrq_tui::App::new(documents, renderer)
+        .with_color_level(colors)
+        .with_root(".", options);
     match mrq_tui::run(&mut app) {
         Ok(()) => ExitCode::SUCCESS,
         Err(err) => {

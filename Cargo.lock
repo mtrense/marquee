@@ -3127,6 +3127,7 @@ dependencies = [
  "mrq-core",
  "mrq-render",
  "ratatui",
+ "tempfile",
 ]
 
 [[package]]

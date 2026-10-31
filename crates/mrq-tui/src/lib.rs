@@ -8,6 +8,10 @@
 //!   later key bindings only add actions.
 //! - [`DocumentView`] is the document panel's part of it: the selectable blocks of the
 //!   laid-out document, the selection and the scroll position.
+//! - Navigation is part of [`App`] too: `Enter` follows the chosen link of the selected
+//!   block (`←`/`→` choose among several) to a heading, another file or, through the
+//!   injectable [`Opener`], to the operating system; `Backspace` goes back through
+//!   [`App::history`]. What went wrong is an [`App::status`] message.
 //! - [`ui::draw`] renders an [`App`] into a ratatui [`Frame`](ratatui::Frame), so tests
 //!   draw to a `TestBackend` and snapshot the text. The document panel draws only its
 //!   visible lines.
@@ -36,11 +40,13 @@ use ratatui::backend::Backend;
 
 mod app;
 pub mod event;
+pub mod open;
 pub mod ui;
 pub mod view;
 
-pub use app::{App, FileView, Overlay, Panel};
+pub use app::{App, FileView, Location, Overlay, Panel};
 pub use event::{Action, Event};
+pub use open::{Opener, SystemOpener};
 pub use view::{Block, DocumentView};
 
 /// Runs `app` on the terminal until it quits: raw mode on the alternate screen, events

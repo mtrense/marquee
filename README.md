@@ -398,7 +398,8 @@ An interactive viewer for one or more files, or a directory, with colors, syntax
 | `↑` `↓` / `PgUp` `PgDn` / `Home` `End` | move the selection / scroll a page / go to the start or end |
 | `Tab`                   | switch between panels (outline, document, file list)  |
 | `o`                     | toggle the outline sidebar                            |
-| `Enter`                 | follow link / jump to heading                         |
+| `Enter`                 | follow the link in the selected block / jump to the outline entry's heading / open the file |
+| `←` / `→`               | choose another link in the selected block (shown in the status line) |
 | `Backspace`             | go back                                               |
 | `Shift-←` / `Shift-→`   | promote / demote the selected heading (with its section) |
 | `Alt-↑` / `Alt-↓`       | move the selected section up / down                   |
@@ -409,6 +410,8 @@ An interactive viewer for one or more files, or a directory, with colors, syntax
 | `e`                     | open `$EDITOR` at the current line                    |
 | `?`                     | help                                                  |
 | `q`                     | quit (asks if there are unsaved changes)              |
+
+`Enter` follows the first link (or wikilink) of the selected block, or the one chosen with `←`/`→`. Links resolve as for `mrq validate`: `#anchor` jumps to the heading in the same file, another Markdown file opens in the viewer (added to the file list, at its `#anchor` if given), and web links, `mailto:` addresses and other local files open in the system's opener (`open`, `xdg-open` or `explorer`). `Backspace` goes back to where each jump came from, including jumps from the outline and the file list. A link whose target is missing says so in the status line.
 
 Files are reloaded when they change on disk.
 

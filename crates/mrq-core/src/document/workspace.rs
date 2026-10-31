@@ -168,7 +168,19 @@ pub(crate) fn resolve(root: &Path, from: Option<&Path>, target: &Path) -> PathBu
 
 /// `path` with `.` components dropped and `..` folded into a preceding normal component;
 /// `..` at the start (or after another `..`) is kept, and `..` right after the root is
-/// dropped. An empty result is `.`.
+/// dropped. An empty result is `.`. This is how a [`Workspace`] keys its documents.
+///
+/// ```
+/// use std::path::Path;
+/// use mrq_core::document::normalize_path;
+///
+/// assert_eq!(normalize_path(Path::new("./docs/x/../a.md")), Path::new("docs/a.md"));
+/// ```
+pub fn normalize_path(path: &Path) -> PathBuf {
+    normalize(path)
+}
+
+/// [`normalize_path`].
 pub(crate) fn normalize(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for component in path.components() {

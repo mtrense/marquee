@@ -196,6 +196,22 @@ impl DocumentView {
         index.is_some_and(|index| self.select(index))
     }
 
+    /// Selects the block at the source offset `offset` as [`select_offset`] does, and
+    /// scrolls it to the top of the screen, as far as the end of the document allows:
+    /// where a followed link or an outline entry lands. `false` without blocks.
+    ///
+    /// [`select_offset`]: Self::select_offset
+    pub fn jump(&mut self, offset: usize) -> bool {
+        if !self.select_offset(offset) {
+            return false;
+        }
+        if let Some(block) = self.selected() {
+            self.top = block.lines.start;
+        }
+        self.clamp();
+        true
+    }
+
     /// Selects the next block, or scrolls one line down while the selected block goes on
     /// below the screen (or the last block is selected).
     pub fn down(&mut self) {

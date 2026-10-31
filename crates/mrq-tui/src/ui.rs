@@ -1,7 +1,8 @@
 //! Drawing an [`App`]: where the panels go ([`layout`]) and what they show ([`draw`]).
 //!
 //! The screen is a sidebar on the left (the file list above the outline), the document
-//! on the right and a status line at the bottom. The focused panel has a thick border.
+//! on the right and a status line at the bottom (the file name, or the app's status
+//! message). The focused panel has a thick border.
 //! The sidebar is left out below [`SIDEBAR_MIN_SCREEN`] columns. The document panel
 //! draws only the lines on screen, behind a [`GUTTER`] that marks the selected block.
 
@@ -197,7 +198,9 @@ fn draw_document(frame: &mut Frame, app: &App, area: Rect) {
 
 fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
     let name = app.file().document().name().display().to_string();
-    let left = if app.files().len() > 1 {
+    let left = if let Some(message) = app.status() {
+        format!(" {message}")
+    } else if app.files().len() > 1 {
         format!(" {name} ({}/{})", app.current() + 1, app.files().len())
     } else {
         format!(" {name}")

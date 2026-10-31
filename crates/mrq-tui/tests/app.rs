@@ -6,7 +6,7 @@ mod common;
 
 use std::convert::Infallible;
 
-use common::{app, doc, draw, guide, key, key_with, press, release, several};
+use common::{app, doc, draw, guide, key, key_with, press, release, selected, several};
 use mrq_tui::{Event, Overlay, Panel};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
@@ -251,12 +251,6 @@ fn the_event_loop_ends_with_its_events_and_passes_errors_on() {
 }
 
 /// The text of the first line of the selected block of the shown file.
-fn selected(app: &mrq_tui::App) -> String {
-    let file = app.file();
-    let block = file.view().selected().unwrap();
-    file.lines()[block.lines.start].text().trim_end().to_owned()
-}
-
 #[test]
 fn arrow_keys_move_the_selection_and_the_outline_follows() {
     let mut app = guide(100, 10);

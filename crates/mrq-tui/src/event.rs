@@ -47,8 +47,14 @@ pub enum Action {
     /// Go to the start of the document or the focused list.
     Home,
     End,
-    /// Open what the cursor of the focused panel is on.
+    /// Open what the cursor of the focused panel is on: follow the chosen link of the
+    /// selected block, jump to the outline entry's heading, or show the file.
     Open,
+    /// Choose the next link of the selected block, wrapping around.
+    NextLink,
+    PreviousLink,
+    /// Go back to where the last jump came from.
+    Back,
 }
 
 /// The key bindings for the help overlay: keys and what they do.
@@ -57,7 +63,12 @@ pub const KEYS: &[(&str, &str)] = &[
     ("↑ ↓", "move the selection or the list cursor"),
     ("PgUp PgDn", "scroll a page"),
     ("Home End", "go to the start / end"),
-    ("Enter", "open the selected file"),
+    (
+        "Enter",
+        "follow the link / go to the heading / open the file",
+    ),
+    ("← →", "choose a link in the selected block"),
+    ("Backspace", "go back"),
     ("o", "toggle the outline"),
     ("?", "toggle this help"),
     ("Esc", "close this help"),
@@ -90,6 +101,9 @@ pub fn action(key: &KeyEvent, app: &App) -> Option<Action> {
         KeyCode::Home => Action::Home,
         KeyCode::End => Action::End,
         KeyCode::Enter => Action::Open,
+        KeyCode::Right => Action::NextLink,
+        KeyCode::Left => Action::PreviousLink,
+        KeyCode::Backspace => Action::Back,
         _ => return None,
     })
 }

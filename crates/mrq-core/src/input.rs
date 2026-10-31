@@ -338,7 +338,17 @@ fn walk(root: &Path, extra: &Arc<Gitignore>) -> Result<Vec<PathBuf>, InputError>
     Ok(files)
 }
 
-pub(crate) fn has_markdown_extension(path: &Path) -> bool {
+/// Whether `path` has a Markdown extension (`.md`, `.markdown`, ignoring case), the
+/// files directory walks pick up.
+///
+/// ```
+/// use std::path::Path;
+/// use mrq_core::input::has_markdown_extension;
+///
+/// assert!(has_markdown_extension(Path::new("docs/README.MD")));
+/// assert!(!has_markdown_extension(Path::new("logo.png")));
+/// ```
+pub fn has_markdown_extension(path: &Path) -> bool {
     path.extension()
         .and_then(|ext| ext.to_str())
         .is_some_and(|ext| {

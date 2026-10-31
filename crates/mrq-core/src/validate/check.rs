@@ -80,15 +80,24 @@ pub struct Checker<'w> {
     /// Markdown files outside the workspace by path; `None` if unreadable.
     loaded: HashMap<PathBuf, Option<Document>>,
     /// The vault's files, listed on first use.
-    vault: Option<Vec<VaultFile>>,
+    vault: Option<Vault>,
     #[cfg(feature = "frontmatter-schema")]
     schemas: Option<&'w FrontmatterSchemas>,
     /// External link checks, if enabled.
     external: Option<External<'w>>,
 }
 
+/// The files wikilinks name, the way Obsidian finds them: every file under a
+/// workspace's root (honouring ignore files and skipping hidden ones), plus the
+/// workspace's documents. Listed once by [`list`](Self::list); look names up with
+/// [`find`](Self::find).
+#[derive(Debug, Clone)]
+pub struct Vault {
+    files: Vec<VaultFile>,
+}
+
 /// A file a wikilink may name.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct VaultFile {
     path: PathBuf,
     /// The path relative to the root, `/`-separated and lowercased.
@@ -293,23 +302,36 @@ impl<'w> Checker<'w> {
             .as_ref()
     }
 
-    /// The file a wikilink `name` points at, the way Obsidian finds it: the vault file
-    /// whose path ends with `name` or `name.md` (whole components, ignoring case), the
-    /// shortest such path if several do.
+    /// The file a wikilink `name` points at; see [`Vault::find`].
     fn wikilink_target(&mut self, name: &str) -> Option<PathBuf> {
         let workspace = self.workspace;
-        let vault = self.vault.get_or_insert_with(|| list_vault(workspace));
+        let vault = self.vault.get_or_insert_with(|| Vault::list(workspace));
+        vault.find(name).map(Path::to_owned)
+    }
+}
+
+impl Vault {
+    /// The vault of `workspace`: the files under its root and its documents.
+    pub fn list(workspace: &Workspace) -> Self {
+        Self {
+            files: list_vault(workspace),
+        }
+    }
+
+    /// The file a wikilink `name` points at: the one whose path ends with `name` or
+    /// `name.md` (whole components, ignoring case), the shortest such path if several do.
+    pub fn find(&self, name: &str) -> Option<&Path> {
         let name = name.trim_start_matches("./").to_lowercase();
         let with_md = format!("{name}.md");
         let names_it = |key: &str, name: &str| {
             key.strip_suffix(name)
                 .is_some_and(|rest| rest.is_empty() || rest.ends_with('/'))
         };
-        vault
+        self.files
             .iter()
             .filter(|file| names_it(&file.key, &name) || names_it(&file.key, &with_md))
             .min_by_key(|file| file.key.len())
-            .map(|file| file.path.clone())
+            .map(|file| file.path.as_path())
     }
 }
 
@@ -374,31 +396,56 @@ fn list_vault(workspace: &Workspace) -> Vec<VaultFile> {
         .collect()
 }
 
-/// Whether `document` has `anchor` (empty: the top, always there). Wikilink anchors
-/// (`wiki`) are a heading's text, of which only the last `#` part counts
-/// (`[[Note#Part#Sub]]`), or `^id` for a block.
+/// Whether `document` has `anchor`; see [`anchor_offset`].
 fn has_anchor(document: &Document, anchor: &str, wiki: bool) -> bool {
-    if anchor.is_empty() {
-        return true;
-    }
-    if !wiki {
-        return document.anchors().contains(anchor);
-    }
-    if let Some(id) = anchor.strip_prefix('^') {
-        return has_block_id(document.text(), id);
-    }
-    let heading = anchor.rsplit('#').next().unwrap_or(anchor);
-    document.anchors().contains(&obsidian_anchor(heading))
+    anchor_offset(document, anchor, wiki).is_some()
 }
 
-/// Whether some line of `text` ends with the Obsidian block id `^id`.
-fn has_block_id(text: &str, id: &str) -> bool {
-    text.lines().any(|line| {
-        line.trim_end()
+/// Where `anchor` (a link's fragment, without `#`) points in `document`, as a source
+/// offset: the start of the heading with that [anchor](Document::anchors), or 0 for an
+/// empty anchor (the top). Wikilink anchors (`wiki`) are a heading's text, of which only
+/// the last `#` part counts (`[[Note#Part#Sub]]`), or `^id` for the line ending with
+/// that block id. `None` if `document` has no such target.
+///
+/// ```
+/// use mrq_core::Document;
+/// use mrq_core::validate::anchor_offset;
+///
+/// let doc = Document::parse("# Intro\n\n## Setup\n");
+/// assert_eq!(anchor_offset(&doc, "setup", false), Some(9));
+/// assert_eq!(anchor_offset(&doc, "nope", false), None);
+/// ```
+pub fn anchor_offset(document: &Document, anchor: &str, wiki: bool) -> Option<usize> {
+    if anchor.is_empty() {
+        return Some(0);
+    }
+    let heading = if wiki {
+        if let Some(id) = anchor.strip_prefix('^') {
+            return block_id_offset(document.text(), id);
+        }
+        let heading = anchor.rsplit('#').next().unwrap_or(anchor);
+        document.anchors().get(&obsidian_anchor(heading))
+    } else {
+        document.anchors().get(anchor)
+    };
+    heading.map(|node| document.ast().span(node).start)
+}
+
+/// The offset of the first line of `text` that ends with the Obsidian block id `^id`.
+fn block_id_offset(text: &str, id: &str) -> Option<usize> {
+    let mut offset = 0;
+    for line in text.split_inclusive('\n') {
+        let found = line
+            .trim_end()
             .strip_suffix(id)
             .and_then(|rest| rest.strip_suffix('^'))
-            .is_some_and(|rest| rest.is_empty() || rest.ends_with(char::is_whitespace))
-    })
+            .is_some_and(|rest| rest.is_empty() || rest.ends_with(char::is_whitespace));
+        if found {
+            return Some(offset);
+        }
+        offset += line.len();
+    }
+    None
 }
 
 /// Headings whose anchor (compared as the anchor index compares) repeats an earlier one.

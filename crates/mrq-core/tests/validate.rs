@@ -1,13 +1,13 @@
 //! Acceptance tests for `mrq_core::validate`: link classification and resolution, and the
 //! internal checks over parsed documents and a fixture repository.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use mrq_core::ast::NodeType;
 use mrq_core::diag::Severity;
 use mrq_core::document::{Document, DocumentOptions, Workspace};
 use mrq_core::source::SourceFile;
-use mrq_core::validate::{self, Checker, DocumentLink, Target, codes};
+use mrq_core::validate::{self, Checker, DocumentLink, Target, Vault, codes};
 
 /// `text` parsed as `site/docs/a.md` (flavor from the frontmatter, else gfm).
 fn doc_at(text: &str) -> Document {
@@ -357,6 +357,46 @@ fn wikilinks_are_looked_up_by_name_across_the_vault() {
             found(codes::MISSING_ANCHOR, Severity::Error, "[[#^gone]]"),
         ]
     );
+}
+
+#[test]
+fn anchor_offsets_point_at_the_heading_or_the_block_line() {
+    let text = "# Intro: Setup!\n\nA paragraph. ^blk\n\n## Part 1\n";
+    let part = text.find("## Part").unwrap();
+    let block = text.find("A paragraph").unwrap();
+    let gfm = doc_at(text);
+    let offset = |doc: &Document, anchor: &str, wiki| validate::anchor_offset(doc, anchor, wiki);
+    assert_eq!(offset(&gfm, "intro-setup", false), Some(0));
+    assert_eq!(offset(&gfm, "part-1", false), Some(part));
+    assert_eq!(offset(&gfm, "", false), Some(0), "the top");
+    assert_eq!(offset(&gfm, "nope", false), None);
+    // Wikilink anchors: heading text (the last `#` part), or a block id.
+    let obsidian = doc_with("obsidian", "site/a.md", text);
+    assert_eq!(offset(&obsidian, "part 1", true), Some(part));
+    assert_eq!(offset(&obsidian, "Intro#Part 1", true), Some(part));
+    assert_eq!(offset(&obsidian, "^blk", true), Some(block));
+    assert_eq!(offset(&obsidian, "^nope", true), None);
+    assert_eq!(offset(&obsidian, "Nope", true), None);
+}
+
+#[test]
+fn the_vault_finds_wikilink_targets_by_name() {
+    let mut ws = Workspace::new("site");
+    ws.insert(doc_at_path("site/vault/Other Note.md", "# Other\n"));
+    ws.insert(doc_at_path("site/vault/sub/Deep.md", "# Deep\n"));
+    ws.insert(doc_at_path("site/Deep.md", "# Shallow\n"));
+    let vault = Vault::list(&ws);
+    let other = Some(Path::new("site/vault/Other Note.md"));
+    assert_eq!(vault.find("other note"), other);
+    assert_eq!(vault.find("./Other Note.md"), other);
+    // The shortest path wins; whole components only.
+    assert_eq!(vault.find("Deep"), Some(Path::new("site/Deep.md")));
+    assert_eq!(
+        vault.find("sub/deep"),
+        Some(Path::new("site/vault/sub/Deep.md"))
+    );
+    assert_eq!(vault.find("eep"), None);
+    assert_eq!(vault.find("Missing"), None);
 }
 
 /// Every check over `tests/fixtures/validate`, a small repository with a gfm README, a
