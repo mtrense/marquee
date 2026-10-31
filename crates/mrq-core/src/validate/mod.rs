@@ -140,6 +140,7 @@ mod refdefs;
 mod schema;
 
 pub use check::{Checker, codes};
+pub(crate) use directives::is_remote;
 pub use external::{
     ExcludeError, ExternalChecker, ExternalExclude, ExternalOptions, ExternalStatus,
 };

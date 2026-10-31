@@ -170,40 +170,78 @@ impl<'w> Checker<'w> {
         links(document, self.workspace)
     }
 
+    /// The [`codes::MISSING_ANCHOR`] findings of `document` that need no vault: links to
+    /// anchors of the document itself and, with `cross_file`, to anchors of other
+    /// Markdown files by path. Wikilinks to other notes are skipped. Lint rule `MRQ001`
+    /// mirrors these.
+    pub(crate) fn missing_anchors(
+        &mut self,
+        document: &Document,
+        cross_file: bool,
+    ) -> Vec<Diagnostic> {
+        let mut out = Vec::new();
+        for link in self.links_of(document) {
+            match &link.target {
+                Target::Anchor(anchor) => out.extend(missing_own_anchor(document, &link, anchor)),
+                Target::File {
+                    path,
+                    anchor: Some(anchor),
+                } if cross_file => {
+                    out.extend(self.missing_file_anchor(document, &link, path, anchor));
+                }
+                _ => {}
+            }
+        }
+        out
+    }
+
+    /// A finding if the Markdown file at `path`, which `link` of `document` points at,
+    /// lacks `anchor`.
+    fn missing_file_anchor(
+        &mut self,
+        document: &Document,
+        link: &DocumentLink,
+        path: &Path,
+        anchor: &str,
+    ) -> Option<Diagnostic> {
+        if !self.lacks_anchor(path, anchor, false) {
+            return None;
+        }
+        let written = written_destination(document, link);
+        let message = format!("no anchor `#{anchor}` in `{written}`");
+        Some(
+            Diagnostic::new(
+                codes::MISSING_ANCHOR,
+                Severity::Error,
+                document.name(),
+                link.span,
+                message,
+            )
+            .with_help(format!("resolved to `{}`", path.display())),
+        )
+    }
+
     /// Missing files, assets, anchors and wikilink targets.
     fn check_links(&mut self, document: &Document, out: &mut Vec<Diagnostic>) {
         for link in self.links_of(document) {
-            let wiki = matches!(link.kind, NodeType::WikiLink | NodeType::Embed);
             let report = |code, severity, message: String| {
                 Diagnostic::new(code, severity, document.name(), link.span, message)
             };
             match &link.target {
-                Target::Anchor(anchor) if !has_anchor(document, anchor, wiki) => {
-                    out.push(report(
-                        codes::MISSING_ANCHOR,
-                        Severity::Error,
-                        format!("no anchor `#{anchor}` in this document"),
-                    ));
-                }
+                Target::Anchor(anchor) => out.extend(missing_own_anchor(document, &link, anchor)),
                 Target::File { path, anchor } => {
-                    let written = written_destination(document, &link);
-                    let resolved = || format!("resolved to `{}`", path.display());
                     if self.workspace.get(path).is_none() && !path.exists() {
                         let (code, what) = if link.kind == NodeType::Image {
                             (codes::MISSING_ASSET, "image")
                         } else {
                             (codes::MISSING_FILE, "file")
                         };
+                        let written = written_destination(document, &link);
                         let message = format!("{what} `{written}` does not exist");
-                        out.push(report(code, Severity::Error, message).with_help(resolved()));
-                    } else if let Some(anchor) = anchor
-                        && self.lacks_anchor(path, anchor, false)
-                    {
-                        let message = format!("no anchor `#{anchor}` in `{written}`");
-                        out.push(
-                            report(codes::MISSING_ANCHOR, Severity::Error, message)
-                                .with_help(resolved()),
-                        );
+                        let help = format!("resolved to `{}`", path.display());
+                        out.push(report(code, Severity::Error, message).with_help(help));
+                    } else if let Some(anchor) = anchor {
+                        out.extend(self.missing_file_anchor(document, &link, path, anchor));
                     }
                 }
                 Target::WikiLink { name, anchor } => match self.wikilink_target(name) {
@@ -270,6 +308,24 @@ impl<'w> Checker<'w> {
             .min_by_key(|file| file.key.len())
             .map(|file| file.path.clone())
     }
+}
+
+/// A finding if `document`, which `link` points into, lacks `anchor`.
+fn missing_own_anchor(
+    document: &Document,
+    link: &DocumentLink,
+    anchor: &str,
+) -> Option<Diagnostic> {
+    let wiki = matches!(link.kind, NodeType::WikiLink | NodeType::Embed);
+    (!has_anchor(document, anchor, wiki)).then(|| {
+        Diagnostic::new(
+            codes::MISSING_ANCHOR,
+            Severity::Error,
+            document.name(),
+            link.span,
+            format!("no anchor `#{anchor}` in this document"),
+        )
+    })
 }
 
 /// The path of a [`Target::File`] link as written: its destination up to any `?` or `#`.

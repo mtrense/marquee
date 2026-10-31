@@ -1,0 +1,11 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+1:33 MRQ002 heading text ends with `?`
+--- fixed ---
+# Questions are punctuation here
+
+## Periods are not.
+
+<!-- markdownlint-configure-file { "MRQ002": { "punctuation": "?" } } -->

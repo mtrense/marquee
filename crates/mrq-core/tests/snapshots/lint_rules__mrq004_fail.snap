@@ -1,0 +1,6 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:1 MRQ004 `mrq:include` region is empty, but `targets/chapter.md` is not
+6:3 MRQ004 `mrq:include` region is empty, but `targets/chapter.md` is not

@@ -4,7 +4,8 @@
 //! Every `<root>/<rule>/<name>.md` is linted with only `<rule>` enabled (options come from
 //! `markdownlint-configure-file` comments in the fixture). The findings go to
 //! `<name>.markdownlint.txt`, one `line[:column] RULE message` per line, and the output
-//! of `--fix` to `<name>.markdownlint.fixed` when it differs from the fixture.
+//! of `--fix` to `<name>.markdownlint.fixed` when it differs from the fixture. Fixtures
+//! of mrq's own `MRQ###` rules, which markdownlint does not have, are skipped.
 
 use std::fmt::Write as _;
 use std::io;
@@ -66,12 +67,16 @@ pub fn run(root: &Path, command: &str, check: bool) -> io::Result<Vec<PathBuf>> 
     Ok(changed)
 }
 
-/// Every `*.md` one directory below `root`, sorted.
+/// Every `*.md` one directory below `root`, sorted, except in `mrq###` directories.
 fn fixtures(root: &Path) -> io::Result<Vec<PathBuf>> {
     let mut fixtures = Vec::new();
     for dir in std::fs::read_dir(root)? {
         let dir = dir?.path();
-        if !dir.is_dir() {
+        let mrq_rule = dir
+            .file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| name.to_ascii_lowercase().starts_with("mrq"));
+        if !dir.is_dir() || mrq_rule {
             continue;
         }
         for file in std::fs::read_dir(&dir)? {

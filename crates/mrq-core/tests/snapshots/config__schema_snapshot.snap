@@ -1304,6 +1304,116 @@ expression: "mrq_core::config::schema_json()"
             }
           ]
         },
+        "MRQ001": {
+          "description": "MRQ001: Link to a missing anchor",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Mrq001Options"
+            }
+          ]
+        },
+        "valid-anchors": {
+          "description": "MRQ001: Link to a missing anchor",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Mrq001Options"
+            }
+          ]
+        },
+        "MRQ002": {
+          "description": "MRQ002: Heading text ends with punctuation",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Mrq002Options"
+            }
+          ]
+        },
+        "heading-punctuation": {
+          "description": "MRQ002: Heading text ends with punctuation",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Mrq002Options"
+            }
+          ]
+        },
+        "MRQ003": {
+          "description": "MRQ003: Frontmatter keys out of order",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Mrq003Options"
+            }
+          ]
+        },
+        "frontmatter-key-order": {
+          "description": "MRQ003: Frontmatter keys out of order",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/Mrq003Options"
+            }
+          ]
+        },
+        "MRQ004": {
+          "description": "MRQ004: `mrq:include` region out of date",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "stale-include": {
+          "description": "MRQ004: `mrq:include` region out of date",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "MRQ005": {
+          "description": "MRQ005: Bare URL in a wikilink",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
+        "no-url-wikilinks": {
+          "description": "MRQ005: Bare URL in a wikilink",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            },
+            {
+              "$ref": "#/$defs/NoOptions"
+            }
+          ]
+        },
         "accessibility": {
           "description": "Every rule tagged `accessibility`",
           "allOf": [
@@ -1360,8 +1470,24 @@ expression: "mrq_core::config::schema_json()"
             }
           ]
         },
+        "directives": {
+          "description": "Every rule tagged `directives`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
         "emphasis": {
           "description": "Every rule tagged `emphasis`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "frontmatter": {
+          "description": "Every rule tagged `frontmatter`",
           "allOf": [
             {
               "$ref": "#/$defs/RuleSwitch"
@@ -1434,6 +1560,14 @@ expression: "mrq_core::config::schema_json()"
         },
         "links": {
           "description": "Every rule tagged `links`",
+          "allOf": [
+            {
+              "$ref": "#/$defs/RuleSwitch"
+            }
+          ]
+        },
+        "mrq": {
+          "description": "Every rule tagged `mrq`",
           "allOf": [
             {
               "$ref": "#/$defs/RuleSwitch"
@@ -2365,6 +2499,50 @@ expression: "mrq_core::config::schema_json()"
             "link",
             "more"
           ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "Mrq001Options": {
+      "description": "Options of MRQ001 `valid-anchors`.",
+      "type": "object",
+      "properties": {
+        "cross_file": {
+          "description": "Also check anchors in other Markdown files, read from disk.",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "Mrq002Options": {
+      "description": "Options of MRQ002 `heading-punctuation`.",
+      "type": "object",
+      "properties": {
+        "punctuation": {
+          "description": "Characters a heading's text must not end with.",
+          "type": "string",
+          "default": ".,;:!。，；：！"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Mrq003Options": {
+      "description": "Options of MRQ003 `frontmatter-key-order`.",
+      "type": "object",
+      "properties": {
+        "order": {
+          "description": "Keys that come first, in this order.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "alphabetical": {
+          "description": "Sort the keys not in `order` by name.",
+          "type": "boolean",
+          "default": false
         }
       },
       "additionalProperties": false

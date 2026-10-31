@@ -1,0 +1,6 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+12:138 MRQ001 no anchor `#set-up-1` in this document
+12:164 MRQ001 no anchor `#set-up_2` in this document

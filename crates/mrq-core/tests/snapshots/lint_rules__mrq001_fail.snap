@@ -1,0 +1,8 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+3:3 MRQ001 no anchor `#outro` in this document
+3:31 MRQ001 no anchor `#Intro` in this document
+3:67 MRQ001 no anchor `#install` in `targets/other.md`
+5:3 MRQ001 no anchor `#missing` in this document

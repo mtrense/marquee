@@ -1,0 +1,22 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+4:1 MRQ003 frontmatter key `date` should come before `draft`
+5:1 MRQ003 frontmatter key `title` should come before `date`
+--- fixed ---
+---
+# Leading comments stay on top.
+title: Out of order
+date: 2026-10-31
+# About the authors.
+authors:
+  - Ada
+  - Grace
+draft: true
+tags: [b, a]
+---
+
+# Key order
+
+<!-- markdownlint-configure-file { "MRQ003": { "order": ["title", "date"], "alphabetical": true } } -->

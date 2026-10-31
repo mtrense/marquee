@@ -154,7 +154,7 @@ fn includes(workspace: &Workspace, document: &Document) -> Vec<Include> {
 }
 
 /// Whether an include `path` is an `http(s)://` URL.
-fn is_remote(path: &str) -> bool {
+pub(crate) fn is_remote(path: &str) -> bool {
     scheme(path).is_some_and(|s| s.eq_ignore_ascii_case("http") || s.eq_ignore_ascii_case("https"))
 }
 

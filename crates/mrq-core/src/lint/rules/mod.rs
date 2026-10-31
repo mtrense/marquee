@@ -4,6 +4,10 @@
 //! messages and fixes). markdownlint has dropped `MD002`, `MD006`, `MD008`, `MD015`,
 //! `MD016`, `MD017` and `MD057` (deprecated or never released), so mrq has no rules with
 //! those ids; every other id up to `MD059` exists (`MD060` is beyond mrq's range).
+//!
+//! mrq's own rules, `MRQ001`–`MRQ005`, use mrq's model where markdownlint has none: the
+//! flavor's anchors, frontmatter values and `mrq:` directives. Their messages follow
+//! `mrq validate`'s style; `docs/rules/` documents them.
 
 mod md001;
 mod md003;
@@ -56,6 +60,11 @@ mod md055;
 mod md056;
 mod md058;
 mod md059;
+mod mrq001;
+mod mrq002;
+mod mrq003;
+mod mrq004;
+mod mrq005;
 
 pub use md001::{Md001, Md001Options};
 pub use md003::{HeadingStyle, Md003, Md003Options};
@@ -108,6 +117,11 @@ pub use md055::{Md055, Md055Options, PipeStyle};
 pub use md056::Md056;
 pub use md058::Md058;
 pub use md059::{Md059, Md059Options};
+pub use mrq001::{Mrq001, Mrq001Options};
+pub use mrq002::{Mrq002, Mrq002Options};
+pub use mrq003::{Mrq003, Mrq003Options};
+pub use mrq004::Mrq004;
+pub use mrq005::Mrq005;
 
 use std::sync::LazyLock;
 
@@ -174,6 +188,11 @@ pub(super) fn register_builtin(registry: &mut Registry) {
     registry.register(Md056);
     registry.register(Md058);
     registry.register(Md059);
+    registry.register(Mrq001);
+    registry.register(Mrq002);
+    registry.register(Mrq003);
+    registry.register(Mrq004);
+    registry.register(Mrq005);
 }
 
 /// The line ending the document uses: its first `\r\n` or `\n`, else `\n`.

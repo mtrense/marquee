@@ -1,0 +1,5 @@
+---
+source: crates/mrq-core/tests/lint_rules.rs
+expression: snapshot
+---
+8:83 MRQ001 no anchor `#Weekly Notes` in this document

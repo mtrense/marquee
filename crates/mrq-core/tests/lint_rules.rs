@@ -1,8 +1,9 @@
-//! The built-in markdownlint rules against the fixtures in `tests/fixtures/lint/`.
+//! The built-in rules against the fixtures in `tests/fixtures/lint/`.
 //!
-//! Each `<rule>/<name>.md` is linted with only `<rule>` enabled; rule options come from
-//! `markdownlint-configure-file` comments inside the fixture, which markdownlint reads
-//! too. For every fixture:
+//! Each `<rule>/<name>.md` is loaded from its path (so links and includes resolve
+//! relative to it, against files in subdirectories, which are not fixtures) and linted
+//! with only `<rule>` enabled; rule options come from `markdownlint-configure-file`
+//! comments inside the fixture, which markdownlint reads too. For every fixture:
 //!
 //! - `pass*.md` must be clean, `fail*.md` must not;
 //! - the findings and the text after applying every fix are an insta snapshot;
@@ -10,7 +11,9 @@
 //! - `<name>.markdownlint.txt` (what markdownlint-cli2 reported, recorded by
 //!   `cargo xtask lint-parity`) must match mrq's findings: line, column where
 //!   markdownlint gives one, rule and message; `<name>.markdownlint.fixed` (its `--fix`
-//!   output, absent when nothing changed) must match the fixed text.
+//!   output, absent when nothing changed) must match the fixed text. Every `MD###`
+//!   fixture needs the recording; `MRQ###` rules have no markdownlint counterpart, so
+//!   their fixtures have none and are checked by the snapshot alone.
 
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
@@ -128,7 +131,7 @@ fn rule_fixtures() {
     for (rule, path) in fixtures() {
         let name = path.file_stem().unwrap().to_str().unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
-        let doc = Document::parse(text.clone());
+        let doc = Document::load(&path).unwrap();
         let linter = linter(&rule);
         let diagnostics = linter.check(&doc);
         let found = findings(&doc, &diagnostics);
@@ -149,7 +152,20 @@ fn rule_fixtures() {
             );
         }
 
-        if let Ok(expected) = std::fs::read_to_string(path.with_extension("markdownlint.txt")) {
+        let recording = std::fs::read_to_string(path.with_extension("markdownlint.txt"));
+        let markdownlint_rule = !rule.starts_with("MRQ");
+        if markdownlint_rule != recording.is_ok() {
+            let _ = writeln!(
+                failures,
+                "{label}: {}",
+                if markdownlint_rule {
+                    "no markdownlint recording, run `cargo xtask lint-parity`"
+                } else {
+                    "mrq rules have no markdownlint recording"
+                }
+            );
+        }
+        if let Ok(expected) = recording {
             let expected = recorded(&expected);
             // Columns count only where markdownlint reports one (not for whole lines), so
             // findings pair up by line and message first.
