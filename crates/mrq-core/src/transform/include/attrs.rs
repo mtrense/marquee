@@ -1,17 +1,16 @@
 //! The attributes of an `mrq:include`: [`Spec`].
 
 use super::INCLUDE_CODE;
+use super::code::CodeSpec;
 use crate::ast::{Directive, DirectiveAttribute, Span};
 use crate::diag::{Diagnostic, Severity};
 use crate::document::Document;
 use crate::query::{Query, QueryError};
 use crate::validate::codes;
 
-/// Attributes of later kinds of include (code, symbol and remote includes), rejected
-/// until they are supported.
+/// Attributes of later kinds of include (symbol and remote includes), rejected until
+/// they are supported.
 const RESERVED: &[&str] = &[
-    "lang",
-    "lines",
     "function",
     "struct",
     "class",
@@ -19,6 +18,9 @@ const RESERVED: &[&str] = &[
     "with_docs",
     "sha256",
 ];
+
+/// Attributes of Markdown includes, ignored (with a warning) by code includes.
+const MARKDOWN_ONLY: &[&str] = &["shift", "section", "select", "frontmatter"];
 
 /// What happens to the included file's frontmatter.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -41,7 +43,17 @@ pub(super) struct Spec<'d> {
     pub section: Option<&'d DirectiveAttribute>,
     pub select: Option<(Query, &'d DirectiveAttribute)>,
     pub frontmatter: FrontmatterMode,
-    pub dedent: bool,
+    /// Whether to strip common indentation, if given.
+    pub dedent: Option<bool>,
+    /// With `lang`, how the file is included as code instead of Markdown.
+    pub code: Option<CodeSpec<'d>>,
+}
+
+impl Spec<'_> {
+    /// Whether to strip common indentation: as given, else for code includes only.
+    pub fn dedent(&self) -> bool {
+        self.dedent.unwrap_or(self.code.is_some())
+    }
 }
 
 /// The [`Spec`] of `directive`, a directive of `host` spanning `marker`; `None` after
@@ -66,8 +78,11 @@ pub(super) fn parse<'d>(
         section: None,
         select: None,
         frontmatter: FrontmatterMode::default(),
-        dedent: false,
+        dedent: None,
+        code: None,
     };
+    let is_code = directive.get("lang").is_some();
+    let mut code = Vec::new();
     // Duplicates are reported by the parser; the first one counts.
     let mut seen = Vec::new();
     for attr in &directive.attributes {
@@ -78,6 +93,11 @@ pub(super) fn parse<'d>(
         let value = attr.value.as_str();
         match attr.name.as_str() {
             "path" => {}
+            name if is_code && MARKDOWN_ONLY.contains(&name) => out.push(report(
+                Severity::Warning,
+                attr,
+                format!("`{name}` does not apply to code includes and is ignored"),
+            )),
             "shift" => match value.parse::<i32>() {
                 Ok(by) => spec.shift = Some((by, attr)),
                 Err(_) => out.push(report(
@@ -105,14 +125,15 @@ pub(super) fn parse<'d>(
                 )),
             },
             "dedent" => match value {
-                "true" => spec.dedent = true,
-                "false" => spec.dedent = false,
+                "true" => spec.dedent = Some(true),
+                "false" => spec.dedent = Some(false),
                 _ => out.push(report(
                     Severity::Error,
                     attr,
                     format!("`dedent` must be `true` or `false`, not `{value}`"),
                 )),
             },
+            "lang" | "lines" => code.push(attr),
             name if RESERVED.contains(&name) => out.push(report(
                 Severity::Error,
                 attr,
@@ -125,6 +146,7 @@ pub(super) fn parse<'d>(
             )),
         }
     }
+    spec.code = CodeSpec::parse(host, &code, out);
     let failed = out[errors..]
         .iter()
         .any(|diagnostic| diagnostic.severity == Severity::Error);

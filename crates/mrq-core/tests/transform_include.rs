@@ -86,7 +86,7 @@ fn fixtures_expand_to_their_expected_output() {
 
 #[test]
 fn expanding_an_expansion_changes_nothing() {
-    for name in ["nested", "section", "options"] {
+    for name in ["nested", "section", "options", "code"] {
         let dir = fixture_dir();
         let expanded = expand(name);
         let again = Document::parse(expanded.text.clone());

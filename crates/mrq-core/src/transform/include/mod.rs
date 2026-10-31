@@ -19,8 +19,8 @@
 //!    [selector](crate::query::Query::selector) selects (within the section, if both are
 //!    given), the results separated by blank lines. Without either, everything after the
 //!    frontmatter is kept.
-//! 4. `dedent` (`dedent=true`; off by default) strips the indentation all non-blank
-//!    lines share.
+//! 4. `dedent` (`dedent=true`; off by default for Markdown) strips the indentation all
+//!    non-blank lines share.
 //! 5. `shift=N` shifts the headings by N levels ([`shift_headings`]).
 //! 6. Relative links and assets are rebased to work from the including file
 //!    ([`rewrite_links`]).
@@ -29,11 +29,19 @@
 //!    to the including file's frontmatter, where the including file and earlier includes
 //!    win; `frontmatter=strip` (the default) drops it.
 //!
+//! An include with `lang="rust"` is a *code include*: the file's text, not parsed or
+//! expanded (so a file may include itself), in a fenced code block with `lang` as the
+//! info string. `lines` keeps a range of lines (`10-20`, `10-`, `-20` or `10`, counted
+//! from 1; an end past the last line stops there), `dedent` is on by default, and the
+//! fence is longer than any run of its character in the code (tildes if `lang` has a
+//! backtick). `shift`, `section`, `select` and `frontmatter` do not apply and get a
+//! warning; `lines` without `lang` is an error.
+//!
 //! An include that fails (a missing file, a cycle, a bad attribute, a section or
-//! selector that finds nothing) is reported and left as it is, markers included.
-//! Unknown attributes get a warning. The attributes of code, symbol and remote includes
-//! (`lang`, `lines`, `function`, `struct`, `class`, `symbol`, `with_docs`, `sha256`) are
-//! not supported yet; an include using them fails.
+//! selector that finds nothing, a `lines` range past the end) is reported and left as
+//! it is, markers included. Unknown attributes get a warning. The attributes of symbol
+//! and remote includes (`function`, `struct`, `class`, `symbol`, `with_docs`, `sha256`)
+//! are not supported yet; an include using them fails.
 //!
 //! ```
 //! use std::collections::HashMap;
@@ -64,6 +72,7 @@
 //! ```
 
 mod attrs;
+mod code;
 mod loader;
 
 use std::fmt;
@@ -299,8 +308,11 @@ impl<'i> Run<'i> {
             Diagnostic::new(code, Severity::Error, host.name(), spec.path.span, message)
         };
 
+        // A code include does not expand the file, so including one being expanded is fine.
         let identity = target.identity();
-        if let Some(at) = self.stack.iter().position(|open| *open == identity) {
+        if spec.code.is_none()
+            && let Some(at) = self.stack.iter().position(|open| *open == identity)
+        {
             let message = format!("`mrq:include` cycle: {}", describe_cycle(&self.stack[at..]));
             self.diagnostics.push(
                 report(codes::INCLUDE_CYCLE, message)
@@ -324,6 +336,9 @@ impl<'i> Run<'i> {
                 return None;
             }
         };
+        if let Some(code) = &spec.code {
+            return self.code(host, &spec, code, &text);
+        }
         // TODO(M7.7): content of a URL has no path; its links resolve against the URL.
         let path = target.file().map(Path::to_path_buf);
         let included = match self
@@ -351,7 +366,7 @@ impl<'i> Run<'i> {
         };
 
         let text = self.select(host, &spec, &included)?;
-        let text = if spec.dedent { dedent(&text) } else { text };
+        let text = if spec.dedent() { dedent(&text) } else { text };
         let text = self.adjust(host, &spec, &included, text);
         let text = trim_blank(&text);
         let front = included.frontmatter();
@@ -859,7 +874,7 @@ mod tests {
     #[test]
     fn later_kinds_of_include_are_not_supported_yet() {
         let files = [("main.rs", "fn main() {}\n")];
-        let host = "<!-- mrq:include path=main.rs lang=rust -->\n\n\
+        let host = "<!-- mrq:include path=main.rs lang=rust function=main -->\n\n\
                     <!-- mrq:include path=https://example.com/a.md -->\n";
         let expanded = includer(&files).expand(&doc("host.md", host));
         assert_eq!(expanded.text, host);
@@ -868,7 +883,7 @@ mod tests {
             [
                 (
                     INCLUDE_CODE,
-                    "`lang` is not supported yet; the include is skipped"
+                    "`function` is not supported yet; the include is skipped"
                 ),
                 (
                     INCLUDE_CODE,
@@ -876,6 +891,40 @@ mod tests {
                 ),
             ]
         );
+    }
+
+    #[test]
+    fn code_fences_outlast_any_backtick_run_and_use_tildes_for_backtick_info() {
+        let files = [
+            ("a.txt", "x ``````` y\n"),
+            ("b.txt", "~~~~\n```\n"),
+            ("c.txt", "\r\n  one\r\n\r\n    two\r\n\r\n"),
+        ];
+        assert_eq!(
+            expanded(&files, "<!-- mrq:include path=a.txt lang=text -->\n"),
+            "````````text\nx ``````` y\n````````\n"
+        );
+        assert_eq!(
+            expanded(&files, "<!-- mrq:include path=b.txt lang=\"a`b\" -->\n"),
+            "~~~~~a`b\n~~~~\n```\n~~~~~\n"
+        );
+        assert_eq!(
+            expanded(&files, "<!-- mrq:include path=c.txt lang=text -->\r\n"),
+            "```text\r\none\r\n\r\n  two\r\n```\r\n"
+        );
+    }
+
+    #[test]
+    fn one_code_region_gives_its_fenced_content() {
+        let files = [("src/lib.rs", "fn a() {}\nfn b() {}\n")];
+        let host = doc(
+            "host.md",
+            "<!-- mrq:include path=src/lib.rs lang=rust lines=2 -->\n<!-- mrq:end -->\n",
+        );
+        let inclusion = includer(&files).include(&host, &host.directives()[0]);
+        assert_eq!(inclusion.diagnostics, []);
+        assert_eq!(inclusion.text.as_deref(), Some("```rust\nfn b() {}\n```\n"));
+        assert_eq!(inclusion.frontmatter, None);
     }
 
     #[test]

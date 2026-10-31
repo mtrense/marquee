@@ -1,0 +1,10 @@
+code-errors.md:3:39 include: `lines` only applies to code includes, which need a `lang`
+code-errors.md:6:49 include: `lines` must be a range like `10-20`, `10-` or `-20`, not `one`
+code-errors.md:9:49 include: `lines` count from line 1, not `0-2`
+code-errors.md:12:49 include: `lines` range `5-2` ends before it starts
+code-errors.md:15:49 include: `lines` starts at line 9, but `code/hello.rs` has 8 lines
+code-errors.md:18:39 include: `lang` must name a language, like `lang=rust`
+code-errors.md:21:18 missing-include: included file `code/gone.rs` does not exist
+code-errors.md:24:49 include: `function` is not supported yet; the include is skipped
+code-errors.md:27:57 include: `shift` does not apply to code includes and is ignored
+code-errors.md:27:65 include: `section` does not apply to code includes and is ignored
