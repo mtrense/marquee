@@ -52,7 +52,9 @@ mod links;
 mod merge;
 mod shift;
 
-pub use include::{Expanded, FileLoader, INCLUDE_CODE, IncludeTarget, Includer, Inclusion, Loader};
+pub use include::{
+    Expanded, FileLoader, INCLUDE_CODE, IncludeTarget, Includer, Inclusion, Loader, RegionRefresh,
+};
 #[cfg(feature = "remote-include")]
 pub use include::{HttpLoader, HttpLoaderOptions, IncludeCache};
 pub use links::{LinkMap, LinkRewrite, Location, rewrite_links};

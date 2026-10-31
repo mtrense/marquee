@@ -28,15 +28,12 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use crate::ast::json::{self, Position};
-use crate::ast::{Ast, Directive, NodeId, NodeKind, Span};
+use crate::ast::{Directive, NodeId, NodeKind, Span};
 use crate::diag::{Diagnostic, Severity};
 use crate::directive::{DIRECTIVE_ERROR_CODE, DirectiveKind, DirectiveRegion};
 use crate::document::Document;
 use crate::flavor;
-use crate::source::{ByteRange, TextEdit};
-
-/// What closes a directive region.
-const END_MARKER: &str = "<!-- mrq:end -->";
+use crate::source::TextEdit;
 
 /// Indentation per nesting step, in both renderings.
 const INDENT: &str = "  ";
@@ -252,7 +249,7 @@ pub fn refresh_edits(doc: &Document, depth: Option<u8>) -> TocRefresh {
             .filter(|entry| depth.is_none_or(|depth| entry.level <= depth))
             .cloned()
             .collect();
-        if let Some(edit) = region_edit(src, region, marker, ast, &listed) {
+        if let Some(edit) = region.body_edit(src, ast, &link_list(&listed)) {
             refresh.edits.push(edit);
         }
     }
@@ -304,55 +301,4 @@ fn region_depth(directive: &Directive, doc: &Document) -> Result<Option<u8>, Box
             .with_help("write e.g. `<!-- mrq:toc depth=3 -->`"),
         )),
     }
-}
-
-/// The edit making `region` list `entries`, or `None` if it already does.
-fn region_edit(
-    src: &str,
-    region: &DirectiveRegion,
-    marker: Span,
-    ast: &Ast,
-    entries: &[TocEntry],
-) -> Option<TextEdit> {
-    let line_start = |at: usize| src[..at].rfind('\n').map_or(0, |i| i + 1);
-    let prefix: String = src[line_start(marker.start)..marker.start]
-        .chars()
-        .map(|c| {
-            if matches!(c, '>' | ' ' | '\t') {
-                c
-            } else {
-                ' '
-            }
-        })
-        .collect();
-    let newline = src[marker.end..].find('\n').map(|i| marker.end + i);
-    // The marker line's ending; the file's first one if it is the unterminated last line.
-    let crlf = match newline {
-        Some(i) => src[..i].ends_with('\r'),
-        None => src.contains("\r\n"),
-    };
-    let eol = if crlf { "\r\n" } else { "\n" };
-    let mut body = String::new();
-    if !entries.is_empty() {
-        let blank = format!("{}{eol}", prefix.trim_end());
-        body.push_str(&blank);
-        for line in link_list(entries).lines() {
-            let _ = write!(body, "{prefix}{line}{eol}");
-        }
-        body.push_str(&blank);
-    }
-    let body_start = newline.map_or(src.len(), |i| i + 1);
-    let (range, replacement) = if let Some(end) = region.end {
-        let end_line = line_start(ast.span(end).start);
-        if end_line < body_start {
-            // Both markers on one line: nothing can go between them.
-            return None;
-        }
-        (ByteRange::new(body_start, end_line), body)
-    } else {
-        let lead = if newline.is_none() { eol } else { "" };
-        let replacement = format!("{lead}{body}{prefix}{END_MARKER}{eol}");
-        (ByteRange::empty(body_start), replacement)
-    };
-    (src[range.start..range.end] != replacement).then_some(TextEdit { range, replacement })
 }

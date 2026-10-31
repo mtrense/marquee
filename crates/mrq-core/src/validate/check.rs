@@ -44,6 +44,9 @@ pub mod codes {
     pub const FRONTMATTER_SCHEMA: &str = "frontmatter-schema";
     /// An `mrq:toc` region whose list differs from what `mrq toc --insert` writes.
     pub const STALE_TOC: &str = "stale-toc";
+    /// An `mrq:include` region whose body differs from what `mrq interpolate --in-place`
+    /// writes.
+    pub const STALE_INCLUDE: &str = "stale-include";
     /// An `mrq:include` without a `path`, or whose file does not exist.
     pub const MISSING_INCLUDE: &str = "missing-include";
     /// An `mrq:include` that, through the files it includes, includes its own file.

@@ -320,12 +320,15 @@ pub struct MergeArgs {
 
 #[derive(Debug, Args)]
 pub struct InterpolateArgs {
-    /// Refresh the content between the markers in place.
+    /// Refresh the content between the markers in place (stdin: print the result).
     #[arg(long, conflicts_with = "check")]
     pub in_place: bool,
-    /// Exit 1 if any include block is stale.
+    /// Do not write; exit 1 and show a diff if --in-place would change anything.
     #[arg(long)]
     pub check: bool,
+    /// Print the content between the markers instead of replacing the markers with it.
+    #[arg(long, conflicts_with_all = ["in_place", "check"])]
+    pub keep_directives: bool,
     #[command(flatten)]
     pub inputs: Inputs,
 }

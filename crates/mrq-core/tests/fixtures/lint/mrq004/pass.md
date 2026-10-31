@@ -1,19 +1,25 @@
 # Includes
 
-A region with content is not compared with its file yet:
+A region that is up to date:
 
 <!-- mrq:include path="targets/chapter.md" -->
-## Chapter (outdated)
+
+## Chapter
+
+Included by the MRQ004 fixtures.
+
 <!-- mrq:end -->
 
 A bare marker is expanded by `mrq interpolate`, not stale:
 
 <!-- mrq:include path="targets/chapter.md" -->
 
-An empty region is fine when the expansion may be empty (a file without a body, a `section`, `select` or `lines` filter) or unknown (a missing or remote file):
+An empty region is fine when the included content is empty:
 
 <!-- mrq:include path="targets/empty.md" -->
 <!-- mrq:end -->
+
+Regions whose include fails (`mrq validate` and `mrq interpolate` report why) or is remote are not checked:
 
 <!-- mrq:include path="targets/chapter.md" section="Nowhere" -->
 <!-- mrq:end -->

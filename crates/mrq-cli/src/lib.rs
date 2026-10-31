@@ -19,6 +19,7 @@ use mrq_core::source::SourceFile;
 
 pub mod cli;
 mod fmt;
+mod interpolate;
 mod lint;
 mod merge;
 mod query;
@@ -99,6 +100,13 @@ pub fn run(cli: Cli) -> ExitCode {
                 return ExitCode::from(EXIT_USAGE);
             };
             fmt::run(&args, &inputs, &options, &loaded, &cli.global)
+        }
+        Command::Interpolate(args) => {
+            let Some((loaded, options, inputs)) = prepare_loaded(&cli.global, &args.inputs, false)
+            else {
+                return ExitCode::from(EXIT_USAGE);
+            };
+            interpolate::run(&args, &inputs, &options, &loaded, &cli.global)
         }
         Command::Merge(args) => {
             let Some((options, inputs)) = prepare(&cli.global, &args.inputs, false) else {
@@ -267,6 +275,16 @@ fn emit_diagnostics_to(
         ..EmitOptions::default()
     };
     let _ = diag::emit(format, diagnostics, files, &options, out);
+}
+
+/// A unified diff from `a/<name>` (`old`) to `b/<name>` (`new`), with `/` separators in
+/// the name; empty if they are equal.
+fn unified_diff(name: &Path, old: &str, new: &str) -> String {
+    let label = name.display().to_string().replace('\\', "/");
+    similar::TextDiff::from_lines(old, new)
+        .unified_diff()
+        .header(&format!("a/{label}"), &format!("b/{label}"))
+        .to_string()
 }
 
 /// Replaces the file at `path` with `text` atomically: writes a temp file in the same

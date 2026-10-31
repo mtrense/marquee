@@ -6,3 +6,9 @@
 - <!-- mrq:include path="targets/chapter.md" lang=markdown -->
 
   <!-- mrq:end -->
+
+A region with outdated content:
+
+<!-- mrq:include path="targets/chapter.md" -->
+## Chapter (outdated)
+<!-- mrq:end -->

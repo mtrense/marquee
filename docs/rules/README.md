@@ -9,7 +9,7 @@ Rules are configured under `lint.rules` in `.mrq.yaml` by id, alias or tag, with
 | [MRQ001](MRQ001.md) | `valid-anchors` | `links`, `mrq` | off | no | Link to a missing anchor |
 | [MRQ002](MRQ002.md) | `heading-punctuation` | `headings`, `mrq` | off | yes | Heading text ends with punctuation |
 | [MRQ003](MRQ003.md) | `frontmatter-key-order` | `frontmatter`, `mrq` | off | YAML | Frontmatter keys out of order |
-| [MRQ004](MRQ004.md) | `stale-include` | `directives`, `mrq` | on | no | `mrq:include` region out of date |
+| [MRQ004](MRQ004.md) | `stale-include` | `directives`, `mrq` | on | yes | `mrq:include` region out of date |
 | [MRQ005](MRQ005.md) | `no-url-wikilinks` | `links`, `url`, `mrq` | on | yes | Bare URL in a wikilink |
 
 MRQ001 and MRQ002 are off by default because MD051 and MD026, which are on, cover similar ground: turn on the mrq rule instead of the markdownlint one when you want its behaviour. MRQ003 does nothing until it is given an order.

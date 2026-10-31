@@ -167,7 +167,7 @@ mrq validate --strict docs/             # warnings fail too
 mrq validate --external --format sarif . > results.sarif
 ```
 
-Diagnostics go to stdout in the `--format` (`human` by default, `github` when `GITHUB_ACTIONS=true`; also `json`, `ndjson` and `sarif`); the human format prints nothing when there is nothing to report. The inputs form one workspace rooted at the current directory, so a link starting with `/` resolves from there. Errors exit with 1, warnings (unused footnotes and references, duplicate anchors, unresolved wikilinks, stale tables of contents) only with `--strict`, and an unreadable input, a bad schema or an invalid `external_exclude` pattern with 2.
+Diagnostics go to stdout in the `--format` (`human` by default, `github` when `GITHUB_ACTIONS=true`; also `json`, `ndjson` and `sarif`); the human format prints nothing when there is nothing to report. The inputs form one workspace rooted at the current directory, so a link starting with `/` resolves from there. Errors exit with 1, warnings (unused footnotes and references, duplicate anchors, unresolved wikilinks, stale tables of contents and include regions) only with `--strict`, and an unreadable input, a bad schema or an invalid `external_exclude` pattern with 2.
 
 External links are only checked with `--external` or `validate.external: true`, skipping URLs that match a `validate.external_exclude` regular expression. URLs found working are cached for a day in `external-links.json` in the user cache directory: `$MRQ_CACHE_HOME`, else `$XDG_CACHE_HOME/mrq`, else `~/.cache/mrq`. `mrq-cli` builds with the `external-links` feature by default; without it, `--external` fails with exit code 2.
 
@@ -303,12 +303,13 @@ Expands include directives written as HTML comments, so the source stays valid M
 ```
 
 ```sh
-mrq interpolate book.md > book.full.md   # write the combined result to stdout
-mrq interpolate --in-place README.md     # fill/refresh the content between the markers
-mrq interpolate --check README.md        # exit 1 if any block is stale (CI)
+mrq interpolate book.md > book.full.md    # write the combined result to stdout
+mrq interpolate --keep-directives book.md # stdout, the markers kept around the content
+mrq interpolate --in-place README.md      # fill/refresh the content between the markers
+mrq interpolate --check README.md         # exit 1 and print a diff if any block is stale (CI)
 ```
 
-In-place mode is idempotent: content between `mrq:include` and `mrq:end` is regenerated on every run, so the file stays both readable and current.
+In-place mode is idempotent: content between `mrq:include` and `mrq:end` is regenerated on every run, framed by blank lines, so the file stays both readable and current. A start marker without `mrq:end` gets one. Markers inside the included content (of nested includes that failed, or `mrq:toc` regions) are dropped, so each region keeps its own end marker. `frontmatter=merge` applies only to the stdout expansion; in-place mode leaves the host's frontmatter as written.
 
 | Attribute       | Meaning                                                                       |
 | --------------- | ----------------------------------------------------------------------------- |

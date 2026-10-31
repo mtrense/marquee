@@ -2,8 +2,9 @@
 //!
 //! An `<!-- mrq:include path="…" -->` region (see [`directive`](crate::directive)) stands
 //! for the content of another file. [`Includer::expand`] replaces every include region of
-//! a document, markers and old content alike, by that content; [`Includer::include`]
-//! gives the content of one region, for tools that write it between the markers.
+//! a document, markers and old content alike, by that content (`mrq interpolate`);
+//! [`Includer::refresh`] regenerates the content between the markers instead
+//! (`--in-place`), and [`Includer::include`] gives the content of one region.
 //!
 //! The content of an include is made in this order:
 //!
@@ -117,9 +118,9 @@ use super::merge::{frontmatter_block, merge_into};
 use super::{LinkRewrite, ShiftOptions, rewrite_links, shift_headings};
 #[cfg(feature = "remote-include")]
 use crate::ast::DirectiveAttribute;
-use crate::ast::{FrontMatterFormat, Span};
+use crate::ast::{FrontMatterFormat, NodeKind, Span};
 use crate::diag::{Diagnostic, Severity};
-use crate::directive::{DirectiveKind, DirectiveRegion};
+use crate::directive::{DirectiveKind, DirectiveRegion, container_prefix, is_container_char};
 use crate::document::{Document, DocumentOptions, resolve};
 use crate::frontmatter::Frontmatter;
 use crate::query::{Match, Section, sections};
@@ -206,6 +207,33 @@ pub struct Inclusion {
     pub diagnostics: Vec<Diagnostic>,
 }
 
+/// What [`Includer::refresh`] does to one include region.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct RegionRefresh {
+    /// The span of the region's start marker.
+    pub marker: Span,
+    /// Whether the region has no `mrq:end`; its edit inserts one.
+    pub bare: bool,
+    /// The edit regenerating the region's body; `None` if the body is up to date or the
+    /// include failed.
+    pub edit: Option<TextEdit>,
+    /// Problems with the include, in the files that have them (the document or the files
+    /// it includes).
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+impl RegionRefresh {
+    /// Whether including failed somewhere: the region's own include, or one in the files
+    /// it includes (whose markers are then dropped from the body). The body cannot be
+    /// trusted to be what a successful refresh writes.
+    pub fn has_errors(&self) -> bool {
+        self.diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.severity == Severity::Error)
+    }
+}
+
 impl Includer {
     /// An includer with the defaults.
     pub fn new() -> Self {
@@ -275,6 +303,54 @@ impl Includer {
             text,
             diagnostics: run.diagnostics,
         }
+    }
+
+    /// The edits regenerating the body of every `mrq:include` region of `doc`, in order,
+    /// as `mrq interpolate --in-place` does: one per region, except regions whose start
+    /// marker is inside the old body of another (they go with that body).
+    ///
+    /// The body becomes the region's [content](Self::include), framed by blank lines and
+    /// given the start marker's container prefix and line ending; a bare start marker
+    /// gets an `<!-- mrq:end -->` after it. Directive markers left in the content (of
+    /// includes that failed, and `mrq:toc` regions) are removed with their lines, so the
+    /// region still pairs with its own end marker. A failed include gets no edit. The
+    /// document's frontmatter is left alone, so `frontmatter=merge` has no effect: the
+    /// including file's frontmatter is its source, not the expansion's. Refreshing a
+    /// refreshed document changes nothing, and it expands as the original does.
+    pub fn refresh(&self, doc: &Document) -> Vec<RegionRefresh> {
+        let ast = doc.ast();
+        let src = doc.text();
+        let regions: Vec<&DirectiveRegion> = doc
+            .directives()
+            .iter()
+            .filter(|region| region.kind == DirectiveKind::Include)
+            .collect();
+        let inside_content = |span: Span| {
+            regions.iter().any(|region| {
+                !region.content.is_empty()
+                    && region.content.start <= span.start
+                    && span.end <= region.content.end
+            })
+        };
+        let mut refreshed = Vec::new();
+        for &region in &regions {
+            let marker = ast.span(region.start);
+            if inside_content(marker) {
+                continue;
+            }
+            let mut run = Run::new(self, doc);
+            let edit = run.include(doc, region).and_then(|included| {
+                let body = strip_markers(&self.options, &included.text);
+                region.body_edit(src, ast, &body)
+            });
+            refreshed.push(RegionRefresh {
+                marker,
+                bare: region.is_bare(),
+                edit,
+                diagnostics: run.diagnostics,
+            });
+        }
+        refreshed
     }
 
     /// The content of the include `region` of `doc`, for the region's body.
@@ -809,13 +885,73 @@ fn trim_blank(text: &str) -> String {
     }
 }
 
+/// `text`, the content of an include, without directive markers (parsed with `options`):
+/// a marker alone on its lines goes with them, and with a blank line after them if one
+/// comes before, so removing markers between blank lines leaves one.
+fn strip_markers(options: &DocumentOptions, text: &str) -> String {
+    let Ok(doc) = options.parse_source(SourceFile::new(None, text)) else {
+        return text.to_owned();
+    };
+    let ast = doc.ast();
+    let markers: Vec<Span> = ast
+        .descendants(ast.root())
+        .filter(|&id| {
+            matches!(
+                ast.kind(id),
+                NodeKind::IncludeDirective(_) | NodeKind::TocDirective(_) | NodeKind::DirectiveEnd
+            )
+        })
+        .map(|id| ast.span(id))
+        .collect();
+    if markers.is_empty() {
+        return text.to_owned();
+    }
+    let mut removed: Vec<ByteRange> = Vec::new();
+    for marker in markers {
+        let edit = replace_region(text, marker, "");
+        match removed.last_mut() {
+            Some(last) if last.end == edit.range.start => last.end = edit.range.end,
+            _ => removed.push(edit.range),
+        }
+    }
+    let is_blank = |line: &str| {
+        line.chars()
+            .all(|c| is_container_char(c) || c == '\r' || c == '\n')
+    };
+    let edits: Vec<TextEdit> = removed
+        .into_iter()
+        .map(|mut range| {
+            let whole_lines = (range.start == 0 || text[..range.start].ends_with('\n'))
+                && (range.end == text.len() || text[..range.end].ends_with('\n'));
+            let before_blank = range.start == 0
+                || is_blank(
+                    text[..range.start - 1]
+                        .rsplit('\n')
+                        .next()
+                        .unwrap_or_default(),
+                );
+            let after = text[range.end..]
+                .split_inclusive('\n')
+                .next()
+                .unwrap_or_default();
+            if whole_lines && before_blank && !after.is_empty() && is_blank(after) {
+                range.end += after.len();
+            }
+            TextEdit {
+                range,
+                replacement: String::new(),
+            }
+        })
+        .collect();
+    apply_edits(text, &edits).expect("marker removals do not overlap")
+}
+
 /// The edit replacing the region spanning `span` in `src` by `content`: lines after the
 /// first get the container prefix of the start marker's line, in the marker line's line
 /// ending. An empty `content` removes the markers' lines if nothing else is on them.
 fn replace_region(src: &str, span: Span, content: &str) -> TextEdit {
     let line_start = src[..span.start].rfind('\n').map_or(0, |i| i + 1);
     let lead = &src[line_start..span.start];
-    let container = |c: char| matches!(c, '>' | ' ' | '\t');
     let rest = &src[span.end..];
     // The end marker line's ending; the file's first one if it is the last line.
     let crlf = match rest.find('\n') {
@@ -830,7 +966,7 @@ fn replace_region(src: &str, span: Span, content: &str) -> TextEdit {
             rest.is_empty().then_some(span.end)
         };
         if let Some(line_end) = line_end
-            && lead.chars().all(container)
+            && lead.chars().all(is_container_char)
         {
             return TextEdit {
                 range: ByteRange::new(line_start, line_end),
@@ -842,10 +978,7 @@ fn replace_region(src: &str, span: Span, content: &str) -> TextEdit {
             replacement: String::new(),
         };
     }
-    let prefix: String = lead
-        .chars()
-        .map(|c| if container(c) { c } else { ' ' })
-        .collect();
+    let prefix = container_prefix(lead);
     let mut replacement = String::with_capacity(content.len());
     for (n, line) in content.lines().enumerate() {
         if n > 0 {
@@ -1333,6 +1466,144 @@ mod tests {
         let expanded = includer(&files).root("site").expand(&host);
         assert_eq!(expanded.diagnostics, []);
         assert_eq!(expanded.text, "![i](img/i.png)\n");
+    }
+
+    /// The text of `host` (as `host.md`) after one refresh, which must report nothing,
+    /// checking that a second refresh changes nothing.
+    fn refreshed(files: &[(&str, &str)], host: &str) -> String {
+        let includer = includer(files);
+        let refresh = includer.refresh(&doc("host.md", host));
+        assert!(
+            refresh.iter().all(|region| region.diagnostics.is_empty()),
+            "{refresh:?}"
+        );
+        let edits: Vec<TextEdit> = refresh
+            .into_iter()
+            .filter_map(|region| region.edit)
+            .collect();
+        let text = apply_edits(host, &edits).unwrap();
+        let again = includer.refresh(&doc("host.md", &text));
+        assert!(
+            again.iter().all(|region| region.edit.is_none()),
+            "{text:?}: {again:?}"
+        );
+        text
+    }
+
+    #[test]
+    fn a_refresh_writes_the_content_between_the_markers_framed_by_blank_lines() {
+        let files = [("a.md", "# A\n\ntext\n"), ("empty.md", "---\nk: v\n---\n")];
+        assert_eq!(
+            refreshed(
+                &files,
+                "x\n\n<!-- mrq:include path=a.md -->\nold\n<!-- mrq:end -->\n\ny\n"
+            ),
+            "x\n\n<!-- mrq:include path=a.md -->\n\n# A\n\ntext\n\n<!-- mrq:end -->\n\ny\n"
+        );
+        assert_eq!(
+            refreshed(
+                &files,
+                "<!-- mrq:include path=empty.md -->\nold\n<!-- mrq:end -->\n"
+            ),
+            "<!-- mrq:include path=empty.md -->\n<!-- mrq:end -->\n"
+        );
+        let fresh = "<!-- mrq:include path=a.md -->\n\n# A\n\ntext\n\n<!-- mrq:end -->\n";
+        let refresh = includer(&files).refresh(&doc("host.md", fresh));
+        let [region] = refresh.as_slice() else {
+            panic!("{refresh:?}");
+        };
+        assert_eq!(region.edit, None);
+        assert_eq!(
+            &fresh[region.marker.start..region.marker.end],
+            "<!-- mrq:include path=a.md -->"
+        );
+        assert!(!region.bare && !region.has_errors());
+    }
+
+    #[test]
+    fn a_bare_start_marker_gets_its_content_and_an_end_marker() {
+        let files = [("a.md", "# A\n\ntext\n")];
+        let filled = "<!-- mrq:include path=a.md -->\n\n# A\n\ntext\n\n<!-- mrq:end -->\n";
+        assert_eq!(
+            refreshed(&files, "<!-- mrq:include path=a.md -->\n"),
+            filled
+        );
+        assert_eq!(refreshed(&files, "<!-- mrq:include path=a.md -->"), filled);
+        let refresh = includer(&files).refresh(&doc("host.md", "<!-- mrq:include path=a.md -->\n"));
+        assert!(refresh[0].bare);
+    }
+
+    #[test]
+    fn refreshed_content_takes_the_container_prefix_and_line_ending() {
+        let files = [("a.md", "# A\n\ntext\n")];
+        assert_eq!(
+            refreshed(
+                &files,
+                "> <!-- mrq:include path=a.md -->\r\n> <!-- mrq:end -->\r\n"
+            ),
+            "> <!-- mrq:include path=a.md -->\r\n>\r\n> # A\r\n>\r\n> text\r\n>\r\n> <!-- mrq:end -->\r\n"
+        );
+        assert_eq!(
+            refreshed(&files, "- <!-- mrq:include path=a.md -->\n"),
+            "- <!-- mrq:include path=a.md -->\n\n  # A\n\n  text\n\n  <!-- mrq:end -->\n"
+        );
+    }
+
+    #[test]
+    fn markers_left_in_included_content_are_removed_so_the_region_still_pairs() {
+        let files = [(
+            "a.md",
+            "A\n\n<!-- mrq:include path=gone.md -->\n<!-- mrq:end -->\n\n\
+             <!-- mrq:toc -->\n- [A](#a)\n<!-- mrq:end -->\n\nB\n",
+        )];
+        let host = "<!-- mrq:include path=a.md -->\n<!-- mrq:end -->\n\nafter\n";
+        let includer = includer(&files);
+        let refresh = includer.refresh(&doc("host.md", host));
+        let [region] = refresh.as_slice() else {
+            panic!("{refresh:?}");
+        };
+        assert_eq!(
+            region
+                .diagnostics
+                .iter()
+                .map(|d| (d.code.as_str(), d.file.to_str().unwrap()))
+                .collect::<Vec<_>>(),
+            [(codes::MISSING_INCLUDE, "a.md")]
+        );
+        assert!(region.has_errors());
+        let text = apply_edits(host, region.edit.as_slice()).unwrap();
+        assert_eq!(
+            text,
+            "<!-- mrq:include path=a.md -->\n\nA\n\n- [A](#a)\n\nB\n\n<!-- mrq:end -->\n\nafter\n"
+        );
+        let again = doc("host.md", &text);
+        assert_eq!(again.directives().len(), 1);
+        assert!(!again.directives()[0].is_bare());
+        assert_eq!(includer.refresh(&again)[0].edit, None);
+    }
+
+    #[test]
+    fn a_failed_include_is_not_refreshed() {
+        let host = "<!-- mrq:include path=gone.md -->\nold\n<!-- mrq:end -->\n";
+        let refresh = includer(&[]).refresh(&doc("host.md", host));
+        let [region] = refresh.as_slice() else {
+            panic!("{refresh:?}");
+        };
+        assert_eq!(region.edit, None);
+        assert!(region.has_errors());
+        assert_eq!(region.diagnostics[0].code, codes::MISSING_INCLUDE);
+    }
+
+    #[test]
+    fn a_refresh_leaves_the_host_frontmatter_alone() {
+        let files = [("a.md", "---\nk: v\n---\nA\n")];
+        assert_eq!(
+            refreshed(
+                &files,
+                "---\ntitle: H\n---\n<!-- mrq:include path=a.md frontmatter=merge -->\n"
+            ),
+            "---\ntitle: H\n---\n<!-- mrq:include path=a.md frontmatter=merge -->\n\nA\n\n<!-- mrq:end -->\n"
+        );
     }
 
     #[test]

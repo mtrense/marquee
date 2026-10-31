@@ -2,5 +2,40 @@
 source: crates/mrq-core/tests/lint_rules.rs
 expression: snapshot
 ---
-3:1 MRQ004 `mrq:include` region is empty, but `targets/chapter.md` is not
-6:3 MRQ004 `mrq:include` region is empty, but `targets/chapter.md` is not
+3:1 MRQ004 `mrq:include` region is out of date
+6:3 MRQ004 `mrq:include` region is out of date
+12:1 MRQ004 `mrq:include` region is out of date
+--- fixed ---
+# Includes
+
+<!-- mrq:include path="targets/chapter.md" shift=1 -->
+
+### Chapter
+
+Included by the MRQ004 fixtures.
+
+<!-- mrq:end -->
+
+- <!-- mrq:include path="targets/chapter.md" lang=markdown -->
+
+  ```markdown
+  ---
+  title: Chapter
+  ---
+
+  ## Chapter
+
+  Included by the MRQ004 fixtures.
+  ```
+
+  <!-- mrq:end -->
+
+A region with outdated content:
+
+<!-- mrq:include path="targets/chapter.md" -->
+
+## Chapter
+
+Included by the MRQ004 fixtures.
+
+<!-- mrq:end -->

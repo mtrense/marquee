@@ -512,3 +512,50 @@ fn include_cycles_are_reported_with_the_chain() {
     // d includes the a/b cycle but is not part of it: a and b report it.
     assert_eq!(checker.check(&d), vec![]);
 }
+
+#[test]
+fn stale_include_regions_are_reported_at_the_start_marker() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    std::fs::write(root.join("chapter.md"), "# Chapter\n\nText.\n").unwrap();
+    let host = "<!-- mrq:include path=chapter.md -->\n## Old\n<!-- mrq:end -->\n\n\
+                <!-- mrq:include path=chapter.md shift=1 -->\n\n## Chapter\n\nText.\n\n<!-- mrq:end -->\n\n\
+                <!-- mrq:include path=chapter.md -->\n\n\
+                <!-- mrq:include path=chapter.md section=Nowhere -->\n<!-- mrq:end -->\n\n\
+                <!-- mrq:include path=https://example.com/remote.md -->\n<!-- mrq:end -->\n";
+    let path = root.join("host.md");
+    std::fs::write(&path, host).unwrap();
+    let doc = Document::load(&path).unwrap();
+    let ws = Workspace::new(root);
+    let diags = Checker::new(&ws).check(&doc);
+    let summary: Vec<_> = diags
+        .iter()
+        .map(|diag| {
+            (
+                diag.code.as_str(),
+                diag.severity,
+                &host[diag.range.start..diag.range.end],
+            )
+        })
+        .collect();
+    assert_eq!(
+        summary,
+        [
+            (
+                codes::STALE_INCLUDE,
+                Severity::Warning,
+                "<!-- mrq:include path=chapter.md -->"
+            ),
+            (
+                mrq_core::transform::INCLUDE_CODE,
+                Severity::Error,
+                "section=Nowhere"
+            ),
+        ]
+    );
+    assert_eq!(diags[0].message, "`mrq:include` region is out of date");
+    assert_eq!(
+        diags[0].help.as_deref(),
+        Some("run `mrq interpolate --in-place` to regenerate it")
+    );
+}

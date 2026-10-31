@@ -12,10 +12,13 @@ Arguments:
 
 Options:
       --in-place
-          Refresh the content between the markers in place
+          Refresh the content between the markers in place (stdin: print the result)
 
       --check
-          Exit 1 if any include block is stale
+          Do not write; exit 1 and show a diff if --in-place would change anything
+
+      --keep-directives
+          Print the content between the markers instead of replacing the markers with it
 
   -h, --help
           Print help (see a summary with '-h')

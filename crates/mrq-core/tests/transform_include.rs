@@ -10,7 +10,8 @@ use std::path::{Path, PathBuf};
 
 use mrq_core::Document;
 use mrq_core::diag::Diagnostic;
-use mrq_core::source::PositionEncoding;
+use mrq_core::document::DocumentOptions;
+use mrq_core::source::{PositionEncoding, SourceFile, apply_edits};
 use mrq_core::transform::{Expanded, Includer};
 use mrq_core::validate::codes;
 
@@ -113,6 +114,74 @@ fn expanding_an_expansion_changes_nothing() {
         let again = Includer::new().root(&dir).expand(&again);
         assert_eq!(again.text, expanded.text, "{name}");
     }
+}
+
+/// `dir`'s host `name` with its include regions refreshed, and the refresh's diagnostics.
+fn refresh_in(dir: &Path, name: &str) -> (String, Vec<Diagnostic>) {
+    let doc = Document::load(dir.join(format!("{name}.md"))).unwrap();
+    let refresh = Includer::new().root(dir).refresh(&doc);
+    let diagnostics = refresh
+        .iter()
+        .flat_map(|region| region.diagnostics.clone())
+        .collect();
+    let edits: Vec<_> = refresh
+        .into_iter()
+        .filter_map(|region| region.edit)
+        .collect();
+    (apply_edits(doc.text(), &edits).unwrap(), diagnostics)
+}
+
+/// Refreshing every host fixture in `dir` reports what expanding it does, a second refresh
+/// changes nothing, and the refreshed host expands as the original does.
+fn check_refreshes(dir: &Path) {
+    for name in hosts(dir) {
+        let (text, diagnostics) = refresh_in(dir, &name);
+        let expanded = expand_in(dir, &name);
+        assert_eq!(
+            diagnostic_lines(dir, &diagnostics),
+            diagnostic_lines(dir, &expanded.diagnostics),
+            "{name}"
+        );
+        let path = dir.join(format!("{name}.md"));
+        let refreshed = DocumentOptions::new()
+            .parse_source(SourceFile::new(Some(path), text.clone()))
+            .unwrap();
+        let includer = Includer::new().root(dir);
+        let again = includer.refresh(&refreshed);
+        assert!(
+            again.iter().all(|region| region.edit.is_none()),
+            "{name}: {text}"
+        );
+        assert_eq!(includer.expand(&refreshed).text, expanded.text, "{name}");
+    }
+}
+
+#[test]
+fn fixtures_refresh_idempotently_and_expand_the_same() {
+    check_refreshes(&fixture_dir());
+}
+
+#[cfg(feature = "tree-sitter")]
+#[test]
+fn symbol_fixtures_refresh_idempotently_and_expand_the_same() {
+    check_refreshes(&fixtures("symbols"));
+}
+
+#[test]
+fn a_refreshed_region_keeps_the_included_file() {
+    let (text, diagnostics) = refresh_in(&fixture_dir(), "nested");
+    assert_eq!(diagnostics, []);
+    let expected = fs::read_to_string(fixture_dir().join("nested.out.md")).unwrap();
+    let body = expected
+        .strip_prefix("# Book\n\n")
+        .and_then(|rest| rest.strip_suffix("\nThe end.\n"))
+        .unwrap();
+    assert_eq!(
+        text,
+        format!(
+            "# Book\n\n<!-- mrq:include path=\"chapters/one.md\" shift=1 -->\n\n{body}\n<!-- mrq:end -->\n\nThe end.\n"
+        )
+    );
 }
 
 /// A cycle through a symlinked directory is found, and its chain shows canonical paths.

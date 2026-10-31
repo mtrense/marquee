@@ -62,11 +62,7 @@ pub fn run(
         if args.check {
             if text != original {
                 unformatted = true;
-                let label = doc.name().display().to_string().replace('\\', "/");
-                let diff = similar::TextDiff::from_lines(original, text)
-                    .unified_diff()
-                    .header(&format!("a/{label}"), &format!("b/{label}"))
-                    .to_string();
+                let diff = crate::unified_diff(doc.name(), original, text);
                 let _ = stdout.lock().write_all(diff.as_bytes());
             }
         } else if let Some(path) = doc.path() {

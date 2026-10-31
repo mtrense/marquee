@@ -53,11 +53,13 @@
 mod syntax;
 
 use std::collections::HashMap;
+use std::fmt::Write as _;
 use std::path::Path;
 
 use self::syntax::{Name, RawAttribute, Syntax};
 use crate::ast::{Ast, CommentSyntax, Directive, DirectiveAttribute, NodeId, NodeKind, Span};
 use crate::diag::{Diagnostic, Label, Severity};
+use crate::source::{ByteRange, TextEdit};
 
 /// Diagnostic code of malformed and unpaired directives.
 pub const DIRECTIVE_ERROR_CODE: &str = "directive";
@@ -119,6 +121,74 @@ impl DirectiveRegion {
             other => panic!("a region starts at a directive, not {other:?}"),
         }
     }
+
+    /// The edit making the body of this region of `src` (whose tree is `ast`) `body`, a
+    /// Markdown text of whole lines, or `None` if it already is (or both markers are on
+    /// one line, leaving no room for a body).
+    ///
+    /// A non-empty body is framed by blank lines, so it can neither run into the markers
+    /// nor swallow the end marker (an HTML block or paragraph ends at a blank line); an
+    /// empty one leaves the markers on adjacent lines. Only the bytes between the end of
+    /// the start marker's line and the start of the end marker's line are replaced; a
+    /// bare start marker gets the body and an `<!-- mrq:end -->` inserted after its line.
+    /// Inserted lines take the start marker's line ending (the file's first one if it is
+    /// the unterminated last line) and its container prefix (`> ` in a blockquote, the
+    /// item's indentation in a list).
+    pub(crate) fn body_edit(&self, src: &str, ast: &Ast, body: &str) -> Option<TextEdit> {
+        let marker = ast.span(self.start);
+        let line_start = |at: usize| src[..at].rfind('\n').map_or(0, |i| i + 1);
+        let prefix = container_prefix(&src[line_start(marker.start)..marker.start]);
+        let newline = src[marker.end..].find('\n').map(|i| marker.end + i);
+        let crlf = match newline {
+            Some(i) => src[..i].ends_with('\r'),
+            None => src.contains("\r\n"),
+        };
+        let eol = if crlf { "\r\n" } else { "\n" };
+        let mut framed = String::new();
+        if !body.is_empty() {
+            let blank = format!("{}{eol}", prefix.trim_end());
+            framed.push_str(&blank);
+            for line in body.lines() {
+                let lead = if line.is_empty() {
+                    prefix.trim_end()
+                } else {
+                    &prefix
+                };
+                let _ = write!(framed, "{lead}{line}{eol}");
+            }
+            framed.push_str(&blank);
+        }
+        let body_start = newline.map_or(src.len(), |i| i + 1);
+        let (range, replacement) = if let Some(end) = self.end {
+            let end_line = line_start(ast.span(end).start);
+            if end_line < body_start {
+                return None;
+            }
+            (ByteRange::new(body_start, end_line), framed)
+        } else {
+            let lead = if newline.is_none() { eol } else { "" };
+            let replacement = format!("{lead}{framed}{prefix}{END_MARKER}{eol}");
+            (ByteRange::empty(body_start), replacement)
+        };
+        (src[range.start..range.end] != replacement).then_some(TextEdit { range, replacement })
+    }
+}
+
+/// What closes a directive region.
+pub(crate) const END_MARKER: &str = "<!-- mrq:end -->";
+
+/// The container prefix that `lead`, the text before a block on its line, stands for:
+/// blockquote markers and indentation are kept, anything else (a list marker) becomes
+/// spaces.
+pub(crate) fn container_prefix(lead: &str) -> String {
+    lead.chars()
+        .map(|c| if is_container_char(c) { c } else { ' ' })
+        .collect()
+}
+
+/// Whether `c` can be part of a container prefix that is not a list marker.
+pub(crate) const fn is_container_char(c: char) -> bool {
+    matches!(c, '>' | ' ' | '\t')
 }
 
 /// Turns the directive comments of `ast` (the tree of `src`) into directive nodes and

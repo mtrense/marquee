@@ -83,11 +83,7 @@ pub fn run(
         if args.diff {
             if text != original {
                 changed = true;
-                let label = name.display().to_string().replace('\\', "/");
-                let diff = similar::TextDiff::from_lines(original.as_str(), text)
-                    .unified_diff()
-                    .header(&format!("a/{label}"), &format!("b/{label}"))
-                    .to_string();
+                let diff = crate::unified_diff(&name, &original, text);
                 let _ = stdout.lock().write_all(diff.as_bytes());
             }
             continue;

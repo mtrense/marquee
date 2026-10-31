@@ -1,4 +1,5 @@
-//! Directive checks: missing include targets, include cycles and stale `mrq:toc` regions.
+//! Directive checks: missing include targets, include cycles, and stale `mrq:include` and
+//! `mrq:toc` regions.
 
 use std::collections::HashSet;
 use std::fmt::Write as _;
@@ -11,6 +12,7 @@ use crate::diag::{Diagnostic, Severity};
 use crate::directive::DirectiveKind;
 use crate::document::normalize;
 use crate::toc;
+use crate::transform::{FileLoader, INCLUDE_CODE, Includer, RegionRefresh};
 use crate::{Document, Workspace};
 
 /// An `mrq:include` of a document, its `path` resolved.
@@ -28,9 +30,15 @@ enum Include {
 
 impl Checker<'_> {
     /// Includes without a `path`, whose file does not exist, or that lead back to
-    /// `document`. Remote (`http(s)://`) paths are skipped.
+    /// `document`. The others are refreshed as `mrq interpolate --in-place` would: their
+    /// problems in `document` (bad attributes, a `section` or `select` that finds nothing;
+    /// code [`INCLUDE_CODE`]) are reported, and so is a region whose body would change
+    /// (`stale-include`), unless it is bare or including it failed somewhere. Remote
+    /// (`http(s)://`) paths are skipped.
     pub(super) fn check_includes(&mut self, document: &Document, out: &mut Vec<Diagnostic>) {
         let origin = document.path().map(identity);
+        // Refreshed on first use, when an include passed the checks above.
+        let mut refreshed: Option<Vec<RegionRefresh>> = None;
         for include in includes(self.workspace, document) {
             let report = |code, span, message: String| {
                 Diagnostic::new(code, Severity::Error, document.name(), span, message)
@@ -67,17 +75,48 @@ impl Checker<'_> {
                             report(codes::INCLUDE_CYCLE, span, message)
                                 .with_help(describe_cycle(document.name(), &chain)),
                         );
-                    } else {
-                        // TODO(M7.8): stale include regions. The resolver exists
-                        // (`transform::Includer::include` gives a region's content), but
-                        // how `mrq interpolate --in-place` writes it between the markers
-                        // (framing, container prefixes) is decided there. Once it is,
-                        // compare that with `region.content` and report a
-                        // `stale-include` warning, as `check_toc` does for tocs.
+                    } else if let Some(region) = refreshed
+                        .get_or_insert_with(|| self.refresh_includes(document))
+                        .iter()
+                        .find(|region| {
+                            region.marker.start <= span.start && span.end <= region.marker.end
+                        })
+                    {
+                        out.extend(
+                            region
+                                .diagnostics
+                                .iter()
+                                .filter(|d| d.code == INCLUDE_CODE && d.file == document.name())
+                                .cloned(),
+                        );
+                        if region.edit.is_some() && !region.bare && !region.has_errors() {
+                            out.push(
+                                Diagnostic::new(
+                                    codes::STALE_INCLUDE,
+                                    Severity::Warning,
+                                    document.name(),
+                                    region.marker,
+                                    "`mrq:include` region is out of date",
+                                )
+                                .with_help("run `mrq interpolate --in-place` to regenerate it"),
+                            );
+                        }
                     }
                 }
             }
         }
+    }
+
+    /// What `mrq interpolate --in-place` would do to the include regions of `document`,
+    /// offline: files are read from disk (not the workspace), and remote includes, also
+    /// in included files, fail.
+    fn refresh_includes(&self, document: &Document) -> Vec<RegionRefresh> {
+        Includer::new()
+            .loader(FileLoader)
+            .root(self.workspace.root())
+            .document_options(self.workspace.options().clone())
+            .allow_remote(false)
+            .refresh(document)
     }
 
     /// The files from `start` (included) through which includes lead back to `origin`

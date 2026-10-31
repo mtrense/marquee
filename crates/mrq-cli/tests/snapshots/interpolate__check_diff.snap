@@ -1,0 +1,18 @@
+---
+source: crates/mrq-cli/tests/interpolate.rs
+expression: stdout
+---
+--- a/book.md
++++ b/book.md
+@@ -1,6 +1,11 @@
+ # Book
+ 
+ <!-- mrq:include path="chapters/install.md" shift=1 -->
++
++## Install
++
++![shot](chapters/img/shot.png)
++
+ <!-- mrq:end -->
+ 
+ The end.
