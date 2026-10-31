@@ -1,4 +1,4 @@
-//! Core library of `mrq`: document model, parsing, query, validation, lint and formatting.
+//! Core library of `mrq`: document model, parsing, query, validation, lint, formatting and transforms.
 //!
 //! Start with [`Document`] (one parsed file) or [`Workspace`] (several); the README's
 //! library example is compiled as a doctest.
@@ -18,6 +18,7 @@ pub mod query;
 pub mod source;
 pub mod stats;
 pub mod toc;
+pub mod transform;
 pub mod validate;
 
 pub use document::{Document, Workspace};

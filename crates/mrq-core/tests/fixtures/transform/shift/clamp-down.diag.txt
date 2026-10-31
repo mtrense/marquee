@@ -1,0 +1,2 @@
+5:1 heading-clamp: heading shifted by +2 to level 7 is clamped to level 6, the level of a heading that was level 4
+7:1 heading-clamp: heading shifted by +2 to level 8 is clamped to level 6, the level of a heading that was level 5
