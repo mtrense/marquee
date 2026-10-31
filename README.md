@@ -319,7 +319,8 @@ In-place mode is idempotent: content between `mrq:include` and `mrq:end` is rege
 | `frontmatter`   | `strip` (default), `keep` or `merge` into the host file                       |
 | `lang`          | include as a fenced code block in this language (any non-Markdown file)       |
 | `lines`         | line range for code includes: `10-20`, `10-`, `-20`                           |
-| `function`, `struct`, `class`, `symbol` | structural selection from code files via tree-sitter  |
+| `function`, `struct`, `class`, `symbol` | structural selection from code files via tree-sitter (Rust, Python, JavaScript, TypeScript, Go); qualified names like `Type::method`; `lang` defaults to the file's language |
+| `with_docs`     | keep the doc comments, attributes and decorators of a selected symbol (default `false`) |
 | `dedent`        | strip common indentation (default `true` for code includes)                   |
 
 ```markdown

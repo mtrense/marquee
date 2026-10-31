@@ -1,0 +1,12 @@
+errors.md:3:40 include: function `new` is ambiguous in `code/shapes.rs`: function `Point::new` (line 14), function `Shape::new` (line 30)
+errors.md:6:40 include: no function `nrom` in `code/shapes.rs`; did you mean function `Point::norm` (line 18)?
+errors.md:9:40 include: no struct `Shape` in `code/shapes.rs`; did you mean enum `Shape` (line 24)?
+errors.md:12:40 include: no class `Point` in `code/shapes.rs`; did you mean struct `Point` (line 7)?
+errors.md:15:54 include: `function` and `struct` both select a symbol; keep one
+errors.md:18:40 include: `function` must name a symbol, like `function=main`
+errors.md:21:54 include: `with_docs` must be `true` or `false`, not `maybe`
+errors.md:24:50 include: `with_docs` only applies with `function`, `struct`, `class` or `symbol`
+errors.md:27:40 include: cannot find `function` in `code/notes.txt`: no grammar for its language (known: go, javascript, python, rust, tsx, typescript)
+errors.md:30:50 include: cannot find `function` in `code/notes.txt`: no grammar for its language (known: go, javascript, python, rust, tsx, typescript)
+errors.md:36:54 include: `lines` starts at line 9, but `main` in `code/shapes.rs` has 3 lines
+errors.md:39:54 include: `section` does not apply to code includes and is ignored

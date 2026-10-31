@@ -17,6 +17,7 @@ pub mod parse;
 pub mod query;
 pub mod source;
 pub mod stats;
+pub mod symbol;
 pub mod toc;
 pub mod transform;
 pub mod validate;

@@ -1,23 +1,16 @@
 //! The attributes of an `mrq:include`: [`Spec`].
 
 use super::INCLUDE_CODE;
-use super::code::CodeSpec;
+use super::code::{CodeSpec, SYMBOL_KINDS};
 use crate::ast::{Directive, DirectiveAttribute, Span};
 use crate::diag::{Diagnostic, Severity};
 use crate::document::Document;
 use crate::query::{Query, QueryError};
 use crate::validate::codes;
 
-/// Attributes of later kinds of include (symbol and remote includes), rejected until
-/// they are supported.
-const RESERVED: &[&str] = &[
-    "function",
-    "struct",
-    "class",
-    "symbol",
-    "with_docs",
-    "sha256",
-];
+/// Attributes of later kinds of include (remote includes), rejected until they are
+/// supported.
+const RESERVED: &[&str] = &["sha256"];
 
 /// Attributes of Markdown includes, ignored (with a warning) by code includes.
 const MARKDOWN_ONLY: &[&str] = &["shift", "section", "select", "frontmatter"];
@@ -45,7 +38,7 @@ pub(super) struct Spec<'d> {
     pub frontmatter: FrontmatterMode,
     /// Whether to strip common indentation, if given.
     pub dedent: Option<bool>,
-    /// With `lang`, how the file is included as code instead of Markdown.
+    /// With `lang` or a symbol, how the file is included as code instead of Markdown.
     pub code: Option<CodeSpec<'d>>,
 }
 
@@ -81,7 +74,10 @@ pub(super) fn parse<'d>(
         dedent: None,
         code: None,
     };
-    let is_code = directive.get("lang").is_some();
+    let is_code = directive.get("lang").is_some()
+        || SYMBOL_KINDS
+            .iter()
+            .any(|(name, _)| directive.get(name).is_some());
     let mut code = Vec::new();
     // Duplicates are reported by the parser; the first one counts.
     let mut seen = Vec::new();
@@ -133,7 +129,8 @@ pub(super) fn parse<'d>(
                     format!("`dedent` must be `true` or `false`, not `{value}`"),
                 )),
             },
-            "lang" | "lines" => code.push(attr),
+            "lang" | "lines" | "with_docs" => code.push(attr),
+            name if SYMBOL_KINDS.iter().any(|(kind, _)| *kind == name) => code.push(attr),
             name if RESERVED.contains(&name) => out.push(report(
                 Severity::Error,
                 attr,

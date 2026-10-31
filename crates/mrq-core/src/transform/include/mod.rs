@@ -37,11 +37,22 @@
 //! backtick). `shift`, `section`, `select` and `frontmatter` do not apply and get a
 //! warning; `lines` without `lang` is an error.
 //!
+//! A *symbol include* is a code include of one symbol's definition: `function="main"`,
+//! `struct="Point"`, `class="Greeter"`, or `symbol="Point::new"` for any kind. The name
+//! may be qualified (`Point::new` or `Point.new`) and selects the symbols whose qualified
+//! names end with it; none or several is an error listing the candidates. The
+//! [`SymbolLocator`] (with the `tree-sitter` feature, by default) knows the language from
+//! the first word of `lang` or else the file's extension, and `lang` defaults to the
+//! language's name (`rust`). Doc comments, attributes and decorators before the
+//! definition are left out unless `with_docs=true`. `lines` then counts from the
+//! symbol's first line, and `dedent` strips a method's indentation. Without a locator, an
+//! include selecting a symbol fails.
+//!
 //! An include that fails (a missing file, a cycle, a bad attribute, a section or
-//! selector that finds nothing, a `lines` range past the end) is reported and left as
-//! it is, markers included. Unknown attributes get a warning. The attributes of symbol
-//! and remote includes (`function`, `struct`, `class`, `symbol`, `with_docs`, `sha256`)
-//! are not supported yet; an include using them fails.
+//! selector that finds nothing, a `lines` range past the end, a missing or ambiguous
+//! symbol) is reported and left as it is, markers included. Unknown attributes get a
+//! warning. Remote includes and `sha256` are not supported yet; an include using them
+//! fails.
 //!
 //! ```
 //! use std::collections::HashMap;
@@ -93,6 +104,9 @@ use crate::document::{Document, DocumentOptions, resolve};
 use crate::frontmatter::Frontmatter;
 use crate::query::{Match, Section, sections};
 use crate::source::{ByteRange, SourceFile, TextEdit, apply_edits};
+use crate::symbol::SymbolLocator;
+#[cfg(feature = "tree-sitter")]
+use crate::symbol::TreeSitterLocator;
 use crate::validate::{codes, is_remote};
 
 /// Code of include errors and warnings other than a missing file
@@ -104,10 +118,13 @@ pub const INCLUDE_CODE: &str = "include";
 /// Resolves `mrq:include` directives; see the [module docs](self).
 ///
 /// By default files are read from disk ([`FileLoader`]), parsed with the default
-/// [`DocumentOptions`], and `/…` paths start at the current directory.
+/// [`DocumentOptions`], and `/…` paths start at the current directory. Symbols are found
+/// by a `symbol::TreeSitterLocator` with the `tree-sitter` feature, and not at all
+/// without it.
 #[derive(Clone)]
 pub struct Includer {
     loader: Arc<dyn Loader>,
+    symbols: Option<Arc<dyn SymbolLocator>>,
     options: DocumentOptions,
     root: PathBuf,
 }
@@ -117,14 +134,21 @@ impl fmt::Debug for Includer {
         f.debug_struct("Includer")
             .field("options", &self.options)
             .field("root", &self.root)
+            .field("symbols", &self.symbols.is_some())
             .finish_non_exhaustive()
     }
 }
 
 impl Default for Includer {
     fn default() -> Self {
+        // Without the `tree-sitter` feature, symbol includes have no locator by default.
+        #[cfg(feature = "tree-sitter")]
+        let symbols = Some(tree_sitter_locator());
+        #[cfg(not(feature = "tree-sitter"))]
+        let symbols = None;
         Self {
             loader: Arc::new(FileLoader),
+            symbols,
             options: DocumentOptions::new(),
             root: PathBuf::new(),
         }
@@ -164,6 +188,13 @@ impl Includer {
     #[must_use]
     pub fn loader(mut self, loader: impl Loader + 'static) -> Self {
         self.loader = Arc::new(loader);
+        self
+    }
+
+    /// Finds the symbols of symbol includes (`function="main"`) with `locator`.
+    #[must_use]
+    pub fn symbol_locator(mut self, locator: impl SymbolLocator + 'static) -> Self {
+        self.symbols = Some(Arc::new(locator));
         self
     }
 
@@ -225,6 +256,14 @@ impl Includer {
             diagnostics: run.diagnostics,
         }
     }
+}
+
+/// The locator of symbol includes by default: a [`TreeSitterLocator`] shared by all
+/// includers, so each query is compiled once.
+#[cfg(feature = "tree-sitter")]
+fn tree_sitter_locator() -> Arc<dyn SymbolLocator> {
+    static LOCATOR: std::sync::OnceLock<Arc<TreeSitterLocator>> = std::sync::OnceLock::new();
+    LOCATOR.get_or_init(Arc::default).clone()
 }
 
 /// One expansion: the files being included, and what went wrong so far.
@@ -696,6 +735,7 @@ mod tests {
     use std::collections::HashMap;
 
     use super::*;
+    use crate::symbol::{Symbol, SymbolKind};
     use crate::transform::HEADING_CLAMP_CODE;
 
     /// Files in memory, by path as resolved; URLs as [`FileLoader`] has them.
@@ -873,23 +913,105 @@ mod tests {
 
     #[test]
     fn later_kinds_of_include_are_not_supported_yet() {
-        let files = [("main.rs", "fn main() {}\n")];
-        let host = "<!-- mrq:include path=main.rs lang=rust function=main -->\n\n\
-                    <!-- mrq:include path=https://example.com/a.md -->\n";
-        let expanded = includer(&files).expand(&doc("host.md", host));
+        let host = "<!-- mrq:include path=https://example.com/a.md -->\n\n\
+                    <!-- mrq:include path=a.md sha256=00 -->\n";
+        let expanded = includer(&[("a.md", "A\n")]).expand(&doc("host.md", host));
         assert_eq!(expanded.text, host);
         assert_eq!(
             codes_and_messages(&expanded),
             [
                 (
                     INCLUDE_CODE,
-                    "`function` is not supported yet; the include is skipped"
+                    "cannot include `https://example.com/a.md`: remote includes are not supported"
                 ),
                 (
                     INCLUDE_CODE,
-                    "cannot include `https://example.com/a.md`: remote includes are not supported"
+                    "`sha256` is not supported yet; the include is skipped"
                 ),
             ]
+        );
+    }
+
+    #[cfg(not(feature = "tree-sitter"))]
+    #[test]
+    fn symbol_includes_need_a_locator() {
+        let files = [("main.rs", "fn main() {}\n")];
+        let host = "<!-- mrq:include path=main.rs function=main -->\n";
+        let expanded = includer(&files).expand(&doc("host.md", host));
+        assert_eq!(expanded.text, host);
+        assert_eq!(
+            codes_and_messages(&expanded),
+            [(
+                INCLUDE_CODE,
+                "`function` needs mrq built with the `tree-sitter` feature; the include is skipped"
+            )]
+        );
+    }
+
+    /// Finds `name:` lines in `.toy` files; a symbol is its line, docs the `#` lines above.
+    struct Toy;
+
+    impl SymbolLocator for Toy {
+        fn language(&self, path: &Path, lang: Option<&str>) -> Option<String> {
+            let toy = path.extension().is_some_and(|ext| ext == "toy") || lang == Some("toy");
+            toy.then(|| "toy".to_owned())
+        }
+
+        fn languages(&self) -> Vec<String> {
+            vec!["toy".to_owned()]
+        }
+
+        fn symbols(&self, _: &str, code: &str) -> Vec<Symbol> {
+            let mut symbols = Vec::new();
+            let mut offset = 0;
+            let mut docs = None;
+            for line in code.split_inclusive('\n') {
+                if line.starts_with('#') {
+                    docs.get_or_insert(offset);
+                } else if let Some((name, _)) = line.split_once(':') {
+                    symbols.push(Symbol {
+                        kind: SymbolKind::Function,
+                        name: name.to_owned(),
+                        range: ByteRange::new(offset, offset + line.trim_end().len()),
+                        docs_start: docs.take().unwrap_or(offset),
+                    });
+                } else {
+                    docs = None;
+                }
+                offset += line.len();
+            }
+            symbols
+        }
+    }
+
+    #[test]
+    fn symbols_come_from_the_locator() {
+        let files = [("a.toy", "x: 1\n# Why.\ny: 2\nlonger_name: 3\n")];
+        let includer = includer(&files).symbol_locator(Toy);
+        let host = "<!-- mrq:include path=a.toy function=y with_docs=true -->\n";
+        let expanded = includer.expand(&doc("host.md", host));
+        assert_eq!(expanded.diagnostics, []);
+        assert_eq!(expanded.text, "```toy\n# Why.\ny: 2\n```\n");
+
+        let host = "<!-- mrq:include path=a.toy function=zzz -->\n\n\
+                    <!-- mrq:include path=a.toy class=x -->\n";
+        let expanded = includer.expand(&doc("host.md", host));
+        assert_eq!(
+            codes_and_messages(&expanded),
+            [
+                (
+                    INCLUDE_CODE,
+                    "no function `zzz` in `a.toy`; it has function `x` (line 1), function `y` (line 3), function `longer_name` (line 4)"
+                ),
+                (
+                    INCLUDE_CODE,
+                    "no class `x` in `a.toy`; did you mean function `x` (line 1)?"
+                ),
+            ]
+        );
+        assert_eq!(
+            expanded.diagnostics[1].help.as_deref(),
+            Some("`symbol=` selects a symbol of any kind")
         );
     }
 

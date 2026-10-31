@@ -23,6 +23,18 @@ frontmatter-schema = ["dep:jsonschema"]
 # OpenSSL) on a tokio runtime of its own. Off by default; even when built, nothing is
 # requested unless a caller enables the checks.
 external-links = ["dep:reqwest", "dep:rustls", "dep:tokio", "dep:futures-util"]
+# Symbol code includes (`function`, `struct`, `class`, `symbol`) via tree-sitter grammars for
+# Rust, Python, JavaScript, TypeScript and Go (`TreeSitterLocator`); their C parsers are
+# compiled with the crate.
+tree-sitter = [
+  "dep:tree-sitter",
+  "dep:streaming-iterator",
+  "dep:tree-sitter-rust",
+  "dep:tree-sitter-python",
+  "dep:tree-sitter-javascript",
+  "dep:tree-sitter-typescript",
+  "dep:tree-sitter-go",
+]
 
 [dependencies]
 thiserror.workspace = true
@@ -52,6 +64,13 @@ reqwest = { workspace = true, optional = true }
 rustls = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true, features = ["rt", "sync", "time"] }
 futures-util = { workspace = true, optional = true }
+tree-sitter = { workspace = true, optional = true }
+streaming-iterator = { workspace = true, optional = true }
+tree-sitter-rust = { workspace = true, optional = true }
+tree-sitter-python = { workspace = true, optional = true }
+tree-sitter-javascript = { workspace = true, optional = true }
+tree-sitter-typescript = { workspace = true, optional = true }
+tree-sitter-go = { workspace = true, optional = true }
 
 [dev-dependencies]
 proptest.workspace = true

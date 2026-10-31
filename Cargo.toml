@@ -52,6 +52,13 @@ rustls = { version = "0.23.46", default-features = false, features = ["ring", "s
 tokio = { version = "1.54.1", default-features = false }
 similar = { version = "2.7.0", default-features = false, features = ["text"] }
 futures-util = { version = "0.3.34", default-features = false, features = ["alloc"] }
+tree-sitter = "0.27.1"
+streaming-iterator = "0.1.9"
+tree-sitter-rust = "0.24.2"
+tree-sitter-python = "0.25.0"
+tree-sitter-javascript = "0.25.0"
+tree-sitter-typescript = "0.23.2"
+tree-sitter-go = "0.25.0"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

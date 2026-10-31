@@ -11,7 +11,8 @@
 //!   links rebased and cross-file links turned into anchors of the merged document
 //!   (`mrq merge`).
 //! - [`Includer`]: resolve `mrq:include` directives, recursively, with `section`,
-//!   `select`, `shift`, `dedent` and `frontmatter` (`mrq interpolate`).
+//!   `select`, `shift`, `dedent` and `frontmatter`, and code includes of whole files,
+//!   line ranges or symbols ([`symbol`](crate::symbol)) (`mrq interpolate`).
 //!
 //! ```
 //! use mrq_core::Document;

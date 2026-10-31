@@ -1,7 +1,8 @@
 //! Fixture tests for `mrq_core::transform::Includer`: each top-level
 //! `tests/fixtures/transform/include/<name>.md` expands to `<name>.out.md`, with the
 //! diagnostics listed in `<name>.diag.txt` (none if absent). The included files live in
-//! the subdirectories.
+//! the subdirectories. The symbol includes in `tests/fixtures/transform/symbols/` work the
+//! same way, with the `tree-sitter` feature.
 
 use std::fmt::Write as _;
 use std::fs;
@@ -14,12 +15,19 @@ use mrq_core::transform::{Expanded, Includer};
 use mrq_core::validate::codes;
 
 fn fixture_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/transform/include")
+    fixtures("include")
 }
 
-/// The host fixtures: the `.md` files directly in the fixture directory, except outputs.
-fn hosts() -> Vec<String> {
-    let mut names: Vec<String> = fs::read_dir(fixture_dir())
+/// The fixture directory `tests/fixtures/transform/<kind>`.
+fn fixtures(kind: &str) -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/transform")
+        .join(kind)
+}
+
+/// The host fixtures: the `.md` files directly in `dir`, except outputs.
+fn hosts(dir: &Path) -> Vec<String> {
+    let mut names: Vec<String> = fs::read_dir(dir)
         .unwrap()
         .map(|entry| entry.unwrap().file_name().into_string().unwrap())
         .filter_map(|file| {
@@ -32,16 +40,18 @@ fn hosts() -> Vec<String> {
 }
 
 fn expand(name: &str) -> Expanded {
-    let dir = fixture_dir();
+    expand_in(&fixture_dir(), name)
+}
+
+fn expand_in(dir: &Path, name: &str) -> Expanded {
     let doc = Document::load(dir.join(format!("{name}.md"))).unwrap();
-    Includer::new().root(&dir).expand(&doc)
+    Includer::new().root(dir).expand(&doc)
 }
 
 /// One `file:line:col code: message` line per diagnostic, 1-based, with the file relative
-/// to the fixture directory and that directory (canonicalized) written as `<dir>`.
-fn diagnostic_lines(diagnostics: &[Diagnostic]) -> String {
-    let dir = fixture_dir();
-    let canonical = fs::canonicalize(&dir).unwrap();
+/// to `dir` and that directory (canonicalized) written as `<dir>`.
+fn diagnostic_lines(dir: &Path, diagnostics: &[Diagnostic]) -> String {
+    let canonical = fs::canonicalize(dir).unwrap();
     let mut out = String::new();
     for diagnostic in diagnostics {
         let doc = Document::load(&diagnostic.file).unwrap();
@@ -51,7 +61,7 @@ fn diagnostic_lines(diagnostics: &[Diagnostic]) -> String {
             .unwrap();
         let file = diagnostic
             .file
-            .strip_prefix(&dir)
+            .strip_prefix(dir)
             .unwrap_or(&diagnostic.file);
         let message = diagnostic
             .message
@@ -69,19 +79,29 @@ fn diagnostic_lines(diagnostics: &[Diagnostic]) -> String {
     out
 }
 
-#[test]
-fn fixtures_expand_to_their_expected_output() {
-    let names = hosts();
+/// Expands every host fixture in `dir` and compares it with its output and diagnostics.
+fn check_fixtures(dir: &Path) {
+    let names = hosts(dir);
     assert!(names.len() >= 5, "{names:?}");
     for name in names {
-        let dir = fixture_dir();
         let expected = fs::read_to_string(dir.join(format!("{name}.out.md")))
             .unwrap_or_else(|_| panic!("{name}.out.md is missing"));
         let diag = fs::read_to_string(dir.join(format!("{name}.diag.txt"))).unwrap_or_default();
-        let expanded = expand(&name);
+        let expanded = expand_in(dir, &name);
         assert_eq!(expanded.text, expected, "{name}");
-        assert_eq!(diagnostic_lines(&expanded.diagnostics), diag, "{name}");
+        assert_eq!(diagnostic_lines(dir, &expanded.diagnostics), diag, "{name}");
     }
+}
+
+#[test]
+fn fixtures_expand_to_their_expected_output() {
+    check_fixtures(&fixture_dir());
+}
+
+#[cfg(feature = "tree-sitter")]
+#[test]
+fn symbol_fixtures_expand_to_their_expected_output() {
+    check_fixtures(&fixtures("symbols"));
 }
 
 #[test]

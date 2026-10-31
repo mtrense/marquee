@@ -21,8 +21,5 @@
 <!-- mrq:include path="code/gone.rs" lang=rust -->
 <!-- mrq:end -->
 
-<!-- mrq:include path="code/hello.rs" lang=rust function=hello -->
-<!-- mrq:end -->
-
 <!-- mrq:include path="code/hello.rs" lang=rust lines=1 shift=1 section=Hello -->
 <!-- mrq:end -->
