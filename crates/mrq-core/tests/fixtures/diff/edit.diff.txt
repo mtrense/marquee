@@ -1,0 +1,11 @@
+= (root)
+= Guide
+~ Guide / Setup [modified]
+  = ## Setup
+  ~ Run the {+graphical +}installer now.
+  = Restart the shell.
+~ Guide / Usage [modified]
+  = ## Usage
+  = Call `mrq` with a file.
+  ~ - `--json` prints JSON\n- `--word` diffs words{+ inline+}
+= Reference

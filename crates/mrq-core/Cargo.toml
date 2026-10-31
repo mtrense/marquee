@@ -61,6 +61,7 @@ unicode-width.workspace = true
 textwrap.workspace = true
 regex.workspace = true
 winnow.workspace = true
+similar.workspace = true
 jaq-core.workspace = true
 jaq-std.workspace = true
 jaq-json.workspace = true

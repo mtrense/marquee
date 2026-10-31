@@ -1,0 +1,9 @@
+= (root)
+= Guide
+~ Guide / Installation [renamed] <- Guide / Setup
+  ~ ## Setup => ## Installation
+  = Run the installer now.
+  = Restart the shell.
+= Guide / Installation / Linux
+= Guide / Usage
+= Reference

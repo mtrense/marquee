@@ -1,0 +1,8 @@
+= (root)
+= Guide
+~ Guide / Installation [renamed, modified] <- Guide / Setup
+  ~ ## Setup => ## Installation
+  ~ Run the installer now. => Run the graphical installer now.
+  = Restart the shell.
+= Guide / Usage
+= Reference

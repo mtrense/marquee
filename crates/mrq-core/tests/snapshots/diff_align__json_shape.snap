@@ -1,0 +1,251 @@
+---
+source: crates/mrq-core/tests/diff_align.rs
+expression: "serde_json::to_string_pretty(&diff).unwrap()"
+---
+{
+  "sections": [
+    {
+      "status": "matched",
+      "moved": false,
+      "renamed": false,
+      "modified": false,
+      "old": {
+        "path": [],
+        "title": "",
+        "level": 0,
+        "span": {
+          "start": 0,
+          "end": 30
+        },
+        "line": 0
+      },
+      "new": {
+        "path": [],
+        "title": "",
+        "level": 0,
+        "span": {
+          "start": 0,
+          "end": 37
+        },
+        "line": 0
+      },
+      "blocks": []
+    },
+    {
+      "status": "matched",
+      "moved": false,
+      "renamed": true,
+      "modified": true,
+      "old": {
+        "path": [
+          "Setup"
+        ],
+        "title": "Setup",
+        "level": 1,
+        "span": {
+          "start": 0,
+          "end": 18
+        },
+        "line": 0
+      },
+      "new": {
+        "path": [
+          "Install"
+        ],
+        "title": "Install",
+        "level": 1,
+        "span": {
+          "start": 0,
+          "end": 24
+        },
+        "line": 0
+      },
+      "blocks": [
+        {
+          "op": "modify",
+          "old": {
+            "kind": "heading",
+            "canonical": "# Setup",
+            "span": {
+              "start": 0,
+              "end": 7
+            },
+            "lines": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          "new": {
+            "kind": "heading",
+            "canonical": "# Install",
+            "span": {
+              "start": 0,
+              "end": 9
+            },
+            "lines": {
+              "start": 0,
+              "end": 1
+            }
+          },
+          "words": [
+            {
+              "op": "equal",
+              "text": "# "
+            },
+            {
+              "op": "delete",
+              "text": "Setup"
+            },
+            {
+              "op": "insert",
+              "text": "Install"
+            }
+          ]
+        },
+        {
+          "op": "modify",
+          "old": {
+            "kind": "paragraph",
+            "canonical": "Run it.",
+            "span": {
+              "start": 9,
+              "end": 16
+            },
+            "lines": {
+              "start": 2,
+              "end": 3
+            }
+          },
+          "new": {
+            "kind": "paragraph",
+            "canonical": "Run it now.",
+            "span": {
+              "start": 11,
+              "end": 22
+            },
+            "lines": {
+              "start": 2,
+              "end": 3
+            }
+          },
+          "words": [
+            {
+              "op": "equal",
+              "text": "Run it"
+            },
+            {
+              "op": "insert",
+              "text": " now"
+            },
+            {
+              "op": "equal",
+              "text": "."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "status": "removed",
+      "moved": false,
+      "renamed": false,
+      "modified": true,
+      "old": {
+        "path": [
+          "Old"
+        ],
+        "title": "Old",
+        "level": 1,
+        "span": {
+          "start": 18,
+          "end": 30
+        },
+        "line": 4
+      },
+      "new": null,
+      "blocks": [
+        {
+          "op": "delete",
+          "old": {
+            "kind": "heading",
+            "canonical": "# Old",
+            "span": {
+              "start": 18,
+              "end": 23
+            },
+            "lines": {
+              "start": 4,
+              "end": 5
+            }
+          }
+        },
+        {
+          "op": "delete",
+          "old": {
+            "kind": "paragraph",
+            "canonical": "gone",
+            "span": {
+              "start": 25,
+              "end": 29
+            },
+            "lines": {
+              "start": 6,
+              "end": 7
+            }
+          }
+        }
+      ]
+    },
+    {
+      "status": "added",
+      "moved": false,
+      "renamed": false,
+      "modified": true,
+      "old": null,
+      "new": {
+        "path": [
+          "New"
+        ],
+        "title": "New",
+        "level": 1,
+        "span": {
+          "start": 24,
+          "end": 37
+        },
+        "line": 4
+      },
+      "blocks": [
+        {
+          "op": "insert",
+          "new": {
+            "kind": "heading",
+            "canonical": "# New",
+            "span": {
+              "start": 24,
+              "end": 29
+            },
+            "lines": {
+              "start": 4,
+              "end": 5
+            }
+          }
+        },
+        {
+          "op": "insert",
+          "new": {
+            "kind": "paragraph",
+            "canonical": "fresh",
+            "span": {
+              "start": 31,
+              "end": 36
+            },
+            "lines": {
+              "start": 6,
+              "end": 7
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

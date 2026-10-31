@@ -353,7 +353,7 @@ flowchart LR
 ### M9: Diff
 
 - [x] **M9.1 Normalized block model.** Section tree with each block in a canonical form (fmt printer output with `wrap: never`, normalized markers, table cells trimmed), so formatting-only changes compare equal. **AC:** a reflowed paragraph, different list markers or re-aligned tables compare equal.
-- [ ] **M9.2 Alignment.** Match sections by heading path (exact, then fuzzy by similarity, which detects moves and renames), then diff block sequences within matched sections with `similar` (patience), and word-level inline diff with `--word`. **AC:** fixtures for move, rename, insert, delete and edit.
+- [x] **M9.2 Alignment.** Match sections by heading path (exact, then fuzzy by similarity, which detects moves and renames), then diff block sequences within matched sections with `similar` (patience), and word-level inline diff with `--word`. **AC:** fixtures for move, rename, insert, delete and edit.
 - [ ] **M9.3 `mrq diff` command.** Human output (section breadcrumbs, colored), `--json`, exit codes, and use as a `git difftool`. **AC:** CLI snapshots.
 
 ### M10: TUI (`mrq show`)

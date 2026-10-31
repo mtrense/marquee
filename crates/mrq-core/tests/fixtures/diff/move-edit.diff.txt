@@ -1,0 +1,8 @@
+= (root)
+= Guide
+= Guide / Setup
+= Reference
+~ Reference / Usage [moved, modified] <- Guide / Usage
+  = ## Usage
+  ~ Call `mrq` with a file. => Call `mrq` with one or more files.
+  = - `--json` prints JSON\n- `--word` diffs words

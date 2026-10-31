@@ -49,14 +49,54 @@
 //! heading levels, code. Link reference definitions at the top level are blocks of
 //! their own ([`NodeType::LinkDefinition`]), printed from what their links resolve to;
 //! those inside containers are part of the container's block.
+//!
+//! # Alignment
+//!
+//! [`diff`] normalizes both documents and pairs up their sections: the roots, then
+//! sections with the same [path](Section::path) (in order, if a path occurs more than
+//! once), then the rest by similarity, so that a section under another parent or with
+//! another title is found again. Two such sections score [`TITLE_WEIGHT`] times the
+//! similarity of their titles (by character) plus the rest times that of their own
+//! blocks (by word and punctuation character; children aside), or the title similarity
+//! alone if neither has blocks. Pairs scoring at least [`SECTION_MATCH_THRESHOLD`] match,
+//! best first, ties in document order, so the result is deterministic.
+//!
+//! A matched section is *renamed* if its title changed and *moved* if its parent is not
+//! the partner of its old parent, or it left the longest run of siblings that kept
+//! their order. Its heading and blocks are diffed by canonical form (patience diff);
+//! a deleted block and a later inserted one of the same kind that are at least
+//! [`BLOCK_MODIFY_THRESHOLD`] similar become one *modified* block, as do changed
+//! headings, with a word diff if [`DiffOptions::word`] is set.
+//!
+//! ```
+//! use mrq_core::Document;
+//! use mrq_core::diff::{self, DiffOptions};
+//!
+//! let old = Document::parse("# Setup\n\nRun the installer.\n\n# Usage\n\nCall it.\n");
+//! let new = Document::parse("# Usage\n\nCall it.\n\n# Install\n\nRun the installer.\n");
+//! let diff = diff::diff(&old, &new, &DiffOptions::default());
+//! let install = diff.changes().next().unwrap();
+//! assert!(install.renamed && install.moved && !install.modified);
+//! assert_eq!(install.old.as_ref().unwrap().title, "Setup");
+//! assert!(!diff.is_empty());
+//! ```
+
+mod align;
 
 use std::ops::Range;
+
+use serde::Serialize;
 
 use crate::Document;
 use crate::ast::{NodeKind, NodeType, Span};
 use crate::config::{FmtConfig, FrontmatterFormat, Wrap};
 use crate::fmt::{self, Piece};
 use crate::source::{PositionEncoding, SourceFile};
+
+pub use align::{
+    BLOCK_MODIFY_THRESHOLD, BlockOp, DiffOptions, DocDiff, SECTION_MATCH_THRESHOLD, SectionDiff,
+    SectionSide, SectionStatus, TITLE_WEIGHT, WordOp, diff,
+};
 
 /// A heading and what belongs to it; see [Sections](self#sections).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -94,9 +134,10 @@ impl Section {
 
 /// A top-level block (or link reference definition) of a document in its canonical
 /// form; see [Canonical form](self#canonical-form).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Block {
-    /// What the block is.
+    /// What the block is; serialized as [`NodeType::as_str`].
+    #[serde(serialize_with = "node_type")]
     pub kind: NodeType,
     /// The block as printed, lines separated by `\n`, without a final newline.
     pub canonical: String,
@@ -106,6 +147,14 @@ pub struct Block {
     /// The source lines the block is on, counted from 0 as in
     /// [`SourceFile`], end exclusive.
     pub lines: Range<usize>,
+}
+
+#[allow(
+    clippy::trivially_copy_pass_by_ref,
+    reason = "serde's `serialize_with` signature"
+)]
+fn node_type<S: serde::Serializer>(kind: &NodeType, serializer: S) -> Result<S::Ok, S::Error> {
+    serializer.serialize_str(kind.as_str())
 }
 
 /// The section tree of `document` with every block in its canonical form.

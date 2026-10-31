@@ -2047,7 +2047,7 @@ checksum = "b67d3d2e287e4b86c10b3f3b641033d1f89b74bdb39d05f34952e2b9a6fe21cd"
 dependencies = [
  "console",
  "once_cell",
- "similar",
+ "similar 2.7.0",
  "tempfile",
 ]
 
@@ -2712,7 +2712,7 @@ dependencies = [
  "mrq-tui",
  "predicates",
  "serde_json",
- "similar",
+ "similar 3.2.1",
  "tempfile",
  "terminal_size",
 ]
@@ -2742,6 +2742,7 @@ dependencies = [
  "serde",
  "serde-saphyr",
  "serde_json",
+ "similar 3.2.1",
  "streaming-iterator",
  "tempfile",
  "textwrap",
@@ -4181,6 +4182,15 @@ name = "similar"
 version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa"
+
+[[package]]
+name = "similar"
+version = "3.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2f8bec09ae8fae0f4f265a4559a9334be3929d8504e9b536df0a41302bd1733"
+dependencies = [
+ "bstr",
+]
 
 [[package]]
 name = "simplecss"

@@ -1,0 +1,12 @@
+= (root)
+= Guide
+~ Guide / Setup [modified]
+  = ## Setup
+  = Run the installer now.
+  + Check the version.
+  = Restart the shell.
+= Guide / Usage
++ Guide / Troubleshooting
+  + ## Troubleshooting
+  + Ask for help.
+= Reference
