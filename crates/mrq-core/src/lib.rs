@@ -9,6 +9,7 @@ pub mod diag;
 pub mod directive;
 pub mod document;
 pub mod flavor;
+pub mod fmt;
 pub mod frontmatter;
 pub mod input;
 pub mod lint;

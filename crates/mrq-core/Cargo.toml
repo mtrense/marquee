@@ -36,6 +36,7 @@ figment.workspace = true
 schemars.workspace = true
 serde-saphyr.workspace = true
 comrak.workspace = true
+entities.workspace = true
 toml_edit.workspace = true
 unicode-general-category.workspace = true
 unicode-normalization.workspace = true

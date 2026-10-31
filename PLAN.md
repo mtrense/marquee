@@ -267,7 +267,7 @@ flowchart LR
 
 ### M6: fmt
 
-- [ ] **M6.1 Printer core.** A Markdown printer over the mrq AST for every CommonMark + GFM node, with escaping that preserves meaning, honoring the config (`emphasis`, `strong`, `list_marker`, `code_fence`, ATX headings), and correct blank-line handling. **AC:** for the CommonMark and GFM spec suites, `render_html(parse(fmt(x))) == render_html(parse(x))`.
+- [x] **M6.1 Printer core.** A Markdown printer over the mrq AST for every CommonMark + GFM node, with escaping that preserves meaning, honoring the config (`emphasis`, `strong`, `list_marker`, `code_fence`, ATX headings), and correct blank-line handling. **AC:** for the CommonMark and GFM spec suites, `render_html(parse(fmt(x))) == render_html(parse(x))`.
 - [ ] **M6.2 Tables.** Column alignment by Unicode display width, alignment markers kept, escaped pipes, and inline content in cells. **AC:** CJK and emoji fixtures.
 - [ ] **M6.3 Lists.** Ordered numbering modes (`one`, `ordered`, `preserve`), consistent indentation of nested content, loose/tight lists preserved, task markers. **AC:** fixtures.
 - [ ] **M6.4 Wrapping.** Inline fragment model (never break inside code spans, link destinations, autolinks, HTML or math). Modes `preserve`, `never`, `width` (textwrap optimal fit over fragments) and `sentence` (sentence segmentation with abbreviation exceptions). Blockquote and list prefixes count toward the width. **AC:** fixtures for each mode, and a re-wrapped paragraph never changes the rendered HTML.

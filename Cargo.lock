@@ -1434,6 +1434,7 @@ name = "mrq-core"
 version = "0.1.0"
 dependencies = [
  "comrak",
+ "entities",
  "figment",
  "futures-util",
  "globset",
