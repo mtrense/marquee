@@ -1484,7 +1484,14 @@ dependencies = [
 name = "mrq-render"
 version = "0.1.0"
 dependencies = [
+ "jsonschema",
  "mrq-core",
+ "schemars",
+ "serde",
+ "serde-saphyr",
+ "serde_json",
+ "tempfile",
+ "thiserror",
 ]
 
 [[package]]

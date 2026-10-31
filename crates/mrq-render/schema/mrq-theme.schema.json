@@ -1,0 +1,458 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "mrq render theme",
+  "description": "A render theme (`--style`, `render.style`): colors, fonts, heading styles and the\ncode-highlighting theme, which every backend maps as well as it can, plus a native\noverride file per backend.",
+  "type": "object",
+  "properties": {
+    "extends": {
+      "description": "The theme this one builds on: a built-in theme name (`light`, `dark`, `github`,\n`paper`) or a theme file path relative to this file. Without it, the theme builds\non `light`. Always `None` in a loaded theme.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "colors": {
+      "description": "Colors.",
+      "$ref": "#/$defs/Colors",
+      "default": {
+        "foreground": "#222222",
+        "background": "#ffffff",
+        "heading": "#111111",
+        "accent": "#1a5fb4",
+        "muted": "#6a6a6a",
+        "border": "#d4d4d4",
+        "code_foreground": "#222222",
+        "code_background": "#f4f4f4",
+        "alerts": {
+          "note": "#1a5fb4",
+          "tip": "#26a269",
+          "important": "#813d9c",
+          "warning": "#b35900",
+          "caution": "#c01c28"
+        }
+      }
+    },
+    "fonts": {
+      "description": "Font families and sizes.",
+      "$ref": "#/$defs/Fonts",
+      "default": {
+        "body": "system-ui",
+        "heading": null,
+        "mono": "ui-monospace",
+        "size": "16px",
+        "line_height": 1.5
+      }
+    },
+    "headings": {
+      "description": "Per-level heading styles.",
+      "$ref": "#/$defs/Headings",
+      "default": {
+        "h1": {
+          "size": "2em",
+          "weight": "bold",
+          "italic": null,
+          "underline": true,
+          "color": null
+        },
+        "h2": {
+          "size": "1.5em",
+          "weight": "bold",
+          "italic": null,
+          "underline": true,
+          "color": null
+        },
+        "h3": {
+          "size": "1.25em",
+          "weight": "bold",
+          "italic": null,
+          "underline": null,
+          "color": null
+        },
+        "h4": {
+          "size": "1em",
+          "weight": "bold",
+          "italic": null,
+          "underline": null,
+          "color": null
+        },
+        "h5": {
+          "size": "0.875em",
+          "weight": "bold",
+          "italic": null,
+          "underline": null,
+          "color": null
+        },
+        "h6": {
+          "size": "0.85em",
+          "weight": "bold",
+          "italic": null,
+          "underline": null,
+          "color": null
+        }
+      }
+    },
+    "code": {
+      "description": "Code blocks.",
+      "$ref": "#/$defs/CodeStyle",
+      "default": {
+        "theme": "InspiredGitHub"
+      }
+    },
+    "overrides": {
+      "description": "Native per-backend files for what the portable theme can't express.",
+      "$ref": "#/$defs/Overrides",
+      "default": {
+        "html": null,
+        "pdf": null,
+        "ansi": null
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "Colors": {
+      "description": "`colors` section.",
+      "type": "object",
+      "properties": {
+        "foreground": {
+          "description": "Body text.",
+          "$ref": "#/$defs/Color",
+          "default": "#222222"
+        },
+        "background": {
+          "description": "Page background; terminal backends leave the background alone.",
+          "$ref": "#/$defs/Color",
+          "default": "#ffffff"
+        },
+        "heading": {
+          "description": "Heading text, unless the heading style sets its own color.",
+          "$ref": "#/$defs/Color",
+          "default": "#111111"
+        },
+        "accent": {
+          "description": "Links and other highlights.",
+          "$ref": "#/$defs/Color",
+          "default": "#1a5fb4"
+        },
+        "muted": {
+          "description": "Secondary text: blockquotes, captions, footnotes.",
+          "$ref": "#/$defs/Color",
+          "default": "#6a6a6a"
+        },
+        "border": {
+          "description": "Table borders, rules and blockquote bars.",
+          "$ref": "#/$defs/Color",
+          "default": "#d4d4d4"
+        },
+        "code_foreground": {
+          "description": "Inline code and code blocks without a highlighted language.",
+          "$ref": "#/$defs/Color",
+          "default": "#222222"
+        },
+        "code_background": {
+          "description": "Background of inline code and code blocks.",
+          "$ref": "#/$defs/Color",
+          "default": "#f4f4f4"
+        },
+        "alerts": {
+          "description": "Alerts, callouts and admonitions, by kind.",
+          "$ref": "#/$defs/AlertColors",
+          "default": {
+            "note": "#1a5fb4",
+            "tip": "#26a269",
+            "important": "#813d9c",
+            "warning": "#b35900",
+            "caution": "#c01c28"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Color": {
+      "description": "A hex color: `#rgb`, `#rrggbb` or `#rrggbbaa`.",
+      "type": "string",
+      "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+    },
+    "AlertColors": {
+      "description": "`colors.alerts` section: the GFM alert kinds. Other callout and admonition kinds map\nto the closest one.",
+      "type": "object",
+      "properties": {
+        "note": {
+          "$ref": "#/$defs/Color",
+          "default": "#1a5fb4"
+        },
+        "tip": {
+          "$ref": "#/$defs/Color",
+          "default": "#26a269"
+        },
+        "important": {
+          "$ref": "#/$defs/Color",
+          "default": "#813d9c"
+        },
+        "warning": {
+          "$ref": "#/$defs/Color",
+          "default": "#b35900"
+        },
+        "caution": {
+          "$ref": "#/$defs/Color",
+          "default": "#c01c28"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Fonts": {
+      "description": "`fonts` section. A family is a font name or a comma-separated list of names tried in\norder; backends add their own generic fallback (`sans-serif`, `monospace`).",
+      "type": "object",
+      "properties": {
+        "body": {
+          "description": "Body text.",
+          "type": "string",
+          "default": "system-ui"
+        },
+        "heading": {
+          "description": "Headings; `None` uses `body`.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "mono": {
+          "description": "Code.",
+          "type": "string",
+          "default": "ui-monospace"
+        },
+        "size": {
+          "description": "Body font size; `em` and `rem` elsewhere in the theme are relative to it.",
+          "$ref": "#/$defs/Length",
+          "default": "16px"
+        },
+        "line_height": {
+          "description": "Line height as a multiple of the font size.",
+          "type": "number",
+          "format": "float",
+          "default": 1.5
+        }
+      },
+      "additionalProperties": false
+    },
+    "Length": {
+      "description": "A number with a unit: `em`, `rem` (relative to the body font size), `pt` or `px`.",
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?(em|rem|pt|px)$"
+    },
+    "Headings": {
+      "description": "`headings` section.",
+      "type": "object",
+      "properties": {
+        "h1": {
+          "$ref": "#/$defs/HeadingStyle",
+          "default": {
+            "size": "2em",
+            "weight": "bold",
+            "italic": null,
+            "underline": true,
+            "color": null
+          }
+        },
+        "h2": {
+          "$ref": "#/$defs/HeadingStyle",
+          "default": {
+            "size": "1.5em",
+            "weight": "bold",
+            "italic": null,
+            "underline": true,
+            "color": null
+          }
+        },
+        "h3": {
+          "$ref": "#/$defs/HeadingStyle",
+          "default": {
+            "size": "1.25em",
+            "weight": "bold",
+            "italic": null,
+            "underline": null,
+            "color": null
+          }
+        },
+        "h4": {
+          "$ref": "#/$defs/HeadingStyle",
+          "default": {
+            "size": "1em",
+            "weight": "bold",
+            "italic": null,
+            "underline": null,
+            "color": null
+          }
+        },
+        "h5": {
+          "$ref": "#/$defs/HeadingStyle",
+          "default": {
+            "size": "0.875em",
+            "weight": "bold",
+            "italic": null,
+            "underline": null,
+            "color": null
+          }
+        },
+        "h6": {
+          "$ref": "#/$defs/HeadingStyle",
+          "default": {
+            "size": "0.85em",
+            "weight": "bold",
+            "italic": null,
+            "underline": null,
+            "color": null
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "HeadingStyle": {
+      "description": "The style of one heading level. Every property is optional; an unset one keeps the\nbackend's default (body size and weight, `colors.heading`, no italic or underline).\nA file that extends another theme overrides the properties it sets and inherits the\nothers; `null` unsets an inherited one.",
+      "type": "object",
+      "properties": {
+        "size": {
+          "description": "Font size, usually in `em` of the body font size.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Length"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "weight": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FontWeight"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "italic": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "underline": {
+          "description": "A line under the heading (a bottom border in HTML).",
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null
+        },
+        "color": {
+          "description": "Overrides `colors.heading`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Color"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false
+    },
+    "FontWeight": {
+      "description": "A font weight, from `thin` (100) to `black` (900).",
+      "oneOf": [
+        {
+          "description": "100.",
+          "type": "string",
+          "const": "thin"
+        },
+        {
+          "description": "300.",
+          "type": "string",
+          "const": "light"
+        },
+        {
+          "description": "400.",
+          "type": "string",
+          "const": "normal"
+        },
+        {
+          "description": "500.",
+          "type": "string",
+          "const": "medium"
+        },
+        {
+          "description": "600.",
+          "type": "string",
+          "const": "semibold"
+        },
+        {
+          "description": "700.",
+          "type": "string",
+          "const": "bold"
+        },
+        {
+          "description": "800.",
+          "type": "string",
+          "const": "extrabold"
+        },
+        {
+          "description": "900.",
+          "type": "string",
+          "const": "black"
+        }
+      ]
+    },
+    "CodeStyle": {
+      "description": "`code` section.",
+      "type": "object",
+      "properties": {
+        "theme": {
+          "description": "The highlighting theme: a bundled syntect theme name (e.g. `InspiredGitHub`) or a\n`.tmTheme` file path relative to the theme file.",
+          "type": "string",
+          "default": "InspiredGitHub"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Overrides": {
+      "description": "`overrides` section: native files per backend, relative to the theme file that sets\nthem. Loaded themes hold absolute paths when the theme file path was absolute.",
+      "type": "object",
+      "properties": {
+        "html": {
+          "description": "CSS appended to the generated stylesheet.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "pdf": {
+          "description": "Typst template wrapping the document.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "ansi": {
+          "description": "Per-element ANSI styles.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

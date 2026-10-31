@@ -45,9 +45,10 @@ build-release:
 install:
     cargo install --path crates/mrq-cli --locked
 
-# Regenerate the checked-in AST JSON Schema (crates/mrq-core/schema/) from the projection types.
+# Regenerate the checked-in JSON Schemas: the AST (crates/mrq-core/schema/) and themes (crates/mrq-render/schema/).
 schema:
     MRQ_UPDATE_SCHEMA=1 cargo test -p mrq-core --test json_ast schema_file_is_up_to_date
+    MRQ_UPDATE_SCHEMA=1 cargo test -p mrq-render --test theme schema_file_is_up_to_date
 
 # Generate man pages for mrq and every subcommand into `out` (default target/man).
 man out="target/man":

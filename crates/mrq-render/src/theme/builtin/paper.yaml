@@ -1,0 +1,27 @@
+# Built-in theme `paper`: black serif text for print and PDF. The fonts are the ones
+# Typst embeds, so PDFs need no system fonts.
+extends: light
+colors:
+  foreground: "#000000"
+  background: "#ffffff"
+  heading: "#000000"
+  accent: "#1f3f7f"
+  muted: "#555555"
+  border: "#999999"
+  code_foreground: "#000000"
+  code_background: "#f7f7f7"
+fonts:
+  body: "Libertinus Serif"
+  heading: "Libertinus Serif"
+  mono: "DejaVu Sans Mono"
+  size: 11pt
+  line_height: 1.4
+headings:
+  h1: { size: 1.8em, weight: bold, underline: false }
+  h2: { size: 1.4em, weight: bold, underline: false }
+  h3: { size: 1.2em, weight: bold }
+  h4: { size: 1em, weight: bold }
+  h5: { size: 1em, weight: bold, italic: true }
+  h6: { size: 1em, weight: normal, italic: true }
+code:
+  theme: "InspiredGitHub"

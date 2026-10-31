@@ -321,7 +321,7 @@ flowchart LR
 
 ### M8: Render
 
-- [ ] **M8.1 Theme model.** Theme struct (colors, fonts, headings, code theme, `extends`), built-in themes `light`, `dark`, `github` and `paper`, loading from YAML, per-backend `overrides` paths. **AC:** schema published, and inheritance tests.
+- [x] **M8.1 Theme model.** Theme struct (colors, fonts, headings, code theme, `extends`), built-in themes `light`, `dark`, `github` and `paper`, loading from YAML, per-backend `overrides` paths. **AC:** schema published, and inheritance tests.
 - [ ] **M8.2 Highlighting.** syntect + two-face wrapper: language lookup by fence info (aliases), output as spans of styled text that every backend consumes, and theme mapping. **AC:** snapshot tests for a few languages.
 - [ ] **M8.3 HTML backend.** mrq's own HTML renderer over the mrq AST (complete control over flavor nodes). Heading ids from the slugger, highlighted code (CSS classes with the stylesheet generated from the theme), alerts/admonitions/callouts, footnotes, tables, task lists, math via pulldown-latex to MathML, standalone vs `--fragment`, CSS override. **AC:** GFM spec HTML equivalence for core nodes (normalized), and snapshots for extensions.
 - [ ] **M8.4 Diagram framework.** `DiagramRenderer` trait (`languages()`, `render(src, format) -> Svg|Png|Text`), registry and fallback order from the README, external-command renderer (stdin to stdout, timeout), Kroki renderer (feature-gated HTTP, opt-in), content-hash cache in the user cache directory, and fallback to the code block plus a warning. **AC:** tests with fake commands, and cache hit/miss tests.

@@ -1,0 +1,31 @@
+# Built-in theme `github`: the look of Markdown on github.com (light mode).
+extends: light
+colors:
+  foreground: "#1f2328"
+  background: "#ffffff"
+  heading: "#1f2328"
+  accent: "#0969da"
+  muted: "#59636e"
+  border: "#d1d9e0"
+  code_foreground: "#1f2328"
+  code_background: "#f6f8fa"
+  alerts:
+    note: "#0969da"
+    tip: "#1a7f37"
+    important: "#8250df"
+    warning: "#9a6700"
+    caution: "#d1242f"
+fonts:
+  body: "-apple-system, BlinkMacSystemFont, Segoe UI, Noto Sans, Helvetica, Arial"
+  mono: "ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono"
+  size: 16px
+  line_height: 1.5
+headings:
+  h1: { size: 2em, weight: semibold, underline: true }
+  h2: { size: 1.5em, weight: semibold, underline: true }
+  h3: { size: 1.25em, weight: semibold }
+  h4: { size: 1em, weight: semibold }
+  h5: { size: 0.875em, weight: semibold }
+  h6: { size: 0.85em, weight: semibold, color: "#59636e" }
+code:
+  theme: "GitHub"
