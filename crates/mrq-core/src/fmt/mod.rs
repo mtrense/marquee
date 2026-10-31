@@ -30,6 +30,10 @@
 //! - Indented code blocks become fenced. Ordered lists are numbered consecutively from
 //!   their start number (`fmt.ordered_list`), and item content is indented by the width
 //!   of its marker.
+//! - Tables are pipe tables with leading and trailing pipes. Every column is padded to
+//!   its widest cell (at least three), measured in display columns so CJK text and emoji
+//!   line up; cells are padded on the side their alignment leaves open, the delimiter row
+//!   keeps each column's alignment marker, and every row has one cell per column.
 //! - Links, images and autolinks keep their form (inline, reference, `<…>`, bare);
 //!   destinations with spaces are written `<…>` and titles in double quotes.
 //! - Reference definitions are recovered from the source (the parser drops them):
@@ -52,11 +56,10 @@
 //!
 //! # Scope
 //!
-//! This is the printer core. Table alignment (M6.2), list numbering modes and
-//! indentation rules (M6.3), wrapping (M6.4), flavor-specific printing (M6.5) and code
-//! formatting (M6.6) build on it; until then tables are printed unaligned, `fmt.wrap` is
-//! treated as `preserve`, and flavor syntax is printed with simple generic rules
-//! (mkdocs heading attributes as written).
+//! This is the printer core and the table printer. List numbering modes and indentation
+//! rules (M6.3), wrapping (M6.4), flavor-specific printing (M6.5) and code formatting
+//! (M6.6) build on it; until then `fmt.wrap` is treated as `preserve`, and flavor syntax
+//! is printed with simple generic rules (mkdocs heading attributes as written).
 //!
 //! # Known limits
 //!
@@ -76,6 +79,7 @@
 mod block;
 mod inline;
 mod refs;
+mod table;
 
 use crate::Document;
 use crate::ast::Ast;
@@ -99,8 +103,8 @@ pub fn format(document: &Document, config: &FmtConfig) -> String {
     printer.print()
 }
 
-/// Shared state of one [`format`] call; the block printer lives in `block`, the inline
-/// printer and escaping in `inline`.
+/// Shared state of one [`format`] call; the block printer lives in `block`, tables in
+/// `table`, the inline printer and escaping in `inline`.
 struct Printer<'a> {
     ast: &'a Ast,
     /// The text the tree's spans index, for verbatim parts.

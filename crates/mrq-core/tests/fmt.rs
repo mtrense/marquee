@@ -306,11 +306,84 @@ fn code_spans_choose_their_backticks() {
 fn tables_and_footnotes_print() {
     assert_eq!(
         fmt("a|b\n:-|-:\nc|`\\|`\n"),
-        "| a | b |\n| :-- | --: |\n| c | `\\|` |\n"
+        "| a   |    b |\n| :-- | ---: |\n| c   | `\\|` |\n"
     );
     assert_eq!(
         fmt("x[^1]\n\n[^1]: note\n\n    more\n"),
         "x[^1]\n\n[^1]: note\n\n    more\n"
+    );
+}
+
+/// The fixtures in `tests/fixtures/fmt/`: each `<name>.md` formats to `<name>.out.md`,
+/// which formats to itself, and both render to the same HTML.
+#[test]
+fn fixtures_format_to_their_expected_output() {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/fmt");
+    let mut inputs: Vec<_> = fs::read_dir(&dir)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| {
+            path.extension().is_some_and(|ext| ext == "md")
+                && !path
+                    .file_stem()
+                    .unwrap()
+                    .to_string_lossy()
+                    .ends_with(".out")
+        })
+        .collect();
+    inputs.sort();
+    assert!(inputs.len() > 1, "no fixtures in {}", dir.display());
+    for input in inputs {
+        let src = fs::read_to_string(&input).unwrap();
+        let expected = fs::read_to_string(input.with_extension("out.md")).unwrap();
+        let name = input.display();
+        assert_eq!(fmt(&src), expected, "{name}");
+        assert_eq!(fmt(&expected), expected, "{name}: not idempotent");
+        let options = Document::parse(&src).flavor().parse_options();
+        assert_eq!(html(&src, options), html(&expected, options), "{name}");
+    }
+}
+
+#[test]
+fn table_columns_are_padded_to_their_widest_cell() {
+    // At least three wide, so that every alignment marker fits.
+    assert_eq!(fmt("|a|\n|-|\n"), "| a   |\n| --- |\n");
+    assert_eq!(
+        fmt("a|b|c\n:-|:-:|-:\nlong cell|x|y\n"),
+        "| a         |  b  |   c |\n| :-------- | :-: | --: |\n| long cell |  x  |   y |\n"
+    );
+    // Centered text leans left when the padding is odd.
+    assert_eq!(
+        fmt("a|b\n:-:|-\nxxxx|y\n"),
+        "|  a   | b   |\n| :--: | --- |\n| xxxx | y   |\n"
+    );
+}
+
+#[test]
+fn table_rows_get_every_column_and_no_more() {
+    assert_eq!(
+        fmt("a|b|c\n-|-|-\nx\nx|y|z|w\n"),
+        "| a   | b   | c   |\n| --- | --- | --- |\n| x   |     |     |\n| x   | y   | z   |\n"
+    );
+}
+
+#[test]
+fn tables_align_inside_containers() {
+    assert_eq!(
+        fmt("> a|b\n> -|-\n> ccc|d\n"),
+        "> | a   | b   |\n> | --- | --- |\n> | ccc | d   |\n"
+    );
+    assert_eq!(
+        fmt("- a|b\n  -|-\n  ccc|d\n"),
+        "- | a   | b   |\n  | --- | --- |\n  | ccc | d   |\n"
+    );
+}
+
+#[test]
+fn table_cells_escape_pipes_and_keep_inline_content() {
+    assert_eq!(
+        fmt("a|b\n-|-\n`x\\|y` \\| z|*e* [l](/u)\n"),
+        "| a           | b           |\n| ----------- | ----------- |\n| `x\\|y` \\| z | *e* [l](/u) |\n"
     );
 }
 

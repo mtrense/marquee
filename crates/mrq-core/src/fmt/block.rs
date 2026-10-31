@@ -3,8 +3,8 @@
 
 use super::Printer;
 use crate::ast::{
-    Admonition, Alignment, Callout, CodeBlock, CommentSyntax, Fold, FrontMatterFormat, Heading,
-    List, ListKind, NodeId, NodeKind, OrderedDelimiter, TaskState,
+    Admonition, Callout, CodeBlock, CommentSyntax, Fold, FrontMatterFormat, Heading, List,
+    ListKind, NodeId, NodeKind, OrderedDelimiter, TaskState,
 };
 use crate::config::OrderedList;
 
@@ -330,33 +330,6 @@ impl Printer<'_> {
         let mut lines = vec![format!("{fence}{}", super::inline::info(&code.info))];
         lines.extend(split_lines(&code.literal));
         lines.push(fence);
-        lines
-    }
-
-    /// A pipe table, one row per line (column alignment is M6.2).
-    fn table(&self, id: NodeId, alignments: &[Alignment]) -> Vec<String> {
-        let mut lines = Vec::new();
-        for (index, &row) in self.ast.children(id).iter().enumerate() {
-            let cells: Vec<String> = self
-                .ast
-                .children(row)
-                .iter()
-                .map(|&cell| self.inlines(cell, true))
-                .collect();
-            lines.push(format!("| {} |", cells.join(" | ")));
-            if index == 0 {
-                let delimiters: Vec<&str> = alignments
-                    .iter()
-                    .map(|alignment| match alignment {
-                        Alignment::None => "---",
-                        Alignment::Left => ":--",
-                        Alignment::Center => ":-:",
-                        Alignment::Right => "--:",
-                    })
-                    .collect();
-                lines.push(format!("| {} |", delimiters.join(" | ")));
-            }
-        }
         lines
     }
 }
