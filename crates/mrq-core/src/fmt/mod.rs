@@ -27,9 +27,13 @@
 //!   (or `)` instead of `.`) for a list right after a list of the same kind, a tilde
 //!   fence for an info string with a backtick, and a longer fence than any fence-like
 //!   line of the code.
-//! - Indented code blocks become fenced. Ordered lists are numbered consecutively from
-//!   their start number (`fmt.ordered_list`), and item content is indented by the width
-//!   of its marker.
+//! - Indented code blocks become fenced.
+//! - Ordered lists keep their start number, which is part of the HTML; the other items
+//!   follow `fmt.ordered_list`: counting up from it (`ordered`), repeating it (`one`), or
+//!   as written, leading zeros included (`preserve`). A number past nine digits repeats
+//!   the start number. All content of an item is indented by the width of its own
+//!   marker (so `10.` indents by four where `9.` indents by three), tight lists stay
+//!   tight and loose ones loose, and task markers are `[ ]` and `[x]`.
 //! - Tables are pipe tables with leading and trailing pipes. Every column is padded to
 //!   its widest cell (at least three), measured in display columns so CJK text and emoji
 //!   line up; cells are padded on the side their alignment leaves open, the delimiter row
@@ -56,10 +60,10 @@
 //!
 //! # Scope
 //!
-//! This is the printer core and the table printer. List numbering modes and indentation
-//! rules (M6.3), wrapping (M6.4), flavor-specific printing (M6.5) and code formatting
-//! (M6.6) build on it; until then `fmt.wrap` is treated as `preserve`, and flavor syntax
-//! is printed with simple generic rules (mkdocs heading attributes as written).
+//! This is the printer core with tables and lists. Wrapping (M6.4), flavor-specific
+//! printing (M6.5) and code formatting (M6.6) build on it; until then `fmt.wrap` is
+//! treated as `preserve`, and flavor syntax is printed with simple generic rules (mkdocs
+//! heading attributes as written).
 //!
 //! # Known limits
 //!

@@ -2662,7 +2662,7 @@ expression: "mrq_core::config::schema_json()"
       "description": "Ordered list numbering of `fmt.ordered_list`.",
       "oneOf": [
         {
-          "description": "Every item is numbered `1.`.",
+          "description": "Every item repeats the start number (`1.` unless the list starts elsewhere).",
           "type": "string",
           "const": "one"
         },

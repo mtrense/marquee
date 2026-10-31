@@ -203,7 +203,7 @@ impl ListMarker {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderedList {
-    /// Every item is numbered `1.`.
+    /// Every item repeats the start number (`1.` unless the list starts elsewhere).
     One,
     /// Items are numbered consecutively from the first number.
     #[default]

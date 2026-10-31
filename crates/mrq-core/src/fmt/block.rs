@@ -10,6 +10,7 @@ use crate::config::OrderedList;
 
 /// The largest ordered list number `CommonMark` accepts (nine digits).
 const MAX_LIST_NUMBER: u64 = 999_999_999;
+const MAX_LIST_DIGITS: usize = 9;
 
 /// Where a block sits among its siblings.
 #[derive(Debug, Clone, Copy)]
@@ -260,8 +261,11 @@ impl Printer<'_> {
         (lines, marker)
     }
 
-    /// The number of the `index`th item of an ordered list starting at `start`.
-    fn item_number(&self, item: NodeId, start: u64, index: usize) -> u64 {
+    /// The number of the `index`th item of an ordered list starting at `start`: the
+    /// start number for every item (`one`), counting up from it (`ordered`), or the
+    /// digits as written, leading zeros included (`preserve`). Only the start number
+    /// changes the HTML.
+    fn item_number(&self, item: NodeId, start: u64, index: usize) -> String {
         let consecutive = start.saturating_add(index as u64);
         let number = match self.config.ordered_list {
             OrderedList::One => start,
@@ -275,14 +279,17 @@ impl Printer<'_> {
                     .chars()
                     .take_while(char::is_ascii_digit)
                     .collect();
-                digits.parse().unwrap_or(consecutive)
+                if (1..=MAX_LIST_DIGITS).contains(&digits.len()) {
+                    return digits;
+                }
+                consecutive
             }
         };
         // A tenth digit would end the list.
         if number > MAX_LIST_NUMBER {
-            start
+            start.to_string()
         } else {
-            number
+            number.to_string()
         }
     }
 

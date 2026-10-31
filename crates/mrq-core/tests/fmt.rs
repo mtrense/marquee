@@ -6,7 +6,7 @@ use std::fs;
 use std::path::Path;
 
 use mrq_core::Document;
-use mrq_core::config::{CodeFence, Emphasis, FmtConfig, ListMarker, Strong};
+use mrq_core::config::{CodeFence, Emphasis, FmtConfig, ListMarker, OrderedList, Strong};
 use mrq_core::document::DocumentOptions;
 use mrq_core::fmt::format;
 use mrq_core::parse::ParseOptions;
@@ -144,13 +144,21 @@ fn gfm_spec_examples_keep_their_html() {
     check_spec("gfm-spec.txt", "gfm", GFM_KNOWN);
 }
 
-/// The other choice of every configurable marker.
+/// The other choice of every configurable marker (and numbering).
 fn other_markers() -> FmtConfig {
     FmtConfig {
         emphasis: Emphasis::Underscore,
         strong: Strong::Underscore,
         list_marker: ListMarker::Star,
+        ordered_list: OrderedList::One,
         code_fence: CodeFence::Tilde,
+        ..FmtConfig::default()
+    }
+}
+
+fn preserved_numbers() -> FmtConfig {
+    FmtConfig {
+        ordered_list: OrderedList::Preserve,
         ..FmtConfig::default()
     }
 }
@@ -158,6 +166,19 @@ fn other_markers() -> FmtConfig {
 #[test]
 fn spec_examples_keep_their_html_with_other_markers() {
     let config = other_markers();
+    check_spec_with(
+        "commonmark-spec.txt",
+        "commonmark",
+        COMMONMARK_KNOWN,
+        &config,
+        false,
+    );
+    check_spec_with("gfm-spec.txt", "gfm", GFM_KNOWN, &config, false);
+}
+
+#[test]
+fn spec_examples_keep_their_html_with_preserved_numbers() {
+    let config = preserved_numbers();
     check_spec_with(
         "commonmark-spec.txt",
         "commonmark",
@@ -270,6 +291,26 @@ fn lists_indent_content_by_their_marker() {
 }
 
 #[test]
+fn ordered_lists_follow_the_numbering_mode() {
+    let src = "3. a\n9. b\n04. c\n";
+    let numbered = |ordered_list| {
+        let config = FmtConfig {
+            ordered_list,
+            ..FmtConfig::default()
+        };
+        fmt_with(src, &config)
+    };
+    assert_eq!(numbered(OrderedList::Ordered), "3. a\n4. b\n5. c\n");
+    assert_eq!(numbered(OrderedList::One), "3. a\n3. b\n3. c\n");
+    assert_eq!(numbered(OrderedList::Preserve), "3. a\n9. b\n04. c\n");
+    // Past nine digits the start number repeats.
+    assert_eq!(
+        fmt("999999998. a\n1. b\n1. c\n"),
+        "999999998. a\n999999999. b\n999999998. c\n"
+    );
+}
+
+#[test]
 fn text_that_looks_like_syntax_is_escaped() {
     assert_eq!(fmt("\\# not a heading\n"), "\\# not a heading\n");
     assert_eq!(fmt("\\- not a list\n"), "\\- not a list\n");
@@ -315,7 +356,8 @@ fn tables_and_footnotes_print() {
 }
 
 /// The fixtures in `tests/fixtures/fmt/`: each `<name>.md` formats to `<name>.out.md`,
-/// which formats to itself, and both render to the same HTML.
+/// which formats to itself, and both render to the same HTML. An optional
+/// `<name>.fmt.yml` holds the `fmt` settings to format with.
 #[test]
 fn fixtures_format_to_their_expected_output() {
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/fmt");
@@ -336,9 +378,17 @@ fn fixtures_format_to_their_expected_output() {
     for input in inputs {
         let src = fs::read_to_string(&input).unwrap();
         let expected = fs::read_to_string(input.with_extension("out.md")).unwrap();
+        let config = match fs::read_to_string(input.with_extension("fmt.yml")) {
+            Ok(yaml) => serde_saphyr::from_str(&yaml).unwrap(),
+            Err(_) => FmtConfig::default(),
+        };
         let name = input.display();
-        assert_eq!(fmt(&src), expected, "{name}");
-        assert_eq!(fmt(&expected), expected, "{name}: not idempotent");
+        assert_eq!(fmt_with(&src, &config), expected, "{name}");
+        assert_eq!(
+            fmt_with(&expected, &config),
+            expected,
+            "{name}: not idempotent"
+        );
         let options = Document::parse(&src).flavor().parse_options();
         assert_eq!(html(&src, options), html(&expected, options), "{name}");
     }
@@ -402,14 +452,16 @@ fn spec_examples_format_idempotently() {
         ("commonmark-spec.txt", "commonmark"),
         ("gfm-spec.txt", "gfm"),
     ] {
-        for example in examples(file) {
-            let once = format(&parse(&example.markdown, flavor), &FmtConfig::default());
-            let twice = format(&parse(&once, flavor), &FmtConfig::default());
-            if once != twice {
-                unstable.push(format!(
-                    "{file} example {}:\n{once}---\n{twice}",
-                    example.number
-                ));
+        for config in [FmtConfig::default(), other_markers(), preserved_numbers()] {
+            for example in examples(file) {
+                let once = format(&parse(&example.markdown, flavor), &config);
+                let twice = format(&parse(&once, flavor), &config);
+                if once != twice {
+                    unstable.push(format!(
+                        "{file} example {} ({config:?}):\n{once}---\n{twice}",
+                        example.number
+                    ));
+                }
             }
         }
     }
