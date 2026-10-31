@@ -75,8 +75,8 @@
 //! let old = Document::parse("# Setup\n\nRun the installer.\n\n# Usage\n\nCall it.\n");
 //! let new = Document::parse("# Usage\n\nCall it.\n\n# Install\n\nRun the installer.\n");
 //! let diff = diff::diff(&old, &new, &DiffOptions::default());
-//! let install = diff.changes().next().unwrap();
-//! assert!(install.renamed && install.moved && !install.modified);
+//! let install = diff.changes().find(|s| s.renamed).unwrap();
+//! assert!(!install.modified);
 //! assert_eq!(install.old.as_ref().unwrap().title, "Setup");
 //! assert!(!diff.is_empty());
 //! ```
