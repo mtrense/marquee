@@ -2,6 +2,7 @@
 
 use mrq_core::source::{
     ByteRange, EditError, Position, PositionEncoding, SourceFile, TextEdit, apply_edits,
+    invert_edits,
 };
 use proptest::prelude::*;
 use proptest::sample::Index;
@@ -144,6 +145,18 @@ proptest! {
             cursor = edit.range.end;
         }
         prop_assert_eq!(&out[at..], &text[cursor..]);
+    }
+
+    #[test]
+    fn inverted_edits_undo_the_edits(text in text(), raw in raw_edits()) {
+        let keys: Vec<u32> = raw.iter().map(|r| r.3).collect();
+        let edits = non_overlapping(to_edits(&text, &raw), &keys);
+        let edited = apply_edits(&text, &edits).unwrap();
+        let inverse = invert_edits(&text, &edits).unwrap();
+        prop_assert_eq!(apply_edits(&edited, &inverse).unwrap(), text.clone());
+        // The inverse of the inverse redoes the edits.
+        let redo = invert_edits(&edited, &inverse).unwrap();
+        prop_assert_eq!(apply_edits(&text, &redo).unwrap(), edited);
     }
 
     #[test]

@@ -1,7 +1,8 @@
 //! The app state: the open files, which one is shown, the focused panel, the outline
 //! toggle, the overlay, the terminal size and colour level, and the navigation state
-//! (history, chosen link, status message) with link following in `navigate`, and the
-//! prompt with search and query in `search`.
+//! (history, chosen link, status message) with link following in `navigate`, the
+//! prompt with search and query in `search`, and structural editing, saving and the
+//! question on quit in `editing`.
 
 use std::path::PathBuf;
 
@@ -14,6 +15,7 @@ use mrq_render::ansi::{AnsiRenderer, ColorLevel, Line, StyledDocument};
 use ratatui::crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::layout::Rect;
 
+use crate::edit::{Structural, UndoStack};
 use crate::event::{self, Action, Event};
 use crate::find::Find;
 use crate::open::{Opener, SystemOpener};
@@ -21,6 +23,7 @@ use crate::prompt::Prompt;
 use crate::ui;
 use crate::view::DocumentView;
 
+mod editing;
 mod navigate;
 mod search;
 
@@ -50,8 +53,8 @@ pub struct Location {
     pub offset: usize,
 }
 
-/// One open file: the document, its outline, and its layout and view (selection and
-/// scroll position) for the document panel.
+/// One open file: the document, its outline, its layout and view (selection and scroll
+/// position) for the document panel, and its edits.
 #[derive(Debug)]
 pub struct FileView {
     document: Document,
@@ -62,16 +65,12 @@ pub struct FileView {
     /// The document laid out, with the width it was laid out for.
     styled: Option<(usize, StyledDocument)>,
     view: DocumentView,
+    undo: UndoStack,
 }
 
 impl FileView {
     fn new(document: Document) -> Self {
-        let outline = document.toc();
-        // `outline` indents each heading under the closest lower-level one, one line each.
-        let outline_text = mrq_core::toc::outline(&outline)
-            .lines()
-            .map(str::to_owned)
-            .collect();
+        let (outline, outline_text) = outline(&document);
         Self {
             outline,
             outline_text,
@@ -79,7 +78,16 @@ impl FileView {
             outline_cursor: 0,
             styled: None,
             view: DocumentView::default(),
+            undo: UndoStack::default(),
         }
+    }
+
+    /// Replaces the document with `document`, an edited version of it, with its outline;
+    /// the next [`lay_out`](Self::lay_out) lays it out.
+    fn set_document(&mut self, document: Document) {
+        (self.outline, self.outline_text) = outline(&document);
+        self.document = document;
+        self.styled = None;
     }
 
     pub fn document(&self) -> &Document {
@@ -105,6 +113,11 @@ impl FileView {
     /// The document panel's blocks, selection and scroll position.
     pub fn view(&self) -> &DocumentView {
         &self.view
+    }
+
+    /// Whether the document has edits that are not saved.
+    pub fn is_dirty(&self) -> bool {
+        self.undo.is_dirty()
     }
 
     /// The styled lines for the document panel's current width; empty until the file
@@ -257,7 +270,8 @@ impl App {
     /// Does what `action` stands for.
     pub fn apply(&mut self, action: Action) {
         match action {
-            Action::Quit => self.quit = true,
+            Action::Quit => self.ask_quit(),
+            Action::ForceQuit => self.quit = true,
             Action::NextPanel => self.cycle_focus(1),
             Action::PreviousPanel => self.cycle_focus(-1),
             Action::ToggleOutline => {
@@ -290,6 +304,14 @@ impl App {
             Action::NextMatch => self.next_match(1),
             Action::PreviousMatch => self.next_match(-1),
             Action::ClearMatches => self.find = None,
+            Action::Promote => self.structural(Structural::Promote),
+            Action::Demote => self.structural(Structural::Demote),
+            Action::MoveSectionUp => self.structural(Structural::MoveUp),
+            Action::MoveSectionDown => self.structural(Structural::MoveDown),
+            Action::DeleteSection => self.structural(Structural::Delete),
+            Action::Undo => self.undo(false),
+            Action::Redo => self.undo(true),
+            Action::Save => self.save(),
         }
     }
 
@@ -363,7 +385,7 @@ impl App {
         self.status.as_deref()
     }
 
-    /// The open prompt (search or query), which takes the keys.
+    /// The open prompt (search, query, or the question on quit), which takes the keys.
     pub fn prompt(&self) -> Option<&Prompt> {
         self.asking.as_ref().map(|asking| &asking.prompt)
     }
@@ -456,6 +478,17 @@ impl App {
             let _ = find.refresh(self.current, width, &self.files[self.current]);
         }
     }
+}
+
+/// The headings of `document`, and the outline as drawn: each heading indented under the
+/// closest lower-level one, one line each.
+fn outline(document: &Document) -> (Vec<TocEntry>, Vec<String>) {
+    let outline = document.toc();
+    let text = mrq_core::toc::outline(&outline)
+        .lines()
+        .map(str::to_owned)
+        .collect();
+    (outline, text)
 }
 
 /// A move of the focused panel.

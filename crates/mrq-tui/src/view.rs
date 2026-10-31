@@ -114,6 +114,26 @@ impl DocumentView {
         self
     }
 
+    /// This view with the block at the source offset `offset` selected as
+    /// [`select_offset`](Self::select_offset) does, on the row of the screen that the
+    /// selection of `old` was on (as far as the ends allow), and the height of `old`: the
+    /// view of an edited document, whose nodes are not those of `old`.
+    #[must_use]
+    pub fn following_offset(mut self, old: &Self, offset: usize) -> Self {
+        self.height = old.height;
+        let row = old
+            .selected()
+            .map_or(0, |block| block.lines.start.saturating_sub(old.top));
+        if self.select_offset(offset)
+            && let Some(block) = self.selected()
+        {
+            self.top = block.lines.start.saturating_sub(row);
+        }
+        self.clamp();
+        self.reveal(false);
+        self
+    }
+
     /// The blocks, in document order.
     pub fn blocks(&self) -> &[Block] {
         &self.blocks

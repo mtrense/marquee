@@ -403,6 +403,7 @@ An interactive viewer for one or more files, or a directory, with colors, syntax
 | `Backspace`             | go back                                               |
 | `Shift-←` / `Shift-→`   | promote / demote the selected heading (with its section) |
 | `Alt-↑` / `Alt-↓`       | move the selected section up / down                   |
+| `d` / `Delete`          | delete the selected section                           |
 | `/`, `n`, `N`           | search, next / previous match                         |
 | `>`                     | run a query; matches are highlighted and navigable    |
 | `Esc`                   | clear the search or query highlighting                |
@@ -410,11 +411,13 @@ An interactive viewer for one or more files, or a directory, with colors, syntax
 | `w`                     | save                                                  |
 | `e`                     | open `$EDITOR` at the current line                    |
 | `?`                     | help                                                  |
-| `q`                     | quit (asks if there are unsaved changes)              |
+| `q`                     | quit (asks if there are unsaved changes; `Ctrl-c` does not ask) |
 
 `Enter` follows the first link (or wikilink) of the selected block, or the one chosen with `←`/`→`. Links resolve as for `mrq validate`: `#anchor` jumps to the heading in the same file, another Markdown file opens in the viewer (added to the file list, at its `#anchor` if given), and web links, `mailto:` addresses and other local files open in the system's opener (`open`, `xdg-open` or `explorer`). `Backspace` goes back to where each jump came from, including jumps from the outline and the file list. A link whose target is missing says so in the status line.
 
 `/` opens a search prompt in the status line. The search runs as you type over the text as it is shown (not the Markdown source), highlighting every match and selecting the first one at or after the selection. It is smart-case: a pattern in lower case ignores case, and one with an upper-case letter matches it exactly. A match never spans two lines. `Enter` keeps the search, and `Esc` cancels it and goes back to where it started. `>` opens a query prompt for the [selector syntax](#mrq-query), or CSS after `css:` and jq after `jq:` (`>css:link[url^="http"]`). It runs on `Enter`; the blocks of its matches are marked in the gutter, and the first match at or after the selection is selected. A query that does not parse keeps the prompt open, with the error and its column in the status line and the cursor on the problem. jq outputs that aren't nodes of the document are skipped. Either way, `n` and `N` go to the next and previous match, wrapping around, with `match i/n` in the status line, and `Backspace` goes back to where the search or query started. The search or query applies to whichever file is shown; `Esc` clears it.
+
+The editing keys act on a section: the selected heading with everything up to the next heading of the same or a higher level, or, if the selection is not on a heading, the innermost section it is in (with the outline focused, the section of the outline entry). `Shift-←`/`Shift-→` move the heading and all its subheadings one level up or down, the way `mrq merge --shift` does (a setext heading becomes ATX); they refuse, with a message in the status line, when a heading would go above level 1 or below level 6. `Alt-↑`/`Alt-↓` swap the section with the previous or next section that has the same parent, and `d` deletes it with the blank lines after it (before it, for the last section), without asking, since `u` brings it back. Every edit changes only the bytes of the section, and `u` and `Ctrl-r` undo and redo them byte for byte; after an edit the selection stays on the edited section. A file with unsaved edits has `[+]` after its name in the status line and the file list. `w` writes the shown file atomically (a temporary file renamed over it, keeping its permissions); stdin input cannot be written. `q` asks before quitting while any file has unsaved edits: `y` quits, any other key goes back.
 
 Files are reloaded when they change on disk.
 

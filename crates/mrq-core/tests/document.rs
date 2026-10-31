@@ -473,3 +473,41 @@ fn workspace_insert_replaces_documents_with_the_same_path() {
     assert_eq!(ws.remove("docs/./a.md").unwrap().text(), "# 2\n");
     assert_eq!(ws.len(), 1);
 }
+
+#[test]
+fn with_text_reparses_an_edited_version_with_the_same_path_and_flavor() {
+    let doc = DocumentOptions::new()
+        .flavor("obsidian")
+        .parse_source(mrq_core::source::SourceFile::new(
+            Some("notes/a.md".into()),
+            "# A\n",
+        ))
+        .unwrap();
+    let edited = doc.with_text("## A\n\n[[B]]\n");
+    assert_eq!(edited.text(), "## A\n\n[[B]]\n");
+    assert_eq!(edited.path(), Some(Path::new("notes/a.md")));
+    assert_eq!(edited.flavor().name(), "obsidian");
+    assert_eq!(edited.toc()[0].level, 2);
+}
+
+#[test]
+fn write_atomic_replaces_a_file_keeping_its_permissions() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = write(&dir, "a.md", "old\n");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o640)).unwrap();
+    }
+    mrq_core::source::write_atomic(&path, "new\n").unwrap();
+    assert_eq!(fs::read_to_string(&path).unwrap(), "new\n");
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = fs::metadata(&path).unwrap().permissions().mode();
+        assert_eq!(mode & 0o777, 0o640);
+    }
+    // Nothing is left behind next to it.
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+    assert!(mrq_core::source::write_atomic(&dir.path().join("missing/b.md"), "x").is_err());
+}

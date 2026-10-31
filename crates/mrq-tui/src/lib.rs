@@ -14,6 +14,10 @@
 //!   [`App::history`]. What went wrong is an [`App::status`] message.
 //! - `/` and `>` open a [`Prompt`](prompt::Prompt) in the status line for a search or
 //!   a query; their hits are the [`App::find`] ([`find`]), and `n`/`N` go through them.
+//! - Structural edits (promote, demote, move and delete the section of the selection)
+//!   are [`TextEdit`](mrq_core::source::TextEdit)s on the source, planned in [`edit`]
+//!   and kept per file on an [`UndoStack`](edit::UndoStack) for `u`/`Ctrl-r`; `w` saves,
+//!   and `q` asks before dropping unsaved edits.
 //! - [`ui::draw`] renders an [`App`] into a ratatui [`Frame`](ratatui::Frame), so tests
 //!   draw to a `TestBackend` and snapshot the text. The document panel draws only its
 //!   visible lines.
@@ -41,6 +45,7 @@ use ratatui::Terminal;
 use ratatui::backend::Backend;
 
 mod app;
+pub mod edit;
 pub mod event;
 pub mod find;
 pub mod open;

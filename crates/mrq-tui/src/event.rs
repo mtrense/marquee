@@ -29,7 +29,10 @@ impl Event {
 /// What a key does; see [`App::apply`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
+    /// Quit, asking first if there are unsaved edits.
     Quit,
+    /// Quit without asking.
+    ForceQuit,
     /// Focus the next visible panel, in screen order, wrapping around.
     NextPanel,
     PreviousPanel,
@@ -64,6 +67,22 @@ pub enum Action {
     PreviousMatch,
     /// Forget the search or query and its highlighting.
     ClearMatches,
+    /// Promote the section of the selection (or of the outline cursor while the outline
+    /// is focused), subsections included, one level.
+    Promote,
+    /// Demote the section one level.
+    Demote,
+    /// Move the section before the previous section with the same parent.
+    MoveSectionUp,
+    /// Move the section after the next section with the same parent.
+    MoveSectionDown,
+    DeleteSection,
+    /// Undo the last edit of the shown file.
+    Undo,
+    /// Redo the last undone edit of the shown file.
+    Redo,
+    /// Write the shown file, if it has unsaved edits.
+    Save,
 }
 
 /// The key bindings for the help overlay: keys and what they do.
@@ -81,21 +100,33 @@ pub const KEYS: &[(&str, &str)] = &[
     ("/", "search (Enter: done, Esc: cancel)"),
     (">", "query (css: or jq: for those syntaxes)"),
     ("n / N", "next / previous match"),
+    ("Shift-← →", "promote / demote the section"),
+    ("Alt-↑ ↓", "move the section up / down"),
+    ("d / Delete", "delete the section"),
+    ("u / Ctrl-r", "undo / redo"),
+    ("w", "save"),
     ("o", "toggle the outline"),
     ("?", "toggle this help"),
     ("Esc", "close this help / clear the matches"),
-    ("q / Ctrl-c", "quit"),
+    ("q / Ctrl-c", "quit (q asks if there are unsaved edits)"),
 ];
 
 /// The action `key` stands for in the current state of `app`, if any. `Ctrl-c` always
 /// quits; while an overlay is open, the other keys only close it, and while a prompt is
-/// open, they are its text (see [`App::handle`]) and stand for nothing.
+/// open, they are its text (see [`App::handle`]) and stand for nothing. `Shift-←`/`→`
+/// and `Alt-↑`/`↓` edit; `Alt` with other keys stands for nothing.
 pub fn action(key: &KeyEvent, app: &App) -> Option<Action> {
     if key.kind == KeyEventKind::Release {
         return None;
     }
     if key.modifiers.contains(KeyModifiers::CONTROL) {
-        return (key.code == KeyCode::Char('c')).then_some(Action::Quit);
+        return match key.code {
+            KeyCode::Char('c') => Some(Action::ForceQuit),
+            KeyCode::Char('r') if app.prompt().is_none() && app.overlay().is_none() => {
+                Some(Action::Redo)
+            }
+            _ => None,
+        };
     }
     if app.prompt().is_some() {
         return None;
@@ -103,6 +134,20 @@ pub fn action(key: &KeyEvent, app: &App) -> Option<Action> {
     if let Some(Overlay::Help) = app.overlay() {
         return matches!(key.code, KeyCode::Char('?' | 'q') | KeyCode::Esc)
             .then_some(Action::CloseOverlay);
+    }
+    if key.modifiers.contains(KeyModifiers::ALT) {
+        return match key.code {
+            KeyCode::Up => Some(Action::MoveSectionUp),
+            KeyCode::Down => Some(Action::MoveSectionDown),
+            _ => None,
+        };
+    }
+    if key.modifiers.contains(KeyModifiers::SHIFT) {
+        match key.code {
+            KeyCode::Left => return Some(Action::Promote),
+            KeyCode::Right => return Some(Action::Demote),
+            _ => {}
+        }
     }
     Some(match key.code {
         KeyCode::Char('q') => Action::Quit,
@@ -125,6 +170,9 @@ pub fn action(key: &KeyEvent, app: &App) -> Option<Action> {
         KeyCode::Char('n') => Action::NextMatch,
         KeyCode::Char('N') => Action::PreviousMatch,
         KeyCode::Esc => Action::ClearMatches,
+        KeyCode::Char('d') | KeyCode::Delete => Action::DeleteSection,
+        KeyCode::Char('u') => Action::Undo,
+        KeyCode::Char('w') => Action::Save,
         _ => return None,
     })
 }

@@ -15,7 +15,7 @@ use mrq_core::config::{
 use mrq_core::diag::{self, Diagnostic, EmitOptions, HumanStyle, OutputFormat};
 use mrq_core::document::DocumentOptions;
 use mrq_core::input::{Input, InputResolver};
-use mrq_core::source::SourceFile;
+use mrq_core::source::{SourceFile, write_atomic};
 
 pub mod cli;
 mod diff;
@@ -322,24 +322,4 @@ fn unified_diff(name: &Path, old: &str, new: &str) -> String {
         .unified_diff()
         .header(&format!("a/{label}"), &format!("b/{label}"))
         .to_string()
-}
-
-/// Replaces the file at `path` with `contents` atomically: writes a temp file in the same
-/// directory, gives it the original's permissions, then renames it over the original.
-fn write_atomic(path: &Path, contents: impl AsRef<[u8]>) -> io::Result<()> {
-    let dir = match path.parent() {
-        Some(dir) if !dir.as_os_str().is_empty() => dir,
-        _ => Path::new("."),
-    };
-    let mut temp = tempfile::Builder::new()
-        .prefix(".mrq-")
-        .suffix(".tmp")
-        .tempfile_in(dir)?;
-    temp.write_all(contents.as_ref())?;
-    temp.as_file().sync_all()?;
-    if let Ok(metadata) = fs::metadata(path) {
-        temp.as_file().set_permissions(metadata.permissions())?;
-    }
-    temp.persist(path).map_err(|err| err.error)?;
-    Ok(())
 }

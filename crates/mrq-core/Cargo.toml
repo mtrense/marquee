@@ -62,6 +62,7 @@ textwrap.workspace = true
 regex.workspace = true
 winnow.workspace = true
 similar.workspace = true
+tempfile.workspace = true
 jaq-core.workspace = true
 jaq-std.workspace = true
 jaq-json.workspace = true
@@ -82,7 +83,6 @@ tree-sitter-go = { workspace = true, optional = true }
 proptest.workspace = true
 insta.workspace = true
 jsonschema.workspace = true
-tempfile.workspace = true
 
 [lints]
 workspace = true

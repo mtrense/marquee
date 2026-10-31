@@ -340,6 +340,24 @@ fn a_view_can_follow_another_layout() {
 }
 
 #[test]
+fn a_view_of_an_edited_document_selects_by_offset_on_the_old_row() {
+    let text = paragraphs(0..40);
+    let (_, _, mut old) = laid_out(&text, 40, 10);
+    old.select(20);
+    old.down();
+    let row = |view: &DocumentView| view.selected().unwrap().lines.start - view.top();
+    // The first paragraph deleted: the old selection is a block earlier now.
+    let edited = &text["Paragraph 0.\n\n".len()..];
+    let (document, lines, _) = laid_out(edited, 40, 10);
+    let offset = edited.find("Paragraph 21.").unwrap();
+    let view =
+        DocumentView::new(&lines, document.ast(), &document.toc()).following_offset(&old, offset);
+    assert_eq!(selected(&lines, &view), "Paragraph 21.");
+    assert_eq!(view.height(), 10);
+    assert_eq!(row(&view), row(&old));
+}
+
+#[test]
 fn an_empty_document_scrolls_without_a_selection() {
     let (_, lines, mut view) = laid_out("", 40, 5);
     assert_eq!(lines, []);

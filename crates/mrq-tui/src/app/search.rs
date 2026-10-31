@@ -25,6 +25,8 @@ use crate::view::DocumentView;
 pub(super) enum Purpose {
     Search,
     Query,
+    /// The question whether to quit with unsaved edits: `y` quits, any other key does not.
+    Quit,
 }
 
 /// An open prompt and what to go back to on `Esc`.
@@ -39,13 +41,15 @@ pub(super) struct Asking {
 }
 
 impl App {
-    /// Opens the prompt for `purpose`, focusing the document.
+    /// Opens the prompt for a search or query, focusing the document.
     pub(super) fn ask(&mut self, purpose: Purpose) {
-        let label = match purpose {
-            Purpose::Search => "/",
-            Purpose::Query => ">",
-        };
+        let label = if purpose == Purpose::Search { "/" } else { ">" };
         self.focus = Panel::Document;
+        self.ask_with(purpose, label);
+    }
+
+    /// Opens the prompt for `purpose` after `label`.
+    pub(super) fn ask_with(&mut self, purpose: Purpose, label: impl Into<String>) {
         self.asking = Some(Asking {
             prompt: Prompt::new(label),
             purpose,
@@ -60,6 +64,11 @@ impl App {
             return;
         };
         match (asking.prompt.handle(key), asking.purpose) {
+            (Outcome::Ignored | Outcome::Moved, Purpose::Quit) => {}
+            (_, Purpose::Quit) => {
+                self.quit = asking.prompt.text().eq_ignore_ascii_case("y");
+                self.asking = None;
+            }
             (Outcome::Cancel, _) => {
                 if let Some(asking) = self.asking.take() {
                     self.restore(&asking);

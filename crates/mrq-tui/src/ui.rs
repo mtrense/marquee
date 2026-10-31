@@ -3,7 +3,8 @@
 //! The screen is a sidebar on the left (the file list above the outline), the document
 //! on the right and a status line at the bottom (the file name, or the app's status
 //! message; the open prompt, with the status message on the right). The focused panel
-//! has a thick border.
+//! has a thick border, and files with unsaved edits have a [`DIRTY_MARK`] after their
+//! name in the file list and the status line.
 //! The sidebar is left out below [`SIDEBAR_MIN_SCREEN`] columns. The document panel
 //! draws only the lines on screen, behind a [`GUTTER`] that marks the selected block and
 //! the blocks of query matches; search matches are highlighted in the text.
@@ -20,7 +21,7 @@ use ratatui::widgets::{
     Block, BorderType, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph,
 };
 
-use crate::app::{App, Overlay, Panel};
+use crate::app::{App, FileView, Overlay, Panel};
 use crate::event::KEYS;
 use crate::find::Find;
 use crate::prompt::Prompt;
@@ -36,6 +37,9 @@ const SELECTION_MARK: &str = "▌ ";
 
 /// The gutter mark of the blocks of query matches.
 const MATCH_MARK: &str = "│ ";
+
+/// After the name of a file with unsaved edits.
+pub const DIRTY_MARK: &str = "[+]";
 
 /// A search match in the text.
 const MATCH: Style = Style::new().fg(Color::Black).bg(Color::Yellow);
@@ -150,7 +154,7 @@ fn draw_files(frame: &mut Frame, app: &App, area: Rect) {
         .iter()
         .enumerate()
         .map(|(i, file)| {
-            let name = file.document().name().display().to_string();
+            let name = name(file);
             if i == app.current() {
                 ListItem::new(name).style(Style::new().add_modifier(Modifier::BOLD))
             } else {
@@ -227,7 +231,7 @@ fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
     if let Some(prompt) = app.prompt() {
         return draw_prompt(frame, prompt, app.status(), area);
     }
-    let name = app.file().document().name().display().to_string();
+    let name = name(app.file());
     let left = if let Some(message) = app.status() {
         format!(" {message}")
     } else if app.files().len() > 1 {
@@ -243,6 +247,16 @@ fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
             .right_aligned(),
         area,
     );
+}
+
+/// The file's name, with `[+]` after it while it has unsaved edits.
+fn name(file: &FileView) -> String {
+    let name = file.document().name().display().to_string();
+    if file.is_dirty() {
+        format!("{name} {DIRTY_MARK}")
+    } else {
+        name
+    }
 }
 
 /// The prompt with the cursor in it, and `status` on the right of its text, cut off

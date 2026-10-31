@@ -228,6 +228,13 @@ impl Document {
         }
     }
 
+    /// `text` parsed as an edited version of this document: with its path and flavor,
+    /// whatever the frontmatter of `text` says.
+    #[must_use]
+    pub fn with_text(&self, text: impl Into<String>) -> Self {
+        self.reparse(SourceFile::new(self.path().map(Path::to_path_buf), text))
+    }
+
     /// The source text with its path and line index.
     pub const fn source(&self) -> &SourceFile {
         &self.source

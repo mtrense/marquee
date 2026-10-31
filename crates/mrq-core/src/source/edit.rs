@@ -129,6 +129,60 @@ pub enum EditError {
 /// bounds, not on a UTF-8 char boundary, or conflicts with another edit. Nothing is applied
 /// in that case.
 pub fn apply_edits(text: &str, edits: &[TextEdit]) -> Result<String, EditError> {
+    let order = order(text, edits)?;
+    let removed: usize = edits.iter().map(|e| e.range.len()).sum();
+    let added: usize = edits.iter().map(|e| e.replacement.len()).sum();
+    let mut out = String::with_capacity(text.len() - removed + added);
+    let mut cursor = 0;
+    for &i in &order {
+        let edit = &edits[i];
+        out.push_str(&text[cursor..edit.range.start]);
+        out.push_str(&edit.replacement);
+        cursor = edit.range.end;
+    }
+    out.push_str(&text[cursor..]);
+    Ok(out)
+}
+
+/// The edits that undo `edits` on `text`: applied with [`apply_edits`] to the text that
+/// `edits` gave, they give `text` back. Each replaces the text one of `edits` put in
+/// with the bytes it replaced, in the edited text's offsets; inverting the inverse
+/// against the edited text gives edits that redo `edits`.
+///
+/// ```
+/// use mrq_core::source::{ByteRange, TextEdit, apply_edits, invert_edits};
+///
+/// let edits = [TextEdit { range: ByteRange::new(0, 5), replacement: "Goodbye".to_owned() }];
+/// let edited = apply_edits("Hello, world", &edits).unwrap();
+/// let undo = invert_edits("Hello, world", &edits).unwrap();
+/// assert_eq!(apply_edits(&edited, &undo).unwrap(), "Hello, world");
+/// ```
+///
+/// # Errors
+///
+/// The [`EditError`] that [`apply_edits`] gives for `edits` on `text`.
+pub fn invert_edits(text: &str, edits: &[TextEdit]) -> Result<Vec<TextEdit>, EditError> {
+    let order = order(text, edits)?;
+    // The bytes the edits before the current one added and removed; they never removed
+    // more than there is before it.
+    let (mut added, mut removed) = (0, 0);
+    let mut inverse = Vec::with_capacity(edits.len());
+    for i in order {
+        let edit = &edits[i];
+        let start = edit.range.start + added - removed;
+        inverse.push(TextEdit {
+            range: ByteRange::new(start, start + edit.replacement.len()),
+            replacement: text[edit.range.start..edit.range.end].to_owned(),
+        });
+        added += edit.replacement.len();
+        removed += edit.range.len();
+    }
+    Ok(inverse)
+}
+
+/// The indices of `edits` in the order they apply to `text`, after checking them; see
+/// [`apply_edits`].
+fn order(text: &str, edits: &[TextEdit]) -> Result<Vec<usize>, EditError> {
     for (index, edit) in edits.iter().enumerate() {
         let range = edit.range;
         if range.start > range.end {
@@ -162,19 +216,7 @@ pub fn apply_edits(text: &str, edits: &[TextEdit]) -> Result<String, EditError> 
             });
         }
     }
-
-    let removed: usize = edits.iter().map(|e| e.range.len()).sum();
-    let added: usize = edits.iter().map(|e| e.replacement.len()).sum();
-    let mut out = String::with_capacity(text.len() - removed + added);
-    let mut cursor = 0;
-    for &i in &order {
-        let edit = &edits[i];
-        out.push_str(&text[cursor..edit.range.start]);
-        out.push_str(&edit.replacement);
-        cursor = edit.range.end;
-    }
-    out.push_str(&text[cursor..]);
-    Ok(out)
+    Ok(order)
 }
 
 #[cfg(test)]
@@ -319,6 +361,34 @@ mod tests {
     fn multi_byte_replacement() {
         let out = apply_edits("a€b", &[edit(1, 4, "ü🦀")]);
         assert_eq!(out.unwrap(), "aü🦀b");
+    }
+
+    #[test]
+    fn inverted_edits_restore_the_text() {
+        let text = "hello world";
+        let edits = [edit(6, 11, "there"), edit(0, 0, "> "), edit(5, 5, ",")];
+        let inverse = invert_edits(text, &edits).unwrap();
+        assert_eq!(
+            inverse,
+            [edit(0, 2, ""), edit(7, 8, ""), edit(9, 14, "world")]
+        );
+        let edited = apply_edits(text, &edits).unwrap();
+        assert_eq!(edited, "> hello, there");
+        assert_eq!(apply_edits(&edited, &inverse).unwrap(), text);
+    }
+
+    #[test]
+    fn inverting_follows_the_order_of_same_offset_inserts() {
+        let edits = [edit(1, 1, "1"), edit(1, 2, "B"), edit(1, 1, "2")];
+        let inverse = invert_edits("abc", &edits).unwrap();
+        assert_eq!(apply_edits("abc", &edits).unwrap(), "a12Bc");
+        assert_eq!(inverse, [edit(1, 2, ""), edit(2, 3, ""), edit(3, 4, "b")]);
+    }
+
+    #[test]
+    fn inverting_rejects_what_applying_rejects() {
+        let err = invert_edits("abc", &[edit(0, 2, "x"), edit(1, 3, "y")]).unwrap_err();
+        assert!(matches!(err, EditError::Overlap { .. }));
     }
 
     #[test]

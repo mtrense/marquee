@@ -3126,6 +3126,7 @@ dependencies = [
  "insta",
  "mrq-core",
  "mrq-render",
+ "proptest",
  "ratatui",
  "tempfile",
 ]

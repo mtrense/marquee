@@ -8,7 +8,7 @@
 //!
 //! A [`Find`] applies to whichever file is shown, laid out at whatever width: the app
 //! refreshes it after every layout, which redoes the search or query
-//! when the file or the width changed.
+//! when the file or the width changed, or the file was edited.
 
 use std::ops::Range;
 
@@ -113,6 +113,12 @@ impl Find {
 
     pub(crate) fn set_current(&mut self, index: usize) {
         self.current = Some(index);
+    }
+
+    /// Makes the next [`refresh`](Self::refresh) find the hits again, after an edit of
+    /// the file.
+    pub(crate) fn invalidate(&mut self) {
+        self.key = None;
     }
 
     /// Finds the hits in `file`, the file of index `index` laid out `width` columns wide,
