@@ -1,0 +1,6 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"gfm\", src)"
+---
+<!-- a comment -->
+<p>text</p>

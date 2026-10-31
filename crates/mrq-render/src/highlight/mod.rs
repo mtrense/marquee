@@ -24,7 +24,12 @@
 //! the block in those colors only has to style the spans that stand out. Plain text has
 //! neither block colors nor styled spans; backends use `colors.code_foreground` and
 //! `colors.code_background` of the theme for it.
+//!
+//! HTML can use classes instead: [`Highlighter::highlight_html`] writes one
+//! `hl-`-prefixed class per scope atom ([`CLASS_PREFIX`]), independent of the code theme,
+//! and [`Highlighter::css`] is the code theme as a stylesheet for them.
 
+mod classed;
 mod language;
 
 use std::path::PathBuf;
@@ -37,6 +42,7 @@ use two_face::theme::LazyThemeSet;
 
 use crate::theme::{CodeStyle, Color};
 
+pub use classed::CLASS_PREFIX;
 pub use language::language_token;
 
 /// Two-face's syntaxes, loaded once.

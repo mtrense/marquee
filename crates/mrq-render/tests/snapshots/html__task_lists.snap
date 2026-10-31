@@ -1,0 +1,17 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"gfm\", src)"
+---
+<ul>
+<li><input type="checkbox" disabled="" /> open</li>
+<li><input type="checkbox" checked="" disabled="" /> done</li>
+<li>plain</li>
+</ul>
+<ol>
+<li>
+<p><input type="checkbox" checked="" disabled="" /> loose</p>
+</li>
+<li>
+<p><input type="checkbox" disabled="" /> items</p>
+</li>
+</ol>

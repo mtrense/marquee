@@ -1,0 +1,7 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"gfm\", src)"
+---
+<h1 id="hello-world">Hello World</h1>
+<h2 id="hello-world-1">Hello World</h2>
+<h3 id="ünïcode--code">Ünïcode &amp; <code>code</code></h3>

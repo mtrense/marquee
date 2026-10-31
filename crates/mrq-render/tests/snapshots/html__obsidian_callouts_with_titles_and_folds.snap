@@ -1,0 +1,16 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"obsidian\", src)"
+---
+<div class="admonition tip">
+<p class="admonition-title">Custom <em>title</em></p>
+<p>Body.</p>
+</div>
+<details class="admonition faq">
+<summary class="admonition-title">Closed</summary>
+<p>Hidden.</p>
+</details>
+<details class="admonition bug" open="">
+<summary class="admonition-title">Bug</summary>
+<p>Open.</p>
+</details>

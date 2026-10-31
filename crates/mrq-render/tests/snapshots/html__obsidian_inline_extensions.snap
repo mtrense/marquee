@@ -1,0 +1,8 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"obsidian\", src)"
+---
+<p>See <a class="wikilink" href="Other%20Note.html">Other Note</a>, <a class="wikilink" href="Other%20Note.html#Some%20Heading">alias</a>, <a class="wikilink" href="#Local">Local</a> and <a class="wikilink" href="file.pdf">file.pdf</a>.</p>
+<p><img src="diagram.png" alt="diagram.png" width="200" height="100" /> <a class="wikilink embed" href="Embedded%20Note.html">Embedded Note</a></p>
+<p><span class="tag">#tag/nested</span> <mark>marked</mark> </p>
+<h1 id="Local">Local</h1>

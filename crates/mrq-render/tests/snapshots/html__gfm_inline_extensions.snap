@@ -1,0 +1,5 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"gfm\", src)"
+---
+<p><del>gone</del>, <a href="http://www.example.com">www.example.com</a>, &lt;<a href="https://example.com/a">https://example.com/a</a> b&gt;, <img src="/img.png" alt="alt text" title="T" />.</p>

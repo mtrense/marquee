@@ -1,0 +1,16 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"gfm\", src)"
+---
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Useful <em>information</em>.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Careful.</p>
+</div>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>Danger.</p>
+</div>

@@ -1,0 +1,7 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"mkdocs\", src)"
+---
+<h1 id="start" class="lead" data-x="1">Intro</h1>
+<h2 id="intro">Intro</h2>
+<h2 id="intro_1">Intro</h2>

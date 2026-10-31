@@ -1,0 +1,7 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: html
+---
+<svg data-src="graph TD"></svg>
+<pre><code class="language-rust">let x = 1;
+</code></pre>

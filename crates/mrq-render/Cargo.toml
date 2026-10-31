@@ -16,8 +16,9 @@ serde.workspace = true
 serde_json.workspace = true
 schemars.workspace = true
 serde-saphyr.workspace = true
-syntect = { workspace = true, features = ["parsing", "regex-fancy", "plist-load"] }
+syntect = { workspace = true, features = ["parsing", "regex-fancy", "plist-load", "html"] }
 two-face = { workspace = true, features = ["syntect-fancy"] }
+pulldown-latex.workspace = true
 
 [dev-dependencies]
 jsonschema.workspace = true

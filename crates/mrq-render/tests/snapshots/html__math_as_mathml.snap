@@ -1,0 +1,14 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"obsidian\", src)"
+---
+<p>Inline <math display="inline"><semantics><mrow><msup><mi>a</mi><mn>2</mn></msup><mo>+</mo><msup><mi>b</mi><mn>2</mn></msup><mo>=</mo><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">a^2 + b^2 = c^2</annotation></semantics></math> math.</p>
+<p><math display="block"><semantics><mrow><mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac></mrow><annotation encoding="application/x-tex">
+\frac{1}{2}
+</annotation></semantics></math></p>
+<p>Broken <math display="inline"><semantics><mrow><merror style="border-color: #c01c28"><mtext>parsing error: unbalanced group found, expected it to be closed with `}`
+╭─► context:
+│
+│ \frac{1
+│ ^^^^^^^
+╰────────</mtext></merror></mrow><annotation encoding="application/x-tex">\frac{1</annotation></semantics></math> math.</p>

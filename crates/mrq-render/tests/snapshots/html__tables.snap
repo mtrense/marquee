@@ -1,0 +1,35 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"gfm\", src)"
+---
+<table>
+<thead>
+<tr>
+<th align="left">Left</th>
+<th align="center">Center</th>
+<th align="right">Right</th>
+<th>None</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>a</code></td>
+<td align="center"><strong>b</strong></td>
+<td align="right">c | d</td>
+<td></td>
+</tr>
+<tr>
+<td align="left">1</td>
+<td align="center">2</td>
+<td align="right">3</td>
+<td>4</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Header only</th>
+</tr>
+</thead>
+</table>

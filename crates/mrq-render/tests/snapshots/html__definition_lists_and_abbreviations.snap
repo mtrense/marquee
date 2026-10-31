@@ -1,0 +1,12 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"mkdocs\", src)"
+---
+<p>The <abbr title="Hyper Text Markup Language">HTML</abbr> spec.</p>
+<dl>
+<dt>Term</dt>
+<dd>Definition of the term.</dd>
+<dt>Other term</dt>
+<dd>First.</dd>
+<dd>Second.</dd>
+</dl>

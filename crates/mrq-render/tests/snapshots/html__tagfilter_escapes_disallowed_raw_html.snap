@@ -1,0 +1,6 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: render(true)
+---
+&lt;script>alert(1)&lt;/script>
+<p><b>ok</b> &lt;iframe src=x>&lt;/iframe></p>

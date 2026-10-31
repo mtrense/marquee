@@ -1,0 +1,26 @@
+---
+source: crates/mrq-render/tests/html.rs
+expression: "render(\"mkdocs\", src)"
+---
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Body.</p>
+</div>
+<div class="admonition danger">
+<p class="admonition-title">Watch out</p>
+<p>Body.</p>
+</div>
+<div class="admonition tip">
+<p>No title.</p>
+</div>
+<details class="admonition info inline">
+<summary class="admonition-title">Collapsed</summary>
+<p>Hidden.</p>
+</details>
+<details class="admonition example" open="">
+<summary class="admonition-title">Example</summary>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Nested.</p>
+</div>
+</details>
