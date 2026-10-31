@@ -12,7 +12,8 @@
 //! - **Code blocks** with a known language are highlighted with CSS classes
 //!   (`<pre class="hl-code">` and `<span class="hl-…">` per scope atom, see
 //!   [`Highlighter::highlight_html`]) whose colors come from the stylesheet. Plain code
-//!   uses `colors.code_*`. A [`CodeBlockHook`] can replace a block (diagrams).
+//!   uses `colors.code_*`. A [`CodeBlockHook`] can replace a block (diagrams), and report
+//!   warnings ([`HtmlRenderer::render_with_diagnostics`]).
 //! - **Alerts, callouts and admonitions** are `<div class="admonition KIND">` with a
 //!   `<p class="admonition-title">`, or `<details>`/`<summary>` when foldable (`open`
 //!   for `+`). The title defaults to the kind capitalized; an mkdocs `""` title has none.
@@ -41,14 +42,16 @@
 //! styles, the code theme's rules) followed by the theme's `overrides.html` file.
 
 mod css;
-mod escape;
+pub(crate) mod escape;
 mod render;
 
 use std::fmt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use mrq_core::Document;
 use mrq_core::ast::{CodeBlock, NodeKind};
+use mrq_core::diag::{Diagnostic, Severity};
+use mrq_core::source::ByteRange;
 
 use crate::highlight::{HighlightError, Highlighter};
 use crate::theme::{Color, Theme};
@@ -94,19 +97,64 @@ pub enum HtmlError {
     },
 }
 
-/// Renders code blocks itself instead of the backend, e.g. diagrams as inline SVG.
+/// Renders code blocks itself instead of the backend, e.g. diagrams as inline SVG
+/// ([`DiagramHook`](crate::diagram::DiagramHook)).
 ///
-/// Closures `Fn(&CodeBlock) -> Option<String>` implement it.
+/// Closures `Fn(&CodeBlock, &mut CodeBlockContext) -> Option<String>` implement it.
 pub trait CodeBlockHook: Send + Sync {
     /// The HTML that replaces `block`, or `None` to leave it to the next hook and then
-    /// to the backend's code block.
-    fn render(&self, block: &CodeBlock) -> Option<String>;
+    /// to the backend's code block. Warnings go to `cx`.
+    fn render(&self, block: &CodeBlock, cx: &mut CodeBlockContext<'_>) -> Option<String>;
 }
 
-impl<F: Fn(&CodeBlock) -> Option<String> + Send + Sync> CodeBlockHook for F {
-    fn render(&self, block: &CodeBlock) -> Option<String> {
-        self(block)
+impl<F> CodeBlockHook for F
+where
+    F: Fn(&CodeBlock, &mut CodeBlockContext<'_>) -> Option<String> + Send + Sync,
+{
+    fn render(&self, block: &CodeBlock, cx: &mut CodeBlockContext<'_>) -> Option<String> {
+        self(block, cx)
     }
+}
+
+/// Where a [`CodeBlockHook`] is asked to render a block, and where its warnings go.
+#[derive(Debug)]
+pub struct CodeBlockContext<'a> {
+    span: ByteRange,
+    file: &'a Path,
+    diagnostics: &'a mut Vec<Diagnostic>,
+}
+
+impl CodeBlockContext<'_> {
+    /// The span of the block in the document's source.
+    pub const fn span(&self) -> ByteRange {
+        self.span
+    }
+
+    /// The name diagnostics use for the document: its path, or `<stdin>`.
+    pub const fn file(&self) -> &Path {
+        self.file
+    }
+
+    /// Reports a warning about the block, with its span.
+    pub fn warn(&mut self, code: &str, message: impl Into<String>) {
+        self.diagnostics.push(Diagnostic::new(
+            code,
+            Severity::Warning,
+            self.file,
+            self.span,
+            message,
+        ));
+    }
+}
+
+/// What [`HtmlRenderer::render_with_diagnostics`] gives.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HtmlOutput {
+    /// The page or fragment.
+    pub html: String,
+    /// Warnings of the code block hooks (e.g. diagrams that fell back to code), in
+    /// document order.
+    pub diagnostics: Vec<Diagnostic>,
 }
 
 /// Renders documents to HTML with one theme. See the [module docs](self).
@@ -171,8 +219,24 @@ impl HtmlRenderer {
     }
 
     /// `doc` as HTML: a fragment or a standalone page, per [`HtmlOptions::fragment`].
+    /// Warnings are dropped; [`render_with_diagnostics`](Self::render_with_diagnostics)
+    /// keeps them.
     pub fn render(&self, doc: &Document) -> String {
-        let body = render::body(self, doc);
+        self.render_with_diagnostics(doc).html
+    }
+
+    /// `doc` as HTML, like [`render`](Self::render), and the warnings of the code block
+    /// hooks.
+    pub fn render_with_diagnostics(&self, doc: &Document) -> HtmlOutput {
+        let (body, diagnostics) = render::body(self, doc);
+        HtmlOutput {
+            html: self.page(doc, body),
+            diagnostics,
+        }
+    }
+
+    /// `body` as a fragment or wrapped in a standalone page.
+    fn page(&self, doc: &Document, body: String) -> String {
         if self.options.fragment {
             return body;
         }

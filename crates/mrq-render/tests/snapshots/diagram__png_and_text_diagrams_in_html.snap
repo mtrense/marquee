@@ -1,0 +1,12 @@
+---
+source: crates/mrq-render/tests/diagram.rs
+assertion_line: 583
+expression: html
+---
+<figure class="diagram" data-lang="p">
+<img src="data:image/png;base64,iVBORw0KGgo=" alt="p diagram" />
+</figure>
+<figure class="diagram" data-lang="t">
+<pre>&lt;a&gt; -&gt; b
+</pre>
+</figure>

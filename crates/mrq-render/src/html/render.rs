@@ -9,13 +9,14 @@ use mrq_core::ast::{
     Admonition, Alignment, Ast, Callout, CodeBlock, CommentSyntax, Fold, Heading, ListKind, NodeId,
     NodeKind, TaskState, WikiLink,
 };
+use mrq_core::diag::Diagnostic;
 use mrq_core::document::DocumentOptions;
 use mrq_core::flavor::obsidian_anchor;
 use pulldown_latex::config::{DisplayMode, MathStyle};
 use pulldown_latex::{Parser, RenderConfig, Storage, push_mathml};
 
-use super::HtmlRenderer;
 use super::escape::{escaped, push_escaped, push_href, push_raw_html};
+use super::{CodeBlockContext, HtmlRenderer};
 use crate::highlight::CLASS_PREFIX;
 
 /// File extensions an Obsidian embed shows as an image.
@@ -23,8 +24,8 @@ const IMAGE_EXTENSIONS: &[&str] = &[
     "png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "avif", "ico",
 ];
 
-/// The body HTML of `doc`.
-pub(super) fn body(renderer: &HtmlRenderer, doc: &Document) -> String {
+/// The body HTML of `doc`, and the warnings of the code block hooks.
+pub(super) fn body(renderer: &HtmlRenderer, doc: &Document) -> (String, Vec<Diagnostic>) {
     let ast = doc.ast();
     let mut writer = Writer {
         renderer,
@@ -35,6 +36,7 @@ pub(super) fn body(renderer: &HtmlRenderer, doc: &Document) -> String {
         footnotes: Footnotes::default(),
         abbreviations: Vec::new(),
         checkbox: None,
+        diagnostics: Vec::new(),
     };
     for id in ast.descendants(ast.root()) {
         match ast.kind(id) {
@@ -59,7 +61,7 @@ pub(super) fn body(renderer: &HtmlRenderer, doc: &Document) -> String {
         .sort_by_key(|(abbr, _)| std::cmp::Reverse(abbr.len()));
     writer.node(ast.root(), false);
     writer.footnote_section();
-    writer.out
+    (writer.out, writer.diagnostics)
 }
 
 /// The footnotes referenced so far, numbered in order of first reference.
@@ -95,6 +97,8 @@ struct Writer<'a> {
     abbreviations: Vec<(&'a str, &'a str)>,
     /// The checkbox of a task item, written by the item's first paragraph.
     checkbox: Option<TaskState>,
+    /// Warnings of the code block hooks.
+    diagnostics: Vec<Diagnostic>,
 }
 
 impl<'a> Writer<'a> {
@@ -168,7 +172,7 @@ impl<'a> Writer<'a> {
                 self.checkbox = None;
                 self.push("</li>\n");
             }
-            NodeKind::CodeBlock(block) => self.code_block(block),
+            NodeKind::CodeBlock(block) => self.code_block(id, block),
             NodeKind::HtmlBlock(html) => {
                 self.cr();
                 push_raw_html(&mut self.out, html, self.renderer.options.tagfilter);
@@ -377,12 +381,17 @@ impl<'a> Writer<'a> {
         self.push(&format!("</h{level}>\n"));
     }
 
-    fn code_block(&mut self, block: &CodeBlock) {
+    fn code_block(&mut self, id: NodeId, block: &CodeBlock) {
+        let mut cx = CodeBlockContext {
+            span: self.ast.span(id),
+            file: self.doc.name(),
+            diagnostics: &mut self.diagnostics,
+        };
         if let Some(html) = self
             .renderer
             .code_hooks
             .iter()
-            .find_map(|hook| hook.render(block))
+            .find_map(|hook| hook.render(block, &mut cx))
         {
             self.cr();
             self.push(&html);
@@ -506,7 +515,7 @@ impl<'a> Writer<'a> {
                 let ast = doc.ast();
                 matches!(ast.children(ast.root()), [only] if matches!(ast.kind(*only), NodeKind::Paragraph))
             })
-            .map(|doc| body(self.renderer, &doc))
+            .map(|doc| body(self.renderer, &doc).0)
             .and_then(|html| {
                 let inner = html.strip_prefix("<p>")?.strip_suffix("</p>\n")?;
                 Some(inner.to_owned())

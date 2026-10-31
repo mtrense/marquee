@@ -9,7 +9,7 @@ use mrq_core::Document;
 use mrq_core::ast::CodeBlock;
 use mrq_core::document::DocumentOptions;
 use mrq_render::Theme;
-use mrq_render::html::{HtmlError, HtmlOptions, HtmlRenderer};
+use mrq_render::html::{CodeBlockContext, HtmlError, HtmlOptions, HtmlRenderer};
 
 fn fragment_options() -> HtmlOptions {
     HtmlOptions {
@@ -234,7 +234,7 @@ fn code_block_hook_replaces_blocks_it_handles() {
     };
     let html = HtmlRenderer::new(&Theme::default(), options)
         .unwrap()
-        .with_code_hook(|block: &CodeBlock| {
+        .with_code_hook(|block: &CodeBlock, _: &mut CodeBlockContext<'_>| {
             (block.lang() == Some("mermaid"))
                 .then(|| format!("<svg data-src=\"{}\"></svg>\n", block.literal.trim()))
         })

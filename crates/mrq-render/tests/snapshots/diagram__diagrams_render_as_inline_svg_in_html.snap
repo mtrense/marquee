@@ -1,0 +1,13 @@
+---
+source: crates/mrq-render/tests/diagram.rs
+assertion_line: 565
+expression: html
+---
+<figure class="diagram" data-lang="bob">
+<svg xmlns="http://www.w3.org/2000/svg"><text>a <b></text></svg>
+</figure>
+<figure class="diagram" data-lang="dot">
+<svg xmlns="http://www.w3.org/2000/svg"></svg>
+</figure>
+<pre class="hl-code"><code class="language-rust"><span class="hl-source hl-rust"><span class="hl-storage hl-type hl-rust">let</span> x <span class="hl-keyword hl-operator hl-assignment hl-rust">=</span> <span class="hl-constant hl-numeric hl-integer hl-decimal hl-rust">1</span><span class="hl-punctuation hl-terminator hl-rust">;</span>
+</span></code></pre>

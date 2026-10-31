@@ -16,6 +16,7 @@ mod http;
 pub mod input;
 pub mod lint;
 pub mod parse;
+pub mod process;
 pub mod query;
 pub mod source;
 pub mod stats;

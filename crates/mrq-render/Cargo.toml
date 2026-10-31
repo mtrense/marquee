@@ -9,6 +9,12 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 
+[features]
+# Diagrams from a Kroki server (`KrokiRenderer`) via reqwest with rustls (ring provider,
+# never OpenSSL) on a tokio runtime of its own. Off by default; even when built, Kroki is
+# never contacted unless `render.diagrams.kroki.enabled` is set.
+kroki = ["dep:reqwest", "dep:rustls", "dep:tokio"]
+
 [dependencies]
 mrq-core.workspace = true
 thiserror.workspace = true
@@ -19,6 +25,10 @@ serde-saphyr.workspace = true
 syntect = { workspace = true, features = ["parsing", "regex-fancy", "plist-load", "html"] }
 two-face = { workspace = true, features = ["syntect-fancy"] }
 pulldown-latex.workspace = true
+ring.workspace = true
+reqwest = { workspace = true, optional = true }
+rustls = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true, features = ["rt", "time"] }
 
 [dev-dependencies]
 jsonschema.workspace = true

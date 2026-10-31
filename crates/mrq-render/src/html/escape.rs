@@ -4,7 +4,7 @@ use std::fmt::Write as _;
 
 /// Appends `text` with `&`, `<`, `>` and `"` escaped; safe in text and in
 /// double-quoted attribute values.
-pub(super) fn push_escaped(out: &mut String, text: &str) {
+pub(crate) fn push_escaped(out: &mut String, text: &str) {
     for c in text.chars() {
         match c {
             '&' => out.push_str("&amp;"),

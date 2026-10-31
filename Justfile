@@ -22,9 +22,9 @@ test:
 deny:
     cargo deny check --hide-inclusion-graph
 
-# Check mrq-core and mrq-cli with each feature on its own; needs `cargo install cargo-hack`.
+# Check mrq-core, mrq-render and mrq-cli with each feature on its own; needs `cargo install cargo-hack`.
 features:
-    cargo hack check --each-feature --no-dev-deps -p mrq-core -p mrq-cli
+    cargo hack check --each-feature --no-dev-deps -p mrq-core -p mrq-render -p mrq-cli
 
 # Check the workspace on the MSRV toolchain (rust-version in Cargo.toml); needs `rustup toolchain install 1.99`.
 msrv:
