@@ -1,0 +1,10 @@
+---
+source: crates/mrq-render/tests/highlight.rs
+expression: render(&out)
+---
+language: -
+foreground: -
+background: -
+"a <b>"
+
+"  c"

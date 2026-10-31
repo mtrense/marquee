@@ -1,0 +1,12 @@
+---
+source: crates/mrq-render/tests/highlight.rs
+expression: render(&out)
+---
+language: TypeScript
+foreground: #333333
+background: #ffffff
+"interface"{#a71d5d} " " "Point"{#000000} " {"
+"  " "x"{#0086b3} ":"{#a71d5d} " " "number"{#0086b3} ";"
+"}"
+
+"export"{#a71d5d} " " "const"{#a71d5d} " " "origin"{#0086b3} ":"{#a71d5d} " " "Point"{#000000} " " "="{#a71d5d} " { x: " "0"{#0086b3} " };"

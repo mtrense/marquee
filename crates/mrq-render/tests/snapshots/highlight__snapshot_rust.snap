@@ -1,0 +1,13 @@
+---
+source: crates/mrq-render/tests/highlight.rs
+expression: render(&out)
+---
+language: Rust
+foreground: #323232
+background: #ffffff
+"/// Adds one."{#969896 i}
+"#[inline]"
+"pub"{#a71d5d b} " " "fn"{#a71d5d b} " " "add_one"{#795da3 b} "(x: " "i32"{#a71d5d b} ") -> " "i32"{#a71d5d b} " {"
+"    " "let"{#a71d5d b} " s " "="{#a71d5d b} " " "\"text\""{#183691} ";"
+"    x " "+"{#a71d5d b} " " "1"{#0086b3} " " "// done"{#969896 i}
+"}"

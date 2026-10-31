@@ -1,0 +1,9 @@
+---
+source: crates/mrq-render/tests/highlight.rs
+expression: render(&out)
+---
+language: Rust
+foreground: #010203
+background: #fafafa
+"// hi"{#00ff00 i}
+"x"

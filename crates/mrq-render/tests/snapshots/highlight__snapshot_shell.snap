@@ -1,0 +1,11 @@
+---
+source: crates/mrq-render/tests/highlight.rs
+expression: render(&out)
+---
+language: Bourne Again Shell (bash)
+foreground: #c0c5ce
+background: #2b303b
+"#!/bin/sh"{#65737e}
+"for"{#b48ead} " f " "in"{#b48ead} " *.md; " "do"{#b48ead}
+"  " "echo"{#96b5b4} " \"" "file: "{#a3be8c} "$" "f"{#bf616a} "\" | " "grep"{#8fa1b3} " -v"{#bf616a} " draft"
+"done"{#b48ead}

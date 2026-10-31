@@ -1,0 +1,14 @@
+---
+source: crates/mrq-render/tests/highlight.rs
+expression: render(&out)
+---
+language: Python
+foreground: #323232
+background: #ffffff
+"import"{#a71d5d b} " os"
+
+"class"{#a71d5d b} " " "Greeter"{#0086b3} ":"
+"    " "\"\"\"Says hello.\"\"\""{#969896 i}
+
+"    " "def"{#a71d5d b} " " "greet"{b} "(self, name: " "str"{#0086b3} ") -> " "str"{#0086b3} ":"
+"        " "return"{#a71d5d b} " " "f"{#a71d5d b} "\"Hello, "{#183691} "{name}" "!\""{#183691} "  " "# friendly"{#969896 i}

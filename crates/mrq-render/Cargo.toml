@@ -16,10 +16,13 @@ serde.workspace = true
 serde_json.workspace = true
 schemars.workspace = true
 serde-saphyr.workspace = true
+syntect = { workspace = true, features = ["parsing", "regex-fancy", "plist-load"] }
+two-face = { workspace = true, features = ["syntect-fancy"] }
 
 [dev-dependencies]
 jsonschema.workspace = true
 tempfile.workspace = true
+insta.workspace = true
 
 [lints]
 workspace = true

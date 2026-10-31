@@ -1,0 +1,12 @@
+---
+source: crates/mrq-render/tests/highlight.rs
+expression: render(&out)
+---
+language: YAML
+foreground: #c0c5ce
+background: #2b303b
+"# config"{#65737e}
+"name"{#bf616a} ": " "mrq"{#a3be8c}
+"version"{#bf616a} ": " "1.2"{#d08770}
+"tags"{#bf616a} ": [" "cli"{#a3be8c} ", \"" "markdown"{#a3be8c} "\"]"
+"enabled"{#bf616a} ": " "true"{#d08770}
