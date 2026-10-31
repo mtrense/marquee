@@ -1,14 +1,18 @@
 //! The inline printer and escaping: the inline children of a block become one string,
-//! with `\n` where the block continues on the next line.
+//! with `\n` where the block continues on the next line, or a [`Flow`] of words for
+//! wrapping.
 
 use std::collections::HashSet;
+use std::ops::Range;
 use std::sync::OnceLock;
 
 use unicode_general_category::{GeneralCategory, get_general_category};
 
 use super::Printer;
 use super::refs::collapse_whitespace;
+use super::wrap::Flow;
 use crate::ast::{CommentSyntax, Link, LinkForm, NodeId, NodeKind, ReferenceStyle, WikiLink};
+use crate::parse::ParseOptions;
 
 impl Printer<'_> {
     /// The inline children of `parent` (a paragraph, heading or table cell). In a table
@@ -29,6 +33,23 @@ impl Printer<'_> {
         writer.node(id);
         writer.out
     }
+
+    /// The inline children of the paragraph `parent` as a [`Flow`]: on one line except
+    /// after hard breaks (and inside raw HTML, math or comments that span lines), with
+    /// the whitespace where a line may break.
+    pub(super) fn flow(&self, parent: NodeId) -> Flow {
+        let mut writer = Inlines::new(self);
+        writer.flow = Some(Flow::default());
+        writer.children(parent);
+        let mut flow = writer.flow.take().unwrap_or_default();
+        flow.text = writer.out;
+        // Alone on the first line, raw HTML would be an HTML block.
+        if let Some(first) = flow.raw.first().filter(|raw| raw.start == 0) {
+            let end = first.end;
+            flow.breaks.retain(|gap| gap.start != end);
+        }
+        flow
+    }
 }
 
 /// Writes inlines into `out`, which is also the context for escaping: whether a text is
@@ -38,6 +59,9 @@ struct Inlines<'p, 'a> {
     out: String,
     /// The delimiter characters of the emphasis nodes being written, innermost last.
     delimiters: Vec<char>,
+    /// When writing a flow: soft breaks are spaces, and the places a line may break
+    /// are recorded here.
+    flow: Option<Flow>,
 }
 
 /// Where a text node sits, for [`Inlines::escape`].
@@ -52,7 +76,9 @@ struct TextContext {
     strip_end: bool,
     /// A line ends right after it (a break or the end of the block follows).
     line_end: bool,
-    /// More inlines follow it in its parent.
+    /// A hard break follows, printed as `\`.
+    before_hard_break: bool,
+    /// Inlines follow it in its parent that may print a `>` (closing raw HTML).
     followed: bool,
     /// It follows a `]`, so `(` or `:` would turn the bracket into a link.
     after_bracket: bool,
@@ -66,6 +92,40 @@ impl<'p, 'a> Inlines<'p, 'a> {
             printer,
             out: String::new(),
             delimiters: Vec::new(),
+            flow: None,
+        }
+    }
+
+    /// Records `range` of `out` as whitespace where a line may break, joined to a break
+    /// right before it.
+    fn breakable(&mut self, range: Range<usize>) {
+        let Some(flow) = &mut self.flow else {
+            return;
+        };
+        match flow.breaks.last_mut() {
+            Some(last) if last.end == range.start => last.end = range.end,
+            _ => flow.breaks.push(range),
+        }
+    }
+
+    /// Records the `\n` just written as the end of a hard break.
+    fn hard_break(&mut self) {
+        if let Some(flow) = &mut self.flow {
+            flow.hard.push(self.out.len() - 1);
+        }
+    }
+
+    /// Raw HTML or a comment, kept on the line of what comes before: at the start of a
+    /// line it could start an HTML block. Where it does start a line (as it did in the
+    /// source), it is never escaped.
+    fn raw(&mut self, html: &str) {
+        let start = self.out.len();
+        self.out.push_str(html);
+        if let Some(flow) = &mut self.flow {
+            if flow.breaks.last().is_some_and(|last| last.end == start) {
+                flow.breaks.pop();
+            }
+            flow.raw.push(start..self.out.len());
         }
     }
 
@@ -81,10 +141,43 @@ impl<'p, 'a> Inlines<'p, 'a> {
             NodeKind::Text(text) => {
                 let context = self.text_context(id);
                 let escaped = self.escape(text, context);
+                let start = self.out.len();
                 self.out.push_str(&escaped);
+                // Whitespace left as it is (not a character reference) may break.
+                let mut at = 0;
+                while let Some(offset) = escaped[at..].find([' ', '\t']) {
+                    let begin = at + offset;
+                    let end = escaped[begin..]
+                        .find(|c| c != ' ' && c != '\t')
+                        .map_or(escaped.len(), |len| begin + len);
+                    self.breakable(start + begin..start + end);
+                    at = end;
+                }
+            }
+            // Before a hard break, a space would be stripped (and `&#32;` would join a
+            // bare URL), so the line break stays.
+            NodeKind::SoftBreak
+                if self.flow.is_some()
+                    && !ast
+                        .next_sibling(id)
+                        .is_some_and(|next| matches!(ast.kind(next), NodeKind::LineBreak)) =>
+            {
+                self.out.push(' ');
+                self.breakable(self.out.len() - 1..self.out.len());
             }
             NodeKind::SoftBreak => self.out.push('\n'),
-            NodeKind::LineBreak => self.out.push_str("\\\n"),
+            // A `\` right after a bare URL would be part of it.
+            NodeKind::LineBreak if ast.prev_sibling(id).is_some_and(|prev| {
+                matches!(ast.kind(prev), NodeKind::Link(link) if link.form == LinkForm::Bare)
+            }) =>
+            {
+                self.out.push_str("  \n");
+                self.hard_break();
+            }
+            NodeKind::LineBreak => {
+                self.out.push_str("\\\n");
+                self.hard_break();
+            }
             NodeKind::Code(code) => self.out.push_str(&code_span(code)),
             NodeKind::Emphasis => self.emphasis(id, false),
             NodeKind::Strong => self.emphasis(id, true),
@@ -97,7 +190,7 @@ impl<'p, 'a> Inlines<'p, 'a> {
                 self.out.push('!');
                 self.link(id, link);
             }
-            NodeKind::HtmlInline(html) => self.out.push_str(html),
+            NodeKind::HtmlInline(html) => self.raw(html),
             NodeKind::FootnoteReference(reference) => {
                 self.out.push_str("[^");
                 self.out.push_str(&reference.label);
@@ -124,9 +217,7 @@ impl<'p, 'a> Inlines<'p, 'a> {
                 } else {
                     ("<!--", "-->")
                 };
-                self.out.push_str(open);
-                self.out.push_str(&comment.literal);
-                self.out.push_str(close);
+                self.raw(&format!("{open}{}{close}", comment.literal));
             }
             // Blocks never appear among inlines.
             _ => {}
@@ -236,7 +327,8 @@ impl<'p, 'a> Inlines<'p, 'a> {
                 self.out.push('[');
                 let start = self.out.len();
                 self.children(id);
-                let same = self.out[start..] == **label;
+                // Labels match with their whitespace collapsed.
+                let same = collapse_whitespace(&self.out[start..]) == collapse_whitespace(label);
                 self.out.push(']');
                 // A shortcut before a bracket would take it as its label.
                 let bracket_follows = ast.next_sibling(id).is_some_and(|next| {
@@ -278,7 +370,16 @@ impl<'p, 'a> Inlines<'p, 'a> {
             strip_start: line_start || breaks(prev) || (prev.is_none() && !in_link),
             strip_end: breaks(next) || (next.is_none() && !in_link),
             line_end: breaks(next) || (next.is_none() && in_block),
-            followed: next.is_some(),
+            before_hard_break: next.is_some_and(|n| matches!(ast.kind(n), NodeKind::LineBreak)),
+            // Text and soft breaks print a `>` only where the text has one, so this does
+            // not depend on where the lines of the source broke.
+            followed: std::iter::successors(next, |&n| ast.next_sibling(n)).any(|n| {
+                match ast.kind(n) {
+                    NodeKind::Text(text) => text.contains('>'),
+                    NodeKind::SoftBreak => false,
+                    _ => true,
+                }
+            }),
             after_bracket: self.out.ends_with(']'),
             before_bracket: next.is_some_and(|n| match ast.kind(n) {
                 NodeKind::Link(link) => !matches!(link.form, LinkForm::Autolink | LinkForm::Bare),
@@ -292,8 +393,9 @@ impl<'p, 'a> Inlines<'p, 'a> {
     fn escape(&self, text: &str, context: TextContext) -> String {
         let syntax = self.printer.syntax;
         let chars: Vec<(usize, char)> = text.char_indices().collect();
-        let marker_at = if context.line_start {
-            line_start_marker(text)
+        // A flow's lines are escaped once they are known.
+        let marker_at = if context.line_start && self.flow.is_none() {
+            line_start_marker(text, syntax)
         } else {
             None
         };
@@ -302,7 +404,11 @@ impl<'p, 'a> Inlines<'p, 'a> {
         } else {
             self.out.chars().next_back()
         };
-        let after = context.line_end.then_some('\n');
+        let after = if context.before_hard_break {
+            Some('\\')
+        } else {
+            context.line_end.then_some('\n')
+        };
         let mut out = String::with_capacity(text.len() + 8);
         for (i, &(at, c)) in chars.iter().enumerate() {
             // The characters around `c` in the output; `None` past the end of the text
@@ -404,21 +510,31 @@ fn is_punctuation(c: char) -> bool {
     )
 }
 
-/// The byte offset of the character to escape when `text` starts a line: the first one
-/// of an ATX heading, block quote, bullet item, setext underline, thematic break or code
-/// fence, the delimiter of an ordered item.
-fn line_start_marker(text: &str) -> Option<usize> {
+/// The byte offset of the character to escape when `text` starts a line (of a paragraph
+/// that has begun already): the first one of an ATX heading, block quote, bullet item,
+/// setext underline, thematic break, code fence, HTML block, table delimiter row,
+/// definition (with `syntax.description_lists`) or admonition header, the delimiter of
+/// an ordered item. `text` is a text node or a whole printed line, so markup it may
+/// start with (emphasis, a `==highlight==`, an autolink) is never escaped.
+pub(super) fn line_start_marker(text: &str, syntax: ParseOptions) -> Option<usize> {
     let bytes = text.as_bytes();
     let blank_at = |i: usize| bytes.get(i).is_none_or(|b| matches!(b, b' ' | b'\t'));
+    let only = |chars: &[u8]| bytes.iter().all(|b| chars.contains(b));
     match *bytes.first()? {
         b'#' => {
             let run = bytes.iter().take_while(|&&b| b == b'#').count();
             (run <= 6 && blank_at(run)).then_some(0)
         }
-        b'>' | b'=' => Some(0),
+        b'>' => Some(0),
+        b'=' => only(b"= \t").then_some(0),
+        b'-' | b'|' | b':' if syntax.table && is_delimiter_row(text) => Some(0),
         b'-' => (blank_at(1) || bytes.get(1) == Some(&b'-')).then_some(0),
         b'+' | b'*' => blank_at(1).then_some(0),
+        b'_' => (only(b"_ \t") && text.matches('_').count() >= 3).then_some(0),
         b'~' => text.starts_with("~~~").then_some(0),
+        b'<' => starts_html_block(text).then_some(0),
+        b':' => (syntax.description_lists && blank_at(1)).then_some(0),
+        b'!' | b'?' => (text.starts_with("!!!") || text.starts_with("???")).then_some(0),
         b'0'..=b'9' => {
             let digits = bytes.iter().take_while(|b| b.is_ascii_digit()).count();
             (digits <= 9 && matches!(bytes.get(digits), Some(b'.' | b')')) && blank_at(digits + 1))
@@ -426,6 +542,100 @@ fn line_start_marker(text: &str) -> Option<usize> {
         }
         _ => None,
     }
+}
+
+/// Whether `line` could be the delimiter row of a table (`-|-`, `:--`): only pipes,
+/// colons, dashes and blanks, with a dash.
+fn is_delimiter_row(line: &str) -> bool {
+    line.bytes()
+        .all(|b| matches!(b, b'|' | b':' | b'-' | b' ' | b'\t'))
+        && line.contains('-')
+}
+
+/// The block-level tag names of HTML blocks of type 6.
+const BLOCK_TAGS: &[&str] = &[
+    "address",
+    "article",
+    "aside",
+    "base",
+    "basefont",
+    "blockquote",
+    "body",
+    "caption",
+    "center",
+    "col",
+    "colgroup",
+    "dd",
+    "details",
+    "dialog",
+    "dir",
+    "div",
+    "dl",
+    "dt",
+    "fieldset",
+    "figcaption",
+    "figure",
+    "footer",
+    "form",
+    "frame",
+    "frameset",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "head",
+    "header",
+    "hr",
+    "html",
+    "iframe",
+    "legend",
+    "li",
+    "link",
+    "main",
+    "menu",
+    "menuitem",
+    "nav",
+    "noframes",
+    "ol",
+    "optgroup",
+    "option",
+    "p",
+    "param",
+    "search",
+    "section",
+    "summary",
+    "table",
+    "tbody",
+    "td",
+    "tfoot",
+    "th",
+    "thead",
+    "title",
+    "tr",
+    "track",
+    "ul",
+];
+
+/// Whether a line starting with `line` starts an HTML block that may interrupt a
+/// paragraph (types 1 to 6 of `CommonMark`).
+fn starts_html_block(line: &str) -> bool {
+    let Some(rest) = line.strip_prefix('<') else {
+        return false;
+    };
+    if rest.starts_with(['!', '?']) {
+        return true;
+    }
+    let rest = rest.strip_prefix('/').unwrap_or(rest);
+    let name_len = rest
+        .find(|c: char| !c.is_ascii_alphanumeric())
+        .unwrap_or(rest.len());
+    let name = rest[..name_len].to_ascii_lowercase();
+    let after = &rest[name_len..];
+    let ends = after.is_empty() || after.starts_with([' ', '\t', '>']) || after.starts_with("/>");
+    ends && (BLOCK_TAGS.contains(&name.as_str())
+        || ["script", "pre", "style", "textarea"].contains(&name.as_str()))
 }
 
 /// Whether `rest` (the text after a `&`) would complete a character reference.

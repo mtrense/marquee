@@ -41,6 +41,7 @@ unicode-general-category = "1.1.0"
 unicode-normalization = "0.1.26"
 unicode-segmentation = "1.13.3"
 unicode-width = "0.2.3"
+textwrap = { version = "0.16.4", default-features = false, features = ["smawk"] }
 regex = "1.13.1"
 winnow = "1.0.4"
 jaq-core = "3.1.2"

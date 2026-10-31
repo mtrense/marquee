@@ -2,6 +2,7 @@
 //! their children's lines (`> `, list markers and indentation).
 
 use super::Printer;
+use super::wrap::Room;
 use crate::ast::{
     Admonition, Callout, CodeBlock, CommentSyntax, Fold, FrontMatterFormat, Heading, List,
     ListKind, NodeId, NodeKind, OrderedDelimiter, TaskState,
@@ -23,6 +24,8 @@ struct Place {
     previous: Option<Marker>,
     /// The bullet of the list item it is in.
     bullet: Option<char>,
+    /// The columns it may fill.
+    room: Room,
 }
 
 /// How a list was printed, so that a list right after it can use a different marker:
@@ -36,14 +39,15 @@ enum Marker {
 impl Printer<'_> {
     /// The lines of the whole document, reference definitions included.
     pub(super) fn document(&self) -> Vec<String> {
-        let mut lines = self.blocks(self.ast.root(), false, None);
+        let room = Room::new(usize::from(self.config.width));
+        let mut lines = self.blocks(self.ast.root(), false, None, room);
         push_block(&mut lines, self.definitions.rest(), false);
         lines
     }
 
-    /// The children of the container `parent`, separated by a blank line unless `tight`.
-    /// `bullet` is the marker of the list item `parent`, if it is one.
-    fn blocks(&self, parent: NodeId, tight: bool, bullet: Option<char>) -> Vec<String> {
+    /// The children of the container `parent`, separated by a blank line unless `tight`,
+    /// in `room`. `bullet` is the marker of the list item `parent`, if it is one.
+    fn blocks(&self, parent: NodeId, tight: bool, bullet: Option<char>, room: Room) -> Vec<String> {
         let mut out = Vec::new();
         let mut previous = None;
         for (index, &child) in self.ast.children(parent).iter().enumerate() {
@@ -61,9 +65,20 @@ impl Printer<'_> {
                 tight,
                 previous,
                 bullet,
+                room: if out.is_empty() { room } else { room.rest() },
             };
             let (lines, marker) = self.block(child, place);
             previous = marker;
+            // Without a blank line, a paragraph right after a quote would continue it.
+            let after_quote = self.ast.prev_sibling(child).is_some_and(|prev| {
+                matches!(
+                    self.ast.kind(prev),
+                    NodeKind::BlockQuote | NodeKind::Callout(_)
+                )
+            });
+            if tight && after_quote && matches!(self.ast.kind(child), NodeKind::Paragraph) {
+                out.push(">".to_owned());
+            }
             push_block(&mut out, lines, tight);
         }
         // A list item ends with its last child; definitions after that, up to the next
@@ -81,7 +96,7 @@ impl Printer<'_> {
     /// One block at `place`. Lists also return the marker they used.
     fn block(&self, id: NodeId, place: Place) -> (Vec<String>, Option<Marker>) {
         let lines = match self.ast.kind(id) {
-            NodeKind::Document => self.blocks(id, false, None),
+            NodeKind::Document => self.blocks(id, false, None, place.room),
             NodeKind::FrontMatter(front) => self.verbatim(id).unwrap_or_else(|| {
                 let fence = match front.format {
                     FrontMatterFormat::Toml => "+++",
@@ -92,7 +107,8 @@ impl Printer<'_> {
                 lines.push(fence.to_owned());
                 lines
             }),
-            NodeKind::Paragraph | NodeKind::DefinitionTerm if self.is_inline_parent(id) => {
+            NodeKind::Paragraph if self.is_inline_parent(id) => self.paragraph(id, place.room),
+            NodeKind::DefinitionTerm if self.is_inline_parent(id) => {
                 split_lines(&self.inlines(id, false))
             }
             NodeKind::Heading(heading) => self.heading(id, heading),
@@ -110,23 +126,32 @@ impl Printer<'_> {
                 };
                 vec![rule.to_owned()]
             }
-            NodeKind::BlockQuote => quote(self.blocks(id, false, None)),
+            NodeKind::BlockQuote => quote(self.blocks(id, false, None, place.room.inside(2, 2))),
             NodeKind::Callout(callout) => {
                 let mut lines = vec![callout_marker(callout)];
-                lines.extend(self.blocks(id, false, None));
+                lines.extend(self.blocks(id, false, None, place.room.inside(2, 2).rest()));
                 quote(lines)
             }
             NodeKind::List(list) => {
-                let (lines, marker) = self.list(id, list, place.previous);
+                let (lines, marker) = self.list(id, list, place);
                 return (lines, Some(marker));
             }
-            NodeKind::ListItem(_) => self.item(id, "-", true, Some('-')),
+            NodeKind::ListItem(_) => self.item(id, "-", true, Some('-'), place.room),
             NodeKind::CodeBlock(code) => self.code_block(code),
-            NodeKind::HtmlBlock(html) => split_lines(html),
+            NodeKind::HtmlBlock(html) => {
+                // An unclosed block in a container ends with the blank lines before the
+                // container's end; the blank line after the block stands for them.
+                let mut lines = split_lines(html);
+                while lines.last().is_some_and(|line| line.trim().is_empty()) {
+                    lines.pop();
+                }
+                lines
+            }
             NodeKind::Table(table) => self.table(id, &table.alignments),
             NodeKind::FootnoteDefinition(def) => {
                 let marker = format!("[^{}]:", def.label);
-                indent(&marker, "    ", self.blocks(id, false, None))
+                let room = place.room.inside(marker.chars().count() + 1, 4);
+                indent(&marker, "    ", self.blocks(id, false, None, room))
             }
             NodeKind::LinkDefinition(def) => {
                 vec![super::refs::definition(
@@ -138,14 +163,17 @@ impl Printer<'_> {
             NodeKind::DefinitionList => {
                 let mut lines = Vec::new();
                 for &item in self.ast.children(id) {
-                    push_block(&mut lines, self.blocks(item, true, None), false);
+                    push_block(&mut lines, self.blocks(item, true, None, place.room), false);
                 }
                 lines
             }
-            NodeKind::DefinitionDetails => indent(":", "    ", self.blocks(id, false, None)),
+            NodeKind::DefinitionDetails => {
+                let room = place.room.inside(2, 4);
+                indent(":", "    ", self.blocks(id, false, None, room))
+            }
             NodeKind::Admonition(admonition) => {
                 let header = admonition_header(admonition);
-                let body = self.blocks(id, false, None);
+                let body = self.blocks(id, false, None, place.room.inside(4, 4).rest());
                 let mut lines = vec![header];
                 lines.extend(indent_all("    ", body));
                 lines
@@ -163,7 +191,7 @@ impl Printer<'_> {
             kind if kind.is_inline() => split_lines(&self.inline_block(id)),
             // Rows and cells outside a table, terms and items outside a definition list,
             // paragraphs holding blocks: print what they contain.
-            _ => self.blocks(id, false, None),
+            _ => self.blocks(id, false, None, place.room),
         };
         (lines, None)
     }
@@ -214,35 +242,53 @@ impl Printer<'_> {
         }
     }
 
-    /// A list, with a marker unlike that of an adjacent `previous` list.
-    fn list(&self, id: NodeId, list: &List, previous: Option<Marker>) -> (Vec<String>, Marker) {
-        let marker = match list.kind {
+    /// A list at `place`, with a marker unlike that of an adjacent previous list, and
+    /// one that does not make an item's first line a thematic break (`- - -` for nested
+    /// empty lists).
+    fn list(&self, id: NodeId, list: &List, place: Place) -> (Vec<String>, Marker) {
+        let previous = place.previous;
+        let candidates: Vec<Marker> = match list.kind {
             ListKind::Bullet { .. } => {
                 let preferred = first_char(self.config.list_marker.as_str());
-                Marker::Bullet(if previous == Some(Marker::Bullet(preferred)) {
-                    ['-', '*', '+']
-                        .into_iter()
-                        .find(|&c| c != preferred)
-                        .unwrap_or(preferred)
-                } else {
-                    preferred
-                })
+                std::iter::once(preferred)
+                    .chain(['-', '*', '+'].into_iter().filter(|&c| c != preferred))
+                    .map(Marker::Bullet)
+                    .filter(|&marker| previous != Some(marker))
+                    .collect()
             }
             ListKind::Ordered { delimiter, .. } => {
-                Marker::Ordered(if previous == Some(Marker::Ordered(delimiter)) {
-                    match delimiter {
-                        OrderedDelimiter::Period => OrderedDelimiter::Paren,
-                        OrderedDelimiter::Paren => OrderedDelimiter::Period,
-                    }
-                } else {
-                    delimiter
-                })
+                vec![Marker::Ordered(
+                    if previous == Some(Marker::Ordered(delimiter)) {
+                        match delimiter {
+                            OrderedDelimiter::Period => OrderedDelimiter::Paren,
+                            OrderedDelimiter::Paren => OrderedDelimiter::Period,
+                        }
+                    } else {
+                        delimiter
+                    },
+                )]
             }
         };
+        let mut fallback = None;
+        for &marker in &candidates {
+            let (lines, thematic) = self.items(id, list, marker, place.room);
+            if !thematic {
+                return (lines, marker);
+            }
+            fallback.get_or_insert((lines, marker));
+        }
+        fallback.unwrap_or((Vec::new(), Marker::Bullet('-')))
+    }
+
+    /// The items of a list with `marker`, and whether the first line of one of them is a
+    /// thematic break.
+    fn items(&self, id: NodeId, list: &List, marker: Marker, room: Room) -> (Vec<String>, bool) {
         let mut lines = Vec::new();
+        let mut thematic = false;
         for (index, &item) in self.ast.children(id).iter().enumerate() {
+            let room = if index == 0 { room } else { room.rest() };
             let item_lines = match marker {
-                Marker::Bullet(c) => self.item(item, &c.to_string(), list.tight, Some(c)),
+                Marker::Bullet(c) => self.item(item, &c.to_string(), list.tight, Some(c), room),
                 Marker::Ordered(delimiter) => {
                     let start = match list.kind {
                         ListKind::Ordered { start, .. } => start,
@@ -253,12 +299,21 @@ impl Printer<'_> {
                         OrderedDelimiter::Period => '.',
                         OrderedDelimiter::Paren => ')',
                     };
-                    self.item(item, &format!("{number}{delimiter}"), list.tight, None)
+                    self.item(
+                        item,
+                        &format!("{number}{delimiter}"),
+                        list.tight,
+                        None,
+                        room,
+                    )
                 }
             };
+            thematic |= item_lines
+                .first()
+                .is_some_and(|line| is_thematic_break(line));
             push_block(&mut lines, item_lines, list.tight);
         }
-        (lines, marker)
+        (lines, thematic)
     }
 
     /// The number of the `index`th item of an ordered list starting at `start`: the
@@ -293,12 +348,25 @@ impl Printer<'_> {
         }
     }
 
-    /// A list item with `marker` (`-`, `1.`); content is indented by the marker width.
-    fn item(&self, id: NodeId, marker: &str, tight: bool, bullet: Option<char>) -> Vec<String> {
-        let mut body = self.blocks(id, tight, bullet);
-        if let NodeKind::ListItem(item) = self.ast.kind(id)
-            && let Some(task) = item.task
-        {
+    /// A list item with `marker` (`-`, `1.`) in `room`; content is indented by the
+    /// marker width.
+    fn item(
+        &self,
+        id: NodeId,
+        marker: &str,
+        tight: bool,
+        bullet: Option<char>,
+        room: Room,
+    ) -> Vec<String> {
+        let width = marker.chars().count() + 1;
+        let task = match self.ast.kind(id) {
+            NodeKind::ListItem(item) => item.task,
+            _ => None,
+        };
+        // `[ ] ` takes room on the first line.
+        let lead = if task.is_some() { 4 } else { 0 };
+        let mut body = self.blocks(id, tight, bullet, room.inside(width + lead, width));
+        if let Some(task) = task {
             let state = match task {
                 TaskState::Open => ' ',
                 TaskState::Done => 'x',
@@ -311,7 +379,6 @@ impl Printer<'_> {
                 None => body.push(task),
             }
         }
-        let width = marker.chars().count() + 1;
         indent(marker, &" ".repeat(width), body)
     }
 
@@ -335,7 +402,16 @@ impl Printer<'_> {
             .unwrap_or(0);
         let fence = fence_char.to_string().repeat((longest + 1).max(3));
         let mut lines = vec![format!("{fence}{}", super::inline::info(&code.info))];
-        lines.extend(split_lines(&code.literal));
+        // Every line of the code counts, a single empty one too.
+        if !code.literal.is_empty() {
+            let literal = code.literal.strip_suffix('\n').unwrap_or(&code.literal);
+            let literal = literal.strip_suffix('\r').unwrap_or(literal);
+            lines.extend(
+                literal
+                    .split('\n')
+                    .map(|line| line.strip_suffix('\r').unwrap_or(line).to_owned()),
+            );
+        }
         lines.push(fence);
         lines
     }
@@ -358,6 +434,17 @@ const fn is_container(kind: &NodeKind) -> bool {
     )
 }
 
+/// Whether `line` is a thematic break: three or more `-`, `*` or `_`, all the same,
+/// and blanks.
+fn is_thematic_break(line: &str) -> bool {
+    let line = line.trim_start();
+    line.chars().next().is_some_and(|c| {
+        matches!(c, '-' | '*' | '_')
+            && line.chars().all(|d| d == c || d == ' ' || d == '\t')
+            && line.chars().filter(|&d| d == c).count() >= 3
+    })
+}
+
 /// Appends a block's `lines` to `out`, after a blank line unless `tight` or first.
 fn push_block(out: &mut Vec<String>, lines: Vec<String>, tight: bool) {
     if lines.is_empty() {
@@ -371,7 +458,7 @@ fn push_block(out: &mut Vec<String>, lines: Vec<String>, tight: bool) {
 
 /// `text` split into lines without their line endings; nothing for empty text, and a
 /// final line ending doesn't start another line.
-fn split_lines(text: &str) -> Vec<String> {
+pub(super) fn split_lines(text: &str) -> Vec<String> {
     let text = text.strip_suffix('\n').unwrap_or(text);
     let text = text.strip_suffix('\r').unwrap_or(text);
     if text.is_empty() {

@@ -1,15 +1,17 @@
 //! Acceptance tests for the Markdown printer `mrq_core::fmt`: every `CommonMark` and GFM
-//! spec example renders to the same HTML before and after formatting, plus the printer's
-//! own conventions (config markers, ATX headings, blank lines, escaping).
+//! spec example renders to the same HTML before and after formatting (in every wrap
+//! mode), plus the printer's own conventions (config markers, ATX headings, blank lines,
+//! escaping, wrapping).
 
 use std::fs;
 use std::path::Path;
 
 use mrq_core::Document;
-use mrq_core::config::{CodeFence, Emphasis, FmtConfig, ListMarker, OrderedList, Strong};
+use mrq_core::config::{CodeFence, Emphasis, FmtConfig, ListMarker, OrderedList, Strong, Wrap};
 use mrq_core::document::DocumentOptions;
 use mrq_core::fmt::format;
 use mrq_core::parse::ParseOptions;
+use proptest::prelude::*;
 
 const FENCE: &str = "````````````````````````````````";
 
@@ -107,7 +109,7 @@ fn check_spec_with(file: &str, flavor: &str, known: &[usize], config: &FmtConfig
         // a CRLF inside code spans, where it should be part of one line ending.
         let before = html(&markdown, options).replace('\r', "");
         let after = html(&formatted, options);
-        let same = before == after;
+        let same = same_html(&before, &after, config.wrap);
         match (same, known.contains(&example.number)) {
             (false, false) => failures.push(format!(
                 "{file} example {}:\n--- input\n{}--- formatted\n{}--- html before\n{before}--- html after\n{after}",
@@ -127,6 +129,66 @@ fn check_spec_with(file: &str, flavor: &str, known: &[usize], config: &FmtConfig
         fixed.is_empty(),
         "{file}: examples {fixed:?} round-trip now; drop them from the known list"
     );
+}
+
+/// Whether two renderings of a document are the same. Re-wrapping moves line breaks:
+/// a soft break becomes a space or a space a soft break, which the HTML shows as `\n`
+/// or ` ` (and a run of spaces may become one line break). Browsers render any run of
+/// whitespace outside `<pre>` as one space, so unless `wrap` is `preserve`, such runs
+/// are compared as one space; inside code blocks (`<pre><code>`, never wrapped)
+/// whitespace must match exactly. A paragraph inside raw HTML `<pre>` (`CommonMark`
+/// example 148) is wrapped like any other, so raw `<pre>` is not exempt.
+fn same_html(before: &str, after: &str, wrap: Wrap) -> bool {
+    if wrap == Wrap::Preserve {
+        before == after
+    } else {
+        collapse_html_whitespace(before) == collapse_html_whitespace(after)
+    }
+}
+
+/// `html` with every run of spaces, tabs and line breaks outside code blocks
+/// (`<pre…><code…>…</pre>`) as one space.
+fn collapse_html_whitespace(html: &str) -> String {
+    let code_block = |at: usize| {
+        let tag_end = html[at..].find('>').map_or(html.len(), |end| at + end + 1);
+        html[tag_end..].starts_with("<code")
+    };
+    let mut out = String::with_capacity(html.len());
+    let mut rest = html;
+    while !rest.is_empty() {
+        let offset = html.len() - rest.len();
+        let code = rest
+            .match_indices("<pre")
+            .map(|(at, _)| at)
+            .find(|&at| code_block(offset + at));
+        let (flow, pre) = match code {
+            Some(start) => {
+                let end = rest[start..]
+                    .find("</pre>")
+                    .map_or(rest.len(), |end| start + end + "</pre>".len());
+                (&rest[..start], &rest[start..end])
+            }
+            None => (rest, ""),
+        };
+        let mut space = false;
+        for c in flow.chars() {
+            if matches!(c, ' ' | '\t' | '\n') {
+                space = true;
+            } else {
+                if space {
+                    out.push(' ');
+                    space = false;
+                }
+                out.push(c);
+            }
+        }
+        if space {
+            out.push(' ');
+        }
+        out.push_str(pre);
+        rest = &rest[flow.len() + pre.len()..];
+    }
+    out
 }
 
 /// Spec examples whose meaning `fmt` does not keep, each for a reason given in
@@ -200,6 +262,36 @@ fn spec_examples_keep_their_html_with_crlf() {
         true,
     );
     check_spec_with("gfm-spec.txt", "gfm", GFM_KNOWN, &config, true);
+}
+
+/// Every wrap mode other than `preserve`; `width` at one column breaks at every place
+/// it may.
+fn wrap_modes() -> Vec<FmtConfig> {
+    let wrap = |wrap, width| FmtConfig {
+        wrap,
+        width,
+        ..FmtConfig::default()
+    };
+    vec![
+        wrap(Wrap::Never, 80),
+        wrap(Wrap::Width, 1),
+        wrap(Wrap::Width, 30),
+        wrap(Wrap::Sentence, 80),
+    ]
+}
+
+#[test]
+fn spec_examples_keep_their_html_in_every_wrap_mode() {
+    for config in wrap_modes() {
+        check_spec_with(
+            "commonmark-spec.txt",
+            "commonmark",
+            COMMONMARK_KNOWN,
+            &config,
+            false,
+        );
+        check_spec_with("gfm-spec.txt", "gfm", GFM_KNOWN, &config, false);
+    }
 }
 
 #[test]
@@ -390,7 +482,11 @@ fn fixtures_format_to_their_expected_output() {
             "{name}: not idempotent"
         );
         let options = Document::parse(&src).flavor().parse_options();
-        assert_eq!(html(&src, options), html(&expected, options), "{name}");
+        let (before, after) = (html(&src, options), html(&expected, options));
+        assert!(
+            same_html(&before, &after, config.wrap),
+            "{name}: HTML differs\n{before}---\n{after}"
+        );
     }
 }
 
@@ -452,7 +548,8 @@ fn spec_examples_format_idempotently() {
         ("commonmark-spec.txt", "commonmark"),
         ("gfm-spec.txt", "gfm"),
     ] {
-        for config in [FmtConfig::default(), other_markers(), preserved_numbers()] {
+        let configs = [FmtConfig::default(), other_markers(), preserved_numbers()];
+        for config in configs.into_iter().chain(wrap_modes()) {
             for example in examples(file) {
                 let once = format(&parse(&example.markdown, flavor), &config);
                 let twice = format(&parse(&once, flavor), &config);
@@ -507,4 +604,246 @@ fn flavor_syntax_prints_with_generic_rules() {
 fn directive_regions_are_printed_verbatim() {
     let src = "<!-- mrq:toc depth=2 -->\n\n- [A](#a)\n\n<!-- mrq:end -->\n\n# A\n";
     assert_eq!(fmt(src), src);
+}
+
+/// Inputs the wrapping proptest found the printer core getting wrong, in `preserve`
+/// mode too: each keeps its HTML and formats idempotently.
+#[test]
+fn printer_edge_cases_keep_their_html() {
+    for (src, expected) in [
+        // A `\\` after a bare URL would be part of it.
+        ("a www.x.com  \nb\n", "a www.x.com  \nb\n"),
+        // A code block of one empty line.
+        ("```\n\n```\n", "```\n\n```\n"),
+        // An unclosed HTML block ends a list item with blank lines.
+        ("- <!--\n\nx\n", "- <!--\n\nx\n"),
+        // Nested empty items in one line would be a thematic break.
+        ("- - +\n", "* - -\n"),
+        // Before a hard break `\\`, `_` is followed by punctuation.
+        ("_  \nb\n", "\\_\\\nb\n"),
+        // A paragraph after a quote in a tight item.
+        ("- > a\n  >\n  b\n", "- > a\n  >\n  b\n"),
+        // An HTML block start and a one-column delimiter row at the start of a line.
+        ("a\n\\<div\n", "a\n\\<div\n"),
+        ("a\n\\:--\n", "a\n\\:--\n"),
+    ] {
+        let once = fmt(src);
+        assert_eq!(once, expected, "{src:?}");
+        let options = ParseOptions::gfm();
+        assert_eq!(html(src, options), html(&once, options), "{src:?}");
+        assert_eq!(fmt(&once), once, "{src:?}: not idempotent");
+    }
+}
+
+fn wrapped(src: &str, wrap: Wrap, width: u16) -> String {
+    let config = FmtConfig {
+        wrap,
+        width,
+        ..FmtConfig::default()
+    };
+    fmt_with(src, &config)
+}
+
+#[test]
+fn preserve_keeps_the_line_breaks_as_written() {
+    let src = "A line that is longer than the configured width.\nshort\n";
+    assert_eq!(wrapped(src, Wrap::Preserve, 10), src);
+}
+
+#[test]
+fn never_puts_each_paragraph_on_one_line() {
+    assert_eq!(
+        wrapped("one\ntwo  three\n\n> four\n> five\n", Wrap::Never, 3),
+        "one two three\n\n> four five\n"
+    );
+}
+
+#[test]
+fn width_fills_lines_up_to_the_width() {
+    assert_eq!(
+        wrapped("aaa bbb ccc\nddd eee fff ggg\n", Wrap::Width, 11),
+        "aaa bbb ccc\nddd eee fff\nggg\n"
+    );
+    // Optimal fit: no line is left much shorter than the others (first fit would
+    // give `aaa bb`, `cc`).
+    assert_eq!(
+        wrapped("aaa bb cc ddddd\n", Wrap::Width, 6),
+        "aaa\nbb cc\nddddd\n"
+    );
+    // Display width: each CJK character takes two columns.
+    assert_eq!(
+        wrapped("日本 語の 文章\n", Wrap::Width, 9),
+        "日本 語の\n文章\n"
+    );
+    // A word longer than the width gets a line of its own.
+    assert_eq!(
+        wrapped("a bbbbbbbbbbbb c\n", Wrap::Width, 5),
+        "a\nbbbbbbbbbbbb\nc\n"
+    );
+}
+
+#[test]
+fn sentence_puts_each_sentence_on_a_line() {
+    assert_eq!(
+        wrapped(
+            "One. Two!\nThree? \"Four.\" Five *six.* Seven\n",
+            Wrap::Sentence,
+            80
+        ),
+        "One.\nTwo!\nThree?\n\"Four.\"\nFive *six.*\nSeven\n"
+    );
+    // Abbreviations, initials and a lowercase continuation end no sentence.
+    assert_eq!(
+        wrapped(
+            "See e.g. Dr. Who, J. R. R. Tolkien and vs. Ends here. and on. Next\n",
+            Wrap::Sentence,
+            80
+        ),
+        "See e.g. Dr. Who, J. R. R. Tolkien and vs. Ends here. and on.\nNext\n"
+    );
+}
+
+#[test]
+fn hard_breaks_stay_in_every_mode() {
+    let src = "aaa bbb\\\nccc  \nddd eee\n";
+    for wrap in [Wrap::Preserve, Wrap::Never, Wrap::Width, Wrap::Sentence] {
+        let out = wrapped(src, wrap, 3);
+        assert!(
+            out.starts_with("aaa") && out.contains("bbb\\\nccc\\\nddd"),
+            "{wrap:?}: {out:?}"
+        );
+    }
+}
+
+#[test]
+fn wrapping_never_breaks_inside_atoms() {
+    let src = "a `x y z` b [l t](</u v> \"t i\") c <https://e.f/g> d <span class=\"k\">x</span> e $m n$ f\n";
+    assert_eq!(
+        wrapped(src, Wrap::Width, 1),
+        "a\n`x y z`\nb\n[l\nt](</u v> \"t i\")\nc\n<https://e.f/g>\nd <span class=\"k\">x</span>\ne\n$m n$\nf\n"
+    );
+}
+
+#[test]
+fn wrapped_lines_never_start_a_block() {
+    let src = "x - x + x * x # x > x 1. x 2) x === x --- x _ _ _ x <div> x ~~~ x !!! note x\n";
+    assert_eq!(
+        wrapped(src, Wrap::Width, 1),
+        "x\n\\-\nx\n\\+\nx\n\\*\nx\n\\#\nx\n\\>\nx\n1\\.\nx\n2\\)\nx\n\\===\nx\n\\---\nx\n_\n_\n_\nx <div>\nx\n\\~\\~\\~\nx\n\\!!!\nnote\nx\n"
+    );
+    assert_eq!(wrapped("aaaaa _ _ _\n", Wrap::Width, 5), "aaaaa\n\\_ _ _\n");
+    // A table delimiter row and an HTML block start from plain text, a definition.
+    let config = FmtConfig {
+        wrap: Wrap::Width,
+        width: 1,
+        ..FmtConfig::default()
+    };
+    assert_eq!(
+        format(&parse("a|b -|- \\<div\n", "gfm"), &config),
+        "a|b\n\\-|-\n\\<div\n"
+    );
+    assert_eq!(format(&parse("a : b\n", "mkdocs"), &config), "a\n\\:\nb\n");
+}
+
+#[test]
+fn container_prefixes_count_toward_the_width() {
+    assert_eq!(
+        wrapped("> aaa bbb ccc\n", Wrap::Width, 9),
+        "> aaa bbb\n> ccc\n"
+    );
+    assert_eq!(
+        wrapped("10. aaa bbb ccc\n", Wrap::Width, 11),
+        "10. aaa bbb\n    ccc\n"
+    );
+    // A task marker takes room on the first line only.
+    assert_eq!(
+        wrapped("- [ ] aaa bbb ccc ddd\n", Wrap::Width, 13),
+        "- [ ] aaa bbb\n  ccc ddd\n"
+    );
+    assert_eq!(
+        wrapped("> - aaa bbb\n", Wrap::Width, 7),
+        "> - aaa\n>   bbb\n"
+    );
+}
+
+#[test]
+fn headings_and_tables_are_not_wrapped() {
+    let src = "# A long heading\n\n| a b c |\n| ----- |\n";
+    assert_eq!(wrapped(src, Wrap::Width, 3), src);
+}
+
+/// Paragraph-ish Markdown made of words that are syntax at the start of a line, inside
+/// containers, with soft and hard breaks.
+fn wrappable() -> impl Strategy<Value = String> {
+    let word = prop_oneof![
+        3 => "[a-z]{1,6}",
+        1 => "[A-Z][a-z]{0,4}[.!?]",
+        3 => prop::sample::select(vec![
+            "-", "+", "*", "1.", "2)", "#", "##", ">", "=", "===", "---", "_", "___", "~~~",
+            "```", "|", "-|-", ":--", ":", "<div", "<div>", "</div>", "<!--", "-->",
+            "<span>", "`code`", "`a b`", "[link](/url \"t\")", "[ref]", "<https://x.y>",
+            "www.x.com", "**bold**", "*em*", "_em_", "Dr.", "e.g.", "end.", "!", "!!!",
+            "![img](/i)", "&amp;", "\\", "\\*", "$x$", "~~del~~", "[^1]", "...", "a@b.cd",
+        ])
+        .prop_map(str::to_owned),
+    ];
+    let gap = prop_oneof![6 => Just(" "), 2 => Just("\n"), 1 => Just("  \n"), 1 => Just("  ")];
+    let line = prop::collection::vec((word, gap), 1..25).prop_map(|words| {
+        words
+            .into_iter()
+            .flat_map(|(word, gap)| [word, gap.to_owned()])
+            .collect::<String>()
+    });
+    // The first line's prefix and that of the others.
+    let prefix = prop::sample::select(vec![
+        ("", ""),
+        ("> ", "> "),
+        ("- ", "  "),
+        ("10. ", "    "),
+        ("- [ ] ", "  "),
+        ("> - ", ">   "),
+    ]);
+    (prefix, line).prop_map(|((first, rest), text)| {
+        let mut out = String::new();
+        for (i, line) in text.trim_end().lines().enumerate() {
+            out.push_str(if i == 0 { first } else { rest });
+            out.push_str(line);
+            out.push('\n');
+        }
+        out.push_str("\n[ref]: /r\n\n[^1]: note\n");
+        out
+    })
+}
+
+proptest! {
+    /// Re-wrapping keeps the HTML and is idempotent, for every input the printer keeps
+    /// as it is without wrapping (other inputs test the printer core, not wrapping). A
+    /// paragraph right after a table (in a tight list item) is a known limit of the
+    /// table printer: once the table has pipes, its lines are rows.
+    #[test]
+    fn rewrapped_paragraphs_keep_their_html(
+        src in wrappable(),
+        wrap in prop::sample::select(vec![Wrap::Never, Wrap::Width, Wrap::Sentence]),
+        width in 1u16..40,
+    ) {
+        let doc = parse(&src, "gfm");
+        let options = doc.flavor().parse_options();
+        let before = html(&src, options);
+        let preserved = format(&doc, &FmtConfig::default());
+        if html(&preserved, options) != before
+            || format(&parse(&preserved, "gfm"), &FmtConfig::default()) != preserved
+            || before.split("</table>\n").skip(1).any(|rest| !rest.starts_with('<'))
+        {
+            return Ok(());
+        }
+        let config = FmtConfig { wrap, width, ..FmtConfig::default() };
+        let once = format(&doc, &config);
+        let after = html(&once, options);
+        prop_assert!(
+            same_html(&before, &after, wrap),
+            "{src:?}\n--- formatted\n{once}--- before\n{before}--- after\n{after}"
+        );
+        let twice = format(&parse(&once, "gfm"), &config);
+        prop_assert_eq!(&once, &twice, "not idempotent: {:?}", src);
+    }
 }

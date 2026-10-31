@@ -1,0 +1,22 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc df9ec6b6b2c4b9983b78e3a07904ed013f29f118d9fbaba2ef0376a66012be7d # shrinks to src = "a www.x.com  \na\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc 4ac53cdef146ddb7aa238521e778c8263b6923c028b681f46d0a4a37be3f7aee # shrinks to src = "- ~~~\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc de60c9a0998cd9f19e5467d1c41a25f547b41f4844e1eb498ba1c6e08681cb0c # shrinks to src = "-|- aa\n\n[ref]: /r\n\n[^1]: note\n", wrap = Width, width = 1
+cc 7b10829ec853d05306f435d2fffa87b8a5df1b5d6956802753a19b77fb5cf9e2 # shrinks to src = "- a a  \n:--\n-\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc a1481174f19eee822cd440344be2a761c18a561a9b49b81c5b361dee57e009b6 # shrinks to src = "> aaaaa  aaaaa : <div !!! `a b` a  a  - 1.  1. aaaaa aaa `code` a a\n\n[ref]: /r\n\n[^1]: note\n", wrap = Width, width = 13
+cc 65e926f886bab2c621aebf99c11919a24d1d7630732c119991adc8be2afa4e35 # shrinks to src = "> a Aaaa! <span> aaa aaa <div aa aa aa a\n\n[ref]: /r\n\n[^1]: note\n", wrap = Width, width = 14
+cc 7269869c46660ed5e584071364e9399c6cef942e99e904467c417c1e68957d4a # shrinks to src = "- <!--\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc 2d534265044baae9d88cb331aefba172c23e423410e17cb133678a7e940c4b67 # shrinks to src = "- [ ] <div>\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc d70747b3ae73a4db7feebbdb9faa92c91f4d819e81e20352f212a9066b099822 # shrinks to src = "- - +\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc 2e194087a9644e189d8ccfb412b3db0f23160b6459bc77acc00d7d415153e710 # shrinks to src = "_  \n___ a\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc eb14f8271444a4dd452de0782bfe9836bd28023b02afe502ed71239813b212bc # shrinks to src = "a\n\\\na\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc 66c0cb4453848b1372da5ee56c7caeff6e4e359fcb1235daf22d8cce2930f69e # shrinks to src = "#  a\n<span> a\n\n[ref]: /r\n\n[^1]: note\n", wrap = Width, width = 1
+cc 4e013c7a511eef02cfe48e6dc96dd11eb0df4fa0acb6a9f299c8cf9820d57935 # shrinks to src = "a www.x.com \\\na\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc d4b0da00b0545a7c455ec29aa771d69518853df3e565ced16be93e0dd7aa4762 # shrinks to src = "www.x.com\n\\\na\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc 3b29c28f23b39b1d8803143171237503092698830662ab5403d7371e7b2e8531 # shrinks to src = "- > a\n  >\n  a a\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc 8825bcf7b9b7cf6012a9b32c0bf76e525d97b845fed5b529dee13cf8b0a3152e # shrinks to src = "- a\n  :--\n  a a\n  |\n  a\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
