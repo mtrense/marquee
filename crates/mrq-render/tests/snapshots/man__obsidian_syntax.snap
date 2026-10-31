@@ -1,0 +1,15 @@
+---
+source: crates/mrq-render/tests/man.rs
+expression: strip_preamble(&roff)
+---
+.TH NOTES 5
+.SH NAME
+notes
+.PP
+See the part, Other and Local, pic.png #tag  marked.
+.RS 4
+.PP
+\fBFold me\fR
+.PP
+Body.
+.RE

@@ -1,0 +1,116 @@
+---
+source: crates/mrq-render/tests/man.rs
+expression: output.roff
+---
+'\" t
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH MRQ 1
+.SH NAME
+mrq \- a Markdown toolkit for the terminal
+.SH SYNOPSIS
+\fBmrq\fR \fBvalidate\fR [\fIoptions\fR] [\fIpath\fR...]
+.br
+\fBmrq\fR \fBrender\fR \fB\-o\fR \fIformat\fR [\fIpath\fR...]
+.SH DESCRIPTION
+\fBmrq\fR verifies, lints, formats and \fIrenders\fR Markdown, with \fBcode\fR, \fBboth\fR and
+\fB\-\-dashes\fR. Backslashes \\ and dashes \- are escaped, so are the
+\&.leading dot and the
+\*(Aqleading quote. It\*(Aqs fine.
+.br
+After a hard break, a line can start
+\&.with a dot too.
+.PP
+See the README <https://github.com/mtrense/marquee> or https://example.com,
+a section and another page.
+An image: the logo. A footnote[1] and another[2].
+.SH OPTIONS
+.IP \(bu 2
+\fB\-o\fR, \fB\-\-output\fR \fIformat\fR:
+The output format.
+.IP \(bu 2
+A loose item.
+.RS 2
+.PP
+With a second paragraph.
+.IP \(bu 2
+Nested
+.IP \(bu 2
+Items
+.RE
+.IP 1. 3
+First
+.IP 2. 3
+Second
+.RS 3
+.IP 1. 3
+Inner
+.RE
+.IP "[ ]" 4
+open task
+.IP [x] 4
+done task
+.SS Examples
+.RS 4
+.nf
+mrq render \-o man mrq.1.md > mrq.1
+\&.not a request
+\*(Aqnot one either
+.fi
+.RE
+.PP
+.RS 4
+.nf
+indented code \\fB stays literal
+.fi
+.RE
+.RS 4
+.PP
+A quote with \fBbold\fR text.
+.RE
+.RS 4
+.PP
+\fBWarning\fR
+.PP
+Mind the gap.
+.RE
+.sp
+.TS
+lb rb
+l r.
+T{
+Format
+T}	T{
+Notes
+T}
+_
+T{
+\fBman\fR
+T}	T{
+roff, for \fIman\fR pages
+T}
+T{
+\fBhtml\fR
+T}	
+.TE
+.PP
+* * *
+.PP
+\fBA minor heading\fR
+.PP
+Done.
+.SH NOTES
+.IP [1] 4
+The note, with \fBcode\fR.
+.IP [2] 4
+Another note.
+.RS 4
+.PP
+With a second paragraph.
+.PP
+.RS 4
+.nf
+and a code block
+.fi
+.RE
+.RE

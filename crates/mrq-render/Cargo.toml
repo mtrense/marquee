@@ -36,6 +36,7 @@ two-face = { workspace = true, features = ["syntect-fancy"] }
 pulldown-latex.workspace = true
 unicode-width.workspace = true
 ring.workspace = true
+roff.workspace = true
 reqwest = { workspace = true, optional = true }
 rustls = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true, features = ["rt", "time"] }

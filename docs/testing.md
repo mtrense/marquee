@@ -46,3 +46,17 @@ The SARIF emitter is validated against the official SARIF 2.1.0 schema in `crate
 4. Fix the file, push again, and check that the alerts are closed.
 
 Paths in the log are relative to the current directory (`docs/broken.md`), which GitHub resolves against the repository root, so run `mrq validate` from the checkout's root.
+
+### Man pages from `mrq render -o man` read well in `man`
+
+`crates/mrq-render/tests/man.rs` snapshots the roff of the fixtures in `crates/mrq-render/tests/fixtures/man/` (`mrq.1.md` for GFM, `mkdocs.7.md` for mkdocs syntax and frontmatter). How a pager shows them can only be judged by eye:
+
+1. Write the roff of a fixture to a file, e.g. by stripping the insta header from its snapshot: `awk 'n>=2; /^---$/{n++}' crates/mrq-render/tests/snapshots/man__gfm_fixture.snap > /tmp/mrq.1` (or, once `mrq render` exists, `mrq render -o man crates/mrq-render/tests/fixtures/man/mrq.1.md > /tmp/mrq.1`).
+2. Open it with `man -l /tmp/mrq.1` (man-db, Linux; it runs `tbl` because of the `'\" t` first line), `man /tmp/mrq.1` (macOS, mandoc) or `mandoc -T utf8 /tmp/mrq.1 | less -R`. Check that:
+   - the header and footer show `MRQ(1)`, and `NAME` reads `mrq - a Markdown toolkit for the terminal`;
+   - `SYNOPSIS` keeps one command per line, with commands bold and placeholders italic or underlined;
+   - no line starts with a stray `.` request or shows a literal `\fB`, dashes and backslashes print as written, apostrophes as `'`;
+   - lists, nested lists and definition lists are indented under their bullets, numbers and terms; code blocks, quotes and alerts are indented, with bold alert titles;
+   - the table has a bold header with a rule under it, and long cells wrap within their column;
+   - footnotes are listed under `NOTES` in the order of their references.
+3. `mandoc -T lint -W warning /tmp/mrq.1` reports nothing but a missing date (the fixture has none). `cargo test -p mrq-render --test man -- --ignored` runs this lint for both fixtures, with a date.

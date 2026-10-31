@@ -1,0 +1,52 @@
+---
+source: crates/mrq-render/tests/man.rs
+expression: output.roff
+---
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH MKDOCS\-PAGES 7 2026-10-31 "mrq 0.1.0" "mrq Manual"
+.SH NAME
+mkdocs\-pages \- flavor syntax in man pages
+.SH DEFINITIONS
+.TP
+\fB\-\-flag\fR
+A definition with \fBcode\fR and a second line
+that continues it.
+.TP
+Term two
+First definition.
+.RS
+.PP
+Its second paragraph.
+.PP
+Second definition.
+.RE
+.SH ADMONITIONS
+.RS 4
+.PP
+\fBNote\fR
+.PP
+The default title.
+.RE
+.RS 4
+.PP
+\fBWatch out\fR
+.PP
+A titled one.
+.RE
+.RS 4
+.PP
+No title at all.
+.RE
+.RS 4
+.PP
+\fBExample\fR
+.RS 4
+.PP
+\fBWarning\fR
+.PP
+Nested admonition.
+.RE
+.RE
+.PP
+The HTML spec and math x_1.

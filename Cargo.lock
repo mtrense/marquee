@@ -1956,6 +1956,7 @@ dependencies = [
  "reqwest",
  "resvg",
  "ring",
+ "roff",
  "rustls",
  "schemars",
  "serde",

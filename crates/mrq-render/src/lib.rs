@@ -5,6 +5,7 @@ pub mod diagram;
 pub mod highlight;
 pub mod html;
 pub mod json;
+pub mod man;
 pub mod md;
 pub mod theme;
 
