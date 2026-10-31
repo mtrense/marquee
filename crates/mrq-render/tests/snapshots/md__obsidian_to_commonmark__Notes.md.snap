@@ -1,0 +1,88 @@
+---
+source: crates/mrq-render/tests/md.rs
+expression: output.markdown
+---
+---
+title: Notes
+mrq:
+  flavor: commonmark
+---
+
+# Notes
+
+Links to [Other Note](Other%20Note.md), [the second section](Other%20Note.md#second-section), [Other Note > Second Section](Other%20Note.md#second-section) and [Tasks](#tasks), tagged #project/active and #idea.
+
+<!--A private comment.-->
+
+<mark>Highlighted</mark> and <del>struck</del> text, inline math $e^{i\\pi} + 1 = 0$ and <https://example.com>.
+
+> **Note**
+>
+> A plain note callout.
+
+> **Mind the _gap_**
+>
+> A titled warning.
+
+> **Why fold?**
+>
+> Because it is long.
+>
+> - with a list
+
+> **Tip**
+>
+> Nested:
+>
+> > **Someone**
+> >
+> > Said something.
+
+```math
+\int_0^1 x\,dx
+```
+
+![cat.png](cat.png), ![A sleeping cat](cat.png) and [Other Note](Other%20Note.md).
+
+## Tasks
+
+- \[ \] Open task
+- \[x\] Done task with a footnote<sup>1</sup>
+
+<table>
+<thead>
+<tr>
+<th>
+
+Name
+
+</th>
+<th align="center">
+
+Link
+
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+
+Other
+
+</td>
+<td align="center">
+
+[Other Note](Other%20Note.md)
+
+</td>
+</tr>
+</tbody>
+</table>
+
+<!--
+A block comment
+spanning lines.
+-->
+
+<sup>1</sup> The footnote.

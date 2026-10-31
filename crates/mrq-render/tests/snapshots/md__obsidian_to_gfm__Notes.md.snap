@@ -1,0 +1,60 @@
+---
+source: crates/mrq-render/tests/md.rs
+expression: output.markdown
+---
+---
+title: Notes
+mrq:
+  flavor: gfm
+---
+
+# Notes
+
+Links to [Other Note](Other%20Note.md), [the second section](Other%20Note.md#second-section), [Other Note > Second Section](Other%20Note.md#second-section) and [Tasks](#tasks), tagged #project/active and #idea.
+
+<!--A private comment.-->
+
+<mark>Highlighted</mark> and ~~struck~~ text, inline math $e^{i\pi} + 1 = 0$ and https://example.com.
+
+> [!NOTE]
+> A plain note callout.
+
+> [!WARNING]
+> **Mind the _gap_**
+>
+> A titled warning.
+
+> **Why fold?**
+>
+> Because it is long.
+>
+> - with a list
+
+> [!TIP]
+> Nested:
+>
+> > **Someone**
+> >
+> > Said something.
+
+$$
+\int_0^1 x\,dx
+$$
+
+![cat.png](cat.png), ![A sleeping cat](cat.png) and [Other Note](Other%20Note.md).
+
+## Tasks
+
+- [ ] Open task
+- [x] Done task with a footnote[^1]
+
+| Name  |             Link              |
+| ----- | :---------------------------: |
+| Other | [Other Note](Other%20Note.md) |
+
+<!--
+A block comment
+spanning lines.
+-->
+
+[^1]: The footnote.

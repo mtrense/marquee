@@ -4,6 +4,8 @@ pub mod ansi;
 pub mod diagram;
 pub mod highlight;
 pub mod html;
+pub mod json;
+pub mod md;
 pub mod theme;
 
 pub use theme::Theme;

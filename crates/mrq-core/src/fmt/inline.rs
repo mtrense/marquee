@@ -222,7 +222,8 @@ impl<'p, 'a> Inlines<'p, 'a> {
                 // mkdocs' `\(…\)` and `\[…\]` keep their form: their literal is the
                 // source between the delimiters, which `$` may not delimit.
                 let span = ast.span(id);
-                let (open, close) = match self.printer.src.get(span.start..span.start + 2) {
+                let source = self.printer.src.get(span.start..span.start + 2);
+                let (open, close) = match source.filter(|_| self.printer.backslash_math) {
                     Some("\\(") => ("\\(", "\\)"),
                     Some("\\[") => ("\\[", "\\]"),
                     _ if math.display => ("$$", "$$"),

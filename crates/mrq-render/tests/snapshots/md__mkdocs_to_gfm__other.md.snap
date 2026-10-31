@@ -1,0 +1,9 @@
+---
+source: crates/mrq-render/tests/md.rs
+expression: output.markdown
+---
+# Other
+
+## Details
+
+Back to the [guide](index.md#guide).

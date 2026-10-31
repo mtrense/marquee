@@ -1,0 +1,37 @@
+---
+source: crates/mrq-render/tests/md.rs
+expression: output.markdown
+---
+# Guide
+
+See [the setup](#install-it) and [other page](other.md#details).
+
+> [!NOTE]
+> An admonition with the default title.
+
+> **Watch out**
+>
+> A titled admonition with **bold** text.
+
+> **Collapsed**
+>
+> Hidden by default.
+
+> **Example**
+>
+> > [!WARNING]
+> > Nested admonition.
+
+## Install it
+
+**HTML**
+
+Hyper Text Markup Language.
+
+**Term two**
+
+First definition.
+
+Second definition.
+
+The HTML spec, <mark>marked</mark> text and math $x_1$.

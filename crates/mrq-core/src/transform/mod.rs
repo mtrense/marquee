@@ -61,6 +61,7 @@ pub use include::{
 };
 #[cfg(feature = "remote-include")]
 pub use include::{HttpLoader, HttpLoaderOptions, IncludeCache};
+pub(crate) use links::encode_segment;
 pub use links::{LinkMap, LinkRewrite, Location, rewrite_links};
 pub use merge::{FrontmatterMerge, MERGE_ANCHORS_CODE, MergeOptions, Merged, merge};
 pub use shift::{HEADING_CLAMP_CODE, Overflow, ShiftOptions, Shifted, shift_headings};

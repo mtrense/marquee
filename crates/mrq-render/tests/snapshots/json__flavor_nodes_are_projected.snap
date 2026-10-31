@@ -1,0 +1,96 @@
+---
+source: crates/mrq-render/tests/json.rs
+expression: "json::render(&doc)"
+---
+{
+  "mrq_ast": 1,
+  "flavor": "obsidian",
+  "frontmatter": null,
+  "type": "root",
+  "id": 0,
+  "position": {
+    "start": {
+      "line": 1,
+      "column": 1,
+      "offset": 0
+    },
+    "end": {
+      "line": 2,
+      "column": 1,
+      "offset": 25
+    }
+  },
+  "children": [
+    {
+      "type": "paragraph",
+      "id": 1,
+      "position": {
+        "start": {
+          "line": 1,
+          "column": 1,
+          "offset": 0
+        },
+        "end": {
+          "line": 1,
+          "column": 25,
+          "offset": 24
+        }
+      },
+      "children": [
+        {
+          "type": "wikiLink",
+          "target": "Note",
+          "anchor": "Part",
+          "alias": "alias",
+          "id": 3,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 1,
+              "offset": 0
+            },
+            "end": {
+              "line": 1,
+              "column": 20,
+              "offset": 19
+            }
+          }
+        },
+        {
+          "type": "text",
+          "value": " ",
+          "id": 5,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 20,
+              "offset": 19
+            },
+            "end": {
+              "line": 1,
+              "column": 21,
+              "offset": 20
+            }
+          }
+        },
+        {
+          "type": "tag",
+          "name": "tag",
+          "id": 4,
+          "position": {
+            "start": {
+              "line": 1,
+              "column": 21,
+              "offset": 20
+            },
+            "end": {
+              "line": 1,
+              "column": 25,
+              "offset": 24
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

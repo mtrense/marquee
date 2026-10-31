@@ -140,6 +140,52 @@
 //! and the meaning of the Markdown are kept whatever the formatter does; idempotence then
 //! depends on the formatter's.
 //!
+//! # Down-conversion
+//!
+//! [`format_as`] prints a document for another flavor (`mrq render -o md --flavor`).
+//! What the target reads back is found by parsing a small sample of each construct with
+//! it (so a custom flavor gets what its parser and passes recognize), and only the
+//! syntax it cannot read is rewritten, in a copy of the tree, before the copy is printed
+//! with the target's extensions and [`PrinterHooks`]:
+//!
+//! - Wikilinks `[[Note#Heading|alias]]` become `[alias](Note.md#slug)`: `.md` is added
+//!   unless the target has an extension, path segments are percent-encoded, and the
+//!   anchor is the *target's* slug of the (last) heading, the anchor of the matching
+//!   heading (ignoring case) for links to the same page. Without an alias the text is
+//!   `Note > Heading`, as Obsidian shows it. Block references (`#^id`) lose their
+//!   anchor. Targets are resolved lexically, next to the document, not vault-wide.
+//! - Embeds of images (by extension) become images, their alt text the alias unless
+//!   it is a size (`100x200`), else the file name; other embeds become links.
+//! - Callouts and admonitions become, in this order of preference: Obsidian callouts
+//!   (`> [!kind]± title`), mkdocs admonitions, GFM alerts when the kind is `note`,
+//!   `tip`, `important`, `warning` or `caution` (any case; a title other than the kind
+//!   becomes a bold first paragraph, the fold is dropped), else block quotes whose
+//!   first paragraph is the title in bold (the kind capitalized when there is none;
+//!   none for an mkdocs `""` title). Callout titles are Markdown, parsed with the
+//!   document's flavor.
+//! - Tags become text (`#tag`); `%%` comments become HTML comments, or are dropped
+//!   where an HTML comment cannot hold them (`-->` inside, or an `mrq:` directive).
+//! - Math keeps `$…$`/`$$…$$` where the target has dollar math (mkdocs' `\(…\)` and
+//!   `\[…\]` become dollar math where it has no backslash math). Without math,
+//!   inline math is text with its dollars (for client-side renderers such as `KaTeX`),
+//!   and display math on its own a fenced `math` code block (as GitHub and GitLab draw
+//!   it).
+//! - Heading attributes are dropped, and links to an anchor of the document follow
+//!   the heading to the anchor the target's slugger gives it (`[a](#custom-id)` becomes
+//!   `[a](#heading-text)`); links into other files keep their anchors.
+//! - Definition lists become a paragraph with the term in bold followed by the blocks
+//!   of its details; abbreviation definitions are dropped.
+//! - Without the GFM extensions (`commonmark`): strikethrough, `==highlight==`,
+//!   superscript and subscript become `<del>`, `<mark>`, `<sup>` and `<sub>`; footnote
+//!   references become `<sup>label</sup>`, and each definition its blocks where it
+//!   was, starting with the same superscript; bare URLs become autolinks
+//!   (`<https://…>`, or `[www.x](http://www.x)` where the text differs); task markers
+//!   become text; tables become HTML tables whose cells hold their Markdown between
+//!   blank lines.
+//! - A frontmatter `mrq.flavor` is set to the target, so the output is read with it.
+//!
+//! The rest prints as [`format()`] prints it.
+//!
 //! # Known limits
 //!
 //! Every `CommonMark` and GFM spec example keeps its HTML (`tests/fmt.rs`), with every
@@ -190,6 +236,7 @@
 
 mod block;
 mod code;
+mod convert;
 mod frontmatter;
 mod inline;
 mod refs;
@@ -203,7 +250,7 @@ use crate::Document;
 use crate::ast::{Ast, NodeId, Span};
 use crate::config::FmtConfig;
 use crate::diag::{Diagnostic, Severity};
-use crate::flavor::{PrinterHooks, repeated_prefix};
+use crate::flavor::{Flavor, PrinterHooks, repeated_prefix};
 use crate::parse::ParseOptions;
 
 pub use self::code::{CodeFormatter, CommandFormatter};
@@ -242,11 +289,69 @@ pub fn format(document: &Document, config: &FmtConfig) -> String {
 /// frontmatter that cannot be normalized, are kept as written with a warning (codes in
 /// [`codes`]).
 pub fn format_with(document: &Document, config: &FmtConfig, code: &dyn CodeFormatter) -> Formatted {
+    print(
+        document,
+        document.ast(),
+        document.flavor(),
+        true,
+        config,
+        code,
+    )
+}
+
+/// Prints `document` for the flavor `target`, as [`format()`] does, after converting
+/// the syntax of its own flavor that `target` cannot express into the closest Markdown
+/// that `target` can (see [Down-conversion](#down-conversion)). Use [`format_as_with`]
+/// for the warnings.
+///
+/// With the document's own flavor as `target`, this is [`format()`].
+pub fn format_as(document: &Document, target: &dyn Flavor, config: &FmtConfig) -> String {
+    format_as_with(
+        document,
+        target,
+        config,
+        &CommandFormatter::from_config(config),
+    )
+    .text
+}
+
+/// Like [`format_as`], with fenced code formatted by `code`, as in [`format_with`].
+pub fn format_as_with(
+    document: &Document,
+    target: &dyn Flavor,
+    config: &FmtConfig,
+    code: &dyn CodeFormatter,
+) -> Formatted {
+    if target.name() == document.flavor().name() {
+        return format_with(document, config, code);
+    }
+    let converted = convert::convert(document, target);
+    print(
+        document,
+        &converted.ast,
+        target,
+        converted.support.backslash_math,
+        config,
+        code,
+    )
+}
+
+/// Prints `ast`, the tree of `document` or one converted from it, with the syntax and
+/// hooks of `flavor`. `backslash_math` keeps mkdocs' `\(…\)` math in that form.
+fn print(
+    document: &Document,
+    ast: &Ast,
+    flavor: &dyn Flavor,
+    backslash_math: bool,
+    config: &FmtConfig,
+    code: &dyn CodeFormatter,
+) -> Formatted {
     let printer = Printer {
-        ast: document.ast(),
+        ast,
         src: document.text(),
-        syntax: document.flavor().parse_options(),
-        hooks: document.flavor().printer_hooks(),
+        syntax: flavor.parse_options(),
+        hooks: flavor.printer_hooks(),
+        backslash_math,
         config,
         definitions: Definitions::new(document),
         code,
@@ -269,6 +374,9 @@ struct Printer<'a> {
     syntax: ParseOptions,
     /// The flavor's rules on top of the generic ones.
     hooks: Option<&'a dyn PrinterHooks>,
+    /// Whether mkdocs' `\(…\)` and `\[…\]` math keep their form (else it is `$`
+    /// math, its literal already without container prefixes).
+    backslash_math: bool,
     config: &'a FmtConfig,
     definitions: Definitions,
     /// Formats fenced code.
@@ -324,17 +432,23 @@ impl Printer<'_> {
     /// prefix of the line the block starts on (`> `, list indentation), as far as each
     /// line repeats it. The printer writes its own prefixes in their place.
     fn unprefixed(&self, text: &str, block: usize) -> String {
-        let line_start = self.src[..block].rfind('\n').map_or(0, |nl| nl + 1);
-        let prefix = &self.src[line_start..block];
-        let mut out = String::with_capacity(text.len());
-        for (index, line) in text.split('\n').enumerate() {
-            if index > 0 {
-                out.push('\n');
-                out.push_str(&line[repeated_prefix(prefix, line)..]);
-            } else {
-                out.push_str(line);
-            }
-        }
-        out.replace("\r\n", "\n")
+        unprefixed(self.src, text, block)
     }
+}
+
+/// `text`, taken from `src` for a block starting at `block`, without the container
+/// prefixes of its continuation lines; see [`Printer::unprefixed`].
+fn unprefixed(src: &str, text: &str, block: usize) -> String {
+    let line_start = src[..block].rfind('\n').map_or(0, |nl| nl + 1);
+    let prefix = &src[line_start..block];
+    let mut out = String::with_capacity(text.len());
+    for (index, line) in text.split('\n').enumerate() {
+        if index > 0 {
+            out.push('\n');
+            out.push_str(&line[repeated_prefix(prefix, line)..]);
+        } else {
+            out.push_str(line);
+        }
+    }
+    out.replace("\r\n", "\n")
 }

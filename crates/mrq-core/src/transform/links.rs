@@ -479,6 +479,12 @@ fn encode(segment: &str, syntax: Syntax) -> String {
     if syntax == Syntax::Wiki {
         return segment.to_owned();
     }
+    encode_segment(segment)
+}
+
+/// `segment` percent-encoded where it could not stand verbatim in a Markdown link
+/// destination: whitespace, controls, `()<>\"'`, `#`, `?` and `%`.
+pub(crate) fn encode_segment(segment: &str) -> String {
     let mut out = String::with_capacity(segment.len());
     for c in segment.chars() {
         if c.is_whitespace() || c.is_control() || "()<>\\\"'#?%".contains(c) {
