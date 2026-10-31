@@ -146,8 +146,8 @@ pub use external::{
 };
 #[cfg(feature = "external-links")]
 pub use http::{CacheOptions, HttpChecker, HttpError, HttpOptions};
-pub(crate) use links::scheme;
 pub use links::{DocumentLink, Target, links};
+pub(crate) use links::{percent_decode, scheme};
 pub use refdefs::{ReferenceDefinition, reference_definitions};
 #[cfg(feature = "frontmatter-schema")]
 pub use schema::{FrontmatterSchemas, SchemaError};

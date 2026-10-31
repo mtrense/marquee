@@ -4,6 +4,9 @@
 //! - [`shift_headings`]: push the headings in a byte range down or up by N levels
 //!   (used by `merge --shift`, `mrq:include shift=N`, `split` and the TUI's
 //!   promote/demote).
+//! - [`rewrite_links`]: make the links in a byte range work from another file, by
+//!   rebasing relative paths and redirecting what a [`LinkMap`] says moved (used by
+//!   `merge`, `mrq:include` and `split`).
 //!
 //! ```
 //! use mrq_core::Document;
@@ -15,7 +18,30 @@
 //! let shifted = shift_headings(&doc, ByteRange::new(0, src.len()), ShiftOptions::by(1));
 //! assert_eq!(apply_edits(src, &shifted.edits).unwrap(), "## Guide\n\n### Intro\n");
 //! ```
+//!
+//! Merging `docs/a.md` and `docs/b.md` into `guide.md`, where `b.md`'s `#setup`
+//! becomes `#setup-1`:
+//!
+//! ```
+//! use mrq_core::Document;
+//! use mrq_core::source::{ByteRange, apply_edits};
+//! use mrq_core::transform::{LinkMap, LinkRewrite, Location, rewrite_links};
+//!
+//! let mut map = LinkMap::new();
+//! map.insert_file("docs/b.md", Location::output().with_anchor("b"));
+//! map.insert_anchor("docs/b.md", "setup", Location::output().with_anchor("setup-1"));
+//! let src = "[b](b.md), [setup](b.md#setup), ![logo](img/logo.png?v=2)\n";
+//! let doc = Document::parse(src);
+//! let rewrite = LinkRewrite::new("docs/a.md", "guide.md").map(&map);
+//! let edits = rewrite_links(&doc, ByteRange::new(0, src.len()), &rewrite);
+//! assert_eq!(
+//!     apply_edits(src, &edits).unwrap(),
+//!     "[b](#b), [setup](#setup-1), ![logo](docs/img/logo.png?v=2)\n"
+//! );
+//! ```
 
+mod links;
 mod shift;
 
+pub use links::{LinkMap, LinkRewrite, Location, rewrite_links};
 pub use shift::{HEADING_CLAMP_CODE, Overflow, ShiftOptions, Shifted, shift_headings};

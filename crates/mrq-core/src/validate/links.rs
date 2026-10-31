@@ -179,7 +179,7 @@ pub(crate) fn scheme(url: &str) -> Option<&str> {
 
 /// `text` with `%XX` escapes decoded. Malformed escapes stay as written; if the decoded
 /// bytes are not UTF-8, `text` is returned unchanged.
-fn percent_decode(text: &str) -> String {
+pub(crate) fn percent_decode(text: &str) -> String {
     let bytes = text.as_bytes();
     let mut out = Vec::with_capacity(bytes.len());
     let mut i = 0;
