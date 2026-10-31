@@ -34,6 +34,7 @@ serde-saphyr.workspace = true
 syntect = { workspace = true, features = ["parsing", "regex-fancy", "plist-load", "html"] }
 two-face = { workspace = true, features = ["syntect-fancy"] }
 pulldown-latex.workspace = true
+unicode-width.workspace = true
 ring.workspace = true
 reqwest = { workspace = true, optional = true }
 rustls = { workspace = true, optional = true }

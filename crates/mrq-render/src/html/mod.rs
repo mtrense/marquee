@@ -41,9 +41,9 @@
 //! is generated from the [`Theme`] (colors, fonts with a generic fallback, heading
 //! styles, the code theme's rules) followed by the theme's `overrides.html` file.
 
-mod css;
+pub(crate) mod css;
 pub(crate) mod escape;
-mod render;
+pub(crate) mod render;
 
 use std::fmt;
 use std::path::{Path, PathBuf};

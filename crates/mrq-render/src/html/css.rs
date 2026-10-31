@@ -9,7 +9,7 @@ use crate::theme::{Color, Fonts, HeadingStyle, Theme};
 /// The alert kinds of [`AlertColors`](crate::theme::AlertColors), each with the
 /// callout and admonition kinds (GFM, Obsidian, mkdocs) that take its color. A kind not
 /// listed takes `note`'s.
-pub(super) const ALERT_KINDS: &[(&str, &[&str])] = &[
+pub(crate) const ALERT_KINDS: &[(&str, &[&str])] = &[
     (
         "note",
         &[

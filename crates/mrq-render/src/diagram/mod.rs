@@ -77,6 +77,7 @@ pub use command::CommandRenderer;
 #[cfg(feature = "dot")]
 pub use dot::DotRenderer;
 pub use html::DiagramHook;
+pub(crate) use html::base64;
 #[cfg(feature = "kroki")]
 pub use kroki::KrokiRenderer;
 #[cfg(feature = "mermaid")]

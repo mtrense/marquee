@@ -1,0 +1,46 @@
+---
+source: crates/mrq-render/tests/ansi.rs
+expression: "snapshot(\"obsidian.md\", 100)"
+---
+# Obsidian note
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Links to Other note, an alias and Obsidian note, a #tag, highlighted text, and inline math a^2 + b^2
+= c^2.
+
+┃ Custom title
+┃ Callout body.
+
+┃ ▸ Closed callout
+┃ Hidden body.
+
+┃ ▾ Bug
+┃ Open callout without a title.
+
+\frac{1}{2}
+
+[image: diagram.png] and Embedded note
+
+• [?] A custom task state
+
+----- ANSI -----
+␛[0;38;2;26;95;180m# ␛[0;1mObsidian note␛[0m
+␛[0;38;2;212;212;212m────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
+
+Links to ␛[0;4;38;2;26;95;180mOther note␛[0m, ␛[0;4;38;2;26;95;180man alias␛[0m and ␛[0;4;38;2;26;95;180mObsidian note␛[0m, a ␛[0;38;2;26;95;180m#tag␛[0m, ␛[0;7mhighlighted text␛[0m, and inline math ␛[0;3;38;2;34;34;34ma^2 + b^2␛[0m
+␛[0;3;38;2;34;34;34m= c^2␛[0m.
+
+␛[0;38;2;38;162;105m┃ ␛[0;1;38;2;38;162;105mCustom ␛[0;1;3;38;2;38;162;105mtitle␛[0m
+␛[0;38;2;38;162;105m┃ ␛[0mCallout body.
+
+␛[0;38;2;179;89;0m┃ ␛[0;1;38;2;179;89;0m▸ Closed callout␛[0m
+␛[0;38;2;179;89;0m┃ ␛[0mHidden body.
+
+␛[0;38;2;192;28;40m┃ ␛[0;1;38;2;192;28;40m▾ Bug␛[0m
+␛[0;38;2;192;28;40m┃ ␛[0mOpen callout without a title.
+
+␛[0;3;38;2;34;34;34m\frac{1}{2}␛[0m
+
+␛[0;3;38;2;106;106;106m[image: diagram.png]␛[0m and ␛[0;4;38;2;26;95;180mEmbedded note␛[0m
+
+␛[0;38;2;26;95;180m• ␛[0m[?] A custom task state

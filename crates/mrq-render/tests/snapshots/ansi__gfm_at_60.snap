@@ -1,0 +1,190 @@
+---
+source: crates/mrq-render/tests/ansi.rs
+expression: "snapshot(\"gfm.md\", 60)"
+---
+# The ANSI backend
+────────────────────────────────────────────────────────────
+
+A paragraph with emphasis, strong text, strikethrough,
+inline code, a link (https://example.com/docs) and an
+autolink https://example.org. It is long enough to wrap at
+sixty columns and again at one hundred columns, so the
+snapshots show the wrapping.
+After a hard break, a footnote[1] and another one[2], then
+the first again[1].
+
+## Lists
+────────────────────────────────────────────────────────────
+
+• First item
+• Second item with a longer text that has to wrap onto a
+  second line at sixty columns
+  ◦ Nested item
+    ▪ Deeper item
+☐ An open task
+☑ A done task
+
+3. Three
+4. Four
+   1. Nested ordered
+5. Ten
+
+Loose list:
+
+• One
+
+• Two
+
+### Quotes and alerts
+
+│ A blockquote with emphasis.
+│
+│ │ A nested quote.
+
+┃ Note
+┃ Useful information that users should know, even when
+┃ skimming content.
+
+┃ Warning
+┃ Critical content demanding immediate user attention due to
+┃ potential risks.
+
+#### Code
+
+  fn main() {
+      println!("Hello, {}!", "world");
+  }
+
+  plain code
+      with a tab
+
+  indented code
+
+┌────┐
+│ ok │
+└────┘
+
+##### Table
+
+┌──────────┬────────┬───────┬──────────────────────────────┐
+│ Left     │ Center │ Right │ Long column                  │
+├──────────┼────────┼───────┼──────────────────────────────┤
+│ a        │   b    │     1 │ short                        │
+│ emphasis │  code  │    22 │ a cell with enough text to   │
+│          │        │       │ make the table wider than    │
+│          │        │       │ sixty columns, which has to  │
+│          │        │       │ wrap                         │
+│ 漢字     │   😀   │   333 │ wide characters              │
+└──────────┴────────┴───────┴──────────────────────────────┘
+
+###### Others
+
+Term without a definition list, then a rule:
+
+────────────────────────────────────────────────────────────
+
+[image: An image that does not exist]
+
+<div class="raw">
+  Raw <b>HTML</b>
+</div>
+
+────────────────────
+[1] The footnote text with a link (https://example.net).
+[2] A second footnote.
+
+    With a second paragraph.
+
+----- ANSI -----
+␛[0;38;2;26;95;180m# ␛[0;1mThe ANSI backend␛[0m
+␛[0;38;2;212;212;212m────────────────────────────────────────────────────────────␛[0m
+
+A paragraph with ␛[0;3memphasis␛[0m, ␛[0;1mstrong text␛[0m, ␛[0;9mstrikethrough␛[0m,
+␛[0;38;2;34;34;34;48;2;244;244;244minline code␛[0m, a ␛]8;;https://example.com/docs␛\␛[0;4;38;2;26;95;180mlink␛]8;;␛\␛[0;38;2;106;106;106m (https://example.com/docs)␛[0m and an
+autolink ␛]8;;https://example.org␛\␛[0;4;38;2;26;95;180mhttps://example.org␛]8;;␛\␛[0m. It is long enough to wrap at
+sixty columns and again at one hundred columns, so the
+snapshots show the wrapping.
+After a hard break, a footnote␛[0;38;2;26;95;180m[1]␛[0m and another one␛[0;38;2;26;95;180m[2]␛[0m, then
+the first again␛[0;38;2;26;95;180m[1]␛[0m.
+
+␛[0;38;2;26;95;180m## ␛[0;1mLists␛[0m
+␛[0;38;2;212;212;212m────────────────────────────────────────────────────────────␛[0m
+
+␛[0;38;2;26;95;180m• ␛[0mFirst item
+␛[0;38;2;26;95;180m• ␛[0mSecond item with a longer text that has to wrap onto a
+  second line at sixty columns
+  ␛[0;38;2;26;95;180m◦ ␛[0mNested item
+    ␛[0;38;2;26;95;180m▪ ␛[0mDeeper item
+␛[0;38;2;26;95;180m☐ ␛[0mAn open task
+␛[0;38;2;26;95;180m☑ ␛[0mA done task
+
+␛[0;38;2;26;95;180m3. ␛[0mThree
+␛[0;38;2;26;95;180m4. ␛[0mFour
+   ␛[0;38;2;26;95;180m1. ␛[0mNested ordered
+␛[0;38;2;26;95;180m5. ␛[0mTen
+
+Loose list:
+
+␛[0;38;2;26;95;180m• ␛[0mOne
+
+␛[0;38;2;26;95;180m• ␛[0mTwo
+
+␛[0;38;2;26;95;180m### ␛[0;1mQuotes and alerts␛[0m
+
+␛[0;38;2;212;212;212m│ ␛[0;38;2;106;106;106mA blockquote with ␛[0;3;38;2;106;106;106memphasis␛[0;38;2;106;106;106m.␛[0m
+␛[0;38;2;212;212;212m│␛[0m
+␛[0;38;2;212;212;212m│ │ ␛[0;38;2;106;106;106mA nested quote.␛[0m
+
+␛[0;38;2;26;95;180m┃ ␛[0;1;38;2;26;95;180mNote␛[0m
+␛[0;38;2;26;95;180m┃ ␛[0mUseful information that users should know, even when
+␛[0;38;2;26;95;180m┃ ␛[0mskimming content.
+
+␛[0;38;2;179;89;0m┃ ␛[0;1;38;2;179;89;0mWarning␛[0m
+␛[0;38;2;179;89;0m┃ ␛[0mCritical content demanding immediate user attention due to
+␛[0;38;2;179;89;0m┃ ␛[0mpotential risks.
+
+␛[0;38;2;26;95;180m#### ␛[0;1mCode␛[0m
+
+␛[0;38;2;50;50;50;48;2;255;255;255m  ␛[0;1;38;2;167;29;93;48;2;255;255;255mfn␛[0;38;2;50;50;50;48;2;255;255;255m ␛[0;1;38;2;121;93;163;48;2;255;255;255mmain␛[0;38;2;50;50;50;48;2;255;255;255m() {                                               ␛[0m
+␛[0;38;2;50;50;50;48;2;255;255;255m      println!(␛[0;38;2;24;54;145;48;2;255;255;255m"Hello, ␛[0;38;2;0;134;179;48;2;255;255;255m{}␛[0;38;2;24;54;145;48;2;255;255;255m!"␛[0;38;2;50;50;50;48;2;255;255;255m, ␛[0;38;2;24;54;145;48;2;255;255;255m"world"␛[0;38;2;50;50;50;48;2;255;255;255m);                      ␛[0m
+␛[0;38;2;50;50;50;48;2;255;255;255m  }                                                         ␛[0m
+
+␛[0;38;2;34;34;34;48;2;244;244;244m  plain code                                                ␛[0m
+␛[0;38;2;34;34;34;48;2;244;244;244m      with a tab                                            ␛[0m
+
+␛[0;38;2;34;34;34;48;2;244;244;244m  indented code                                             ␛[0m
+
+┌────┐
+│ ok │
+└────┘
+
+␛[0;38;2;26;95;180m##### ␛[0;1mTable␛[0m
+
+␛[0;38;2;212;212;212m┌──────────┬────────┬───────┬──────────────────────────────┐␛[0m
+␛[0;38;2;212;212;212m│ ␛[0;1mLeft␛[0m    ␛[0;38;2;212;212;212m │ ␛[0;1mCenter␛[0;38;2;212;212;212m │ ␛[0;1mRight␛[0;38;2;212;212;212m │ ␛[0;1mLong column␛[0m                 ␛[0;38;2;212;212;212m │␛[0m
+␛[0;38;2;212;212;212m├──────────┼────────┼───────┼──────────────────────────────┤␛[0m
+␛[0;38;2;212;212;212m│ ␛[0ma       ␛[0;38;2;212;212;212m │ ␛[0m  b   ␛[0;38;2;212;212;212m │ ␛[0m    1␛[0;38;2;212;212;212m │ ␛[0mshort                       ␛[0;38;2;212;212;212m │␛[0m
+␛[0;38;2;212;212;212m│ ␛[0;3memphasis␛[0;38;2;212;212;212m │ ␛[0m ␛[0;38;2;34;34;34;48;2;244;244;244mcode␛[0m ␛[0;38;2;212;212;212m │ ␛[0m   22␛[0;38;2;212;212;212m │ ␛[0ma cell with enough text to  ␛[0;38;2;212;212;212m │␛[0m
+␛[0;38;2;212;212;212m│ ␛[0m        ␛[0;38;2;212;212;212m │ ␛[0m      ␛[0;38;2;212;212;212m │ ␛[0m     ␛[0;38;2;212;212;212m │ ␛[0mmake the table wider than   ␛[0;38;2;212;212;212m │␛[0m
+␛[0;38;2;212;212;212m│ ␛[0m        ␛[0;38;2;212;212;212m │ ␛[0m      ␛[0;38;2;212;212;212m │ ␛[0m     ␛[0;38;2;212;212;212m │ ␛[0msixty columns, which has to ␛[0;38;2;212;212;212m │␛[0m
+␛[0;38;2;212;212;212m│ ␛[0m        ␛[0;38;2;212;212;212m │ ␛[0m      ␛[0;38;2;212;212;212m │ ␛[0m     ␛[0;38;2;212;212;212m │ ␛[0mwrap                        ␛[0;38;2;212;212;212m │␛[0m
+␛[0;38;2;212;212;212m│ ␛[0m漢字    ␛[0;38;2;212;212;212m │ ␛[0m  😀  ␛[0;38;2;212;212;212m │ ␛[0m  333␛[0;38;2;212;212;212m │ ␛[0mwide characters             ␛[0;38;2;212;212;212m │␛[0m
+␛[0;38;2;212;212;212m└──────────┴────────┴───────┴──────────────────────────────┘␛[0m
+
+␛[0;38;2;26;95;180m###### ␛[0;1mOthers␛[0m
+
+Term without a definition list, then a rule:
+
+␛[0;38;2;212;212;212m────────────────────────────────────────────────────────────␛[0m
+
+␛[0;3;38;2;106;106;106m[image: An image that does not exist]␛[0m
+
+␛[0;38;2;106;106;106m<div class="raw">␛[0m
+␛[0;38;2;106;106;106m  Raw <b>HTML</b>␛[0m
+␛[0;38;2;106;106;106m</div>␛[0m
+
+␛[0;38;2;212;212;212m────────────────────␛[0m
+␛[0;38;2;26;95;180m[1] ␛[0;38;2;106;106;106mThe footnote text with a ␛]8;;https://example.net␛\␛[0;4;38;2;26;95;180mlink␛]8;;␛\␛[0;38;2;106;106;106m (https://example.net).␛[0m
+␛[0;38;2;26;95;180m[2] ␛[0;38;2;106;106;106mA second footnote.␛[0m
+
+    ␛[0;38;2;106;106;106mWith a second paragraph.␛[0m

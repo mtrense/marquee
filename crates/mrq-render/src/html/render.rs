@@ -20,7 +20,7 @@ use super::{CodeBlockContext, HtmlRenderer};
 use crate::highlight::CLASS_PREFIX;
 
 /// File extensions an Obsidian embed shows as an image.
-const IMAGE_EXTENSIONS: &[&str] = &[
+pub(crate) const IMAGE_EXTENSIONS: &[&str] = &[
     "png", "jpg", "jpeg", "gif", "svg", "webp", "bmp", "avif", "ico",
 ];
 
@@ -77,7 +77,7 @@ struct Footnotes {
 
 /// Footnote labels match case-insensitively with whitespace runs collapsed, as link
 /// labels do.
-fn footnote_key(label: &str) -> String {
+pub(crate) fn footnote_key(label: &str) -> String {
     label
         .split_whitespace()
         .collect::<Vec<_>>()
@@ -752,7 +752,7 @@ fn backref_id(number: usize, n: usize) -> String {
 }
 
 /// The title of an alert, callout or admonition without one: the kind capitalized.
-fn default_title(kind: &str) -> String {
+pub(crate) fn default_title(kind: &str) -> String {
     let mut chars = kind.chars();
     chars.next().map_or_else(String::new, |first| {
         first

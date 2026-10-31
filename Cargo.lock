@@ -1966,6 +1966,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "two-face",
+ "unicode-width 0.2.3",
 ]
 
 [[package]]

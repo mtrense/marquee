@@ -1,0 +1,54 @@
+---
+source: crates/mrq-render/tests/ansi.rs
+expression: "snapshot(\"mkdocs.md\", 100)"
+---
+# mkdocs page
+────────────────────────────────────────────────────────────────────────────────────────────────────
+
+┃ Note
+┃ An admonition with the default title.
+
+┃ Watch out
+┃ An admonition with a title and a body long enough to wrap at sixty columns of width.
+
+┃ ▸ Collapsed
+┃ Hidden by default.
+
+┃ ▾ Example
+┃ ┃ Warning
+┃ ┃ Nested admonition.
+
+HTML
+    Hyper Text Markup Language, a definition with a body that wraps at sixty columns.
+
+Term two
+    First definition.
+    Second definition.
+
+The HTML spec and math x_1.
+
+----- ANSI -----
+␛[0;38;2;26;95;180m# ␛[0;1mmkdocs page␛[0m
+␛[0;38;2;212;212;212m────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
+
+␛[0;38;2;26;95;180m┃ ␛[0;1;38;2;26;95;180mNote␛[0m
+␛[0;38;2;26;95;180m┃ ␛[0mAn admonition with the default title.
+
+␛[0;38;2;192;28;40m┃ ␛[0;1;38;2;192;28;40mWatch out␛[0m
+␛[0;38;2;192;28;40m┃ ␛[0mAn admonition with a title and a body long enough to wrap at sixty columns of width.
+
+␛[0;38;2;26;95;180m┃ ␛[0;1;38;2;26;95;180m▸ Collapsed␛[0m
+␛[0;38;2;26;95;180m┃ ␛[0mHidden by default.
+
+␛[0;38;2;129;61;156m┃ ␛[0;1;38;2;129;61;156m▾ Example␛[0m
+␛[0;38;2;129;61;156m┃ ␛[0;38;2;179;89;0m┃ ␛[0;1;38;2;179;89;0mWarning␛[0m
+␛[0;38;2;129;61;156m┃ ␛[0;38;2;179;89;0m┃ ␛[0mNested admonition.
+
+␛[0;1mHTML␛[0m
+    Hyper Text Markup Language, a definition with a body that wraps at sixty columns.
+
+␛[0;1mTerm two␛[0m
+    First definition.
+    Second definition.
+
+The HTML spec and math ␛[0;3;38;2;34;34;34mx_1␛[0m.
