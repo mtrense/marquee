@@ -8,13 +8,19 @@ Usage: mrq split [OPTIONS] <FILE>
 
 Arguments:
   <FILE>
-          The file to split
+          The file to split, or `-` for stdin (needs --out)
 
 Options:
   -d, --depth <LEVEL>
           Heading level to split at
           
           [default: 1]
+
+  -o, --out <DIR>
+          Directory to write the files to [default: the file's path without its extension]
+
+      --dry-run
+          Do not write; list the files that would be written
 
   -h, --help
           Print help (see a summary with '-h')

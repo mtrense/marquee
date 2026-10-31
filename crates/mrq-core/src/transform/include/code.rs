@@ -265,6 +265,7 @@ impl Run<'_> {
                 &trim_blank_lines(&text),
             ),
             frontmatter: None,
+            linked: None,
         })
     }
 

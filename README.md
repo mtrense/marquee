@@ -330,7 +330,7 @@ In-place mode is idempotent: content between `mrq:include` and `mrq:end` is rege
 <!-- mrq:end -->
 ```
 
-Includes are resolved recursively. Cycles are detected and reported with the full include chain. Links and assets in included content are rewritten relative to the including file. Remote includes are fetched only with `include.allow_remote: true`; relative links in remote content become absolute URLs, and its own includes resolve against its URL. Fetched content is cached for an hour in `remote-includes/` in the user cache directory. `sha256="…"` pins the content of an include: different content is an error, and pinned remote content is served from the cache whenever it is there.
+Includes are resolved recursively. Cycles are detected and reported with the full include chain. Links and assets in included content are rewritten relative to the including file, and links to the anchors of included files (`chapter.md#setup`) go to those headings in the expanded document. Remote includes are fetched only with `include.allow_remote: true`; relative links in remote content become absolute URLs, and its own includes resolve against its URL. Fetched content is cached for an hour in `remote-includes/` in the user cache directory. `sha256="…"` pins the content of an include: different content is an error, and pinned remote content is served from the cache whenever it is there.
 
 ### `mrq split`
 
@@ -348,7 +348,7 @@ guide/
 └── 03-usage.md
 ```
 
-Headings in each part are promoted so it starts at level 1. Links between sections are rewritten to point at the new files, and relative assets are adjusted. `mrq interpolate guide/index.md` reproduces the original document.
+Headings in each part are promoted so it starts at level 1 (the include directive's `shift=` pushes them back). Links between sections are rewritten to point at the new files, and relative assets are adjusted. `mrq interpolate guide/index.md` reproduces the original document, with its relative links rebased to `guide/`. `--out DIR` picks another directory (`--out .` puts the files next to `guide.md`, and then the expansion is byte for byte the original), and `--dry-run` lists the files without writing them.
 
 ### `mrq stats`
 

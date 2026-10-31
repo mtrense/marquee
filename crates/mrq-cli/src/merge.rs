@@ -87,7 +87,7 @@ fn strategy(mode: FrontmatterMode) -> FrontmatterMerge {
 
 /// `path` with symlinks and `..` resolved as far as it exists, to compare inputs with
 /// the output.
-fn canonical(path: &Path) -> PathBuf {
+pub(crate) fn canonical(path: &Path) -> PathBuf {
     let path = if path.as_os_str().is_empty() {
         Path::new(".")
     } else {

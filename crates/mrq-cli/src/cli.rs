@@ -338,7 +338,13 @@ pub struct SplitArgs {
     /// Heading level to split at.
     #[arg(short, long, value_name = "LEVEL", default_value_t = 1, value_parser = clap::value_parser!(u8).range(1..=6))]
     pub depth: u8,
-    /// The file to split.
+    /// Directory to write the files to [default: the file's path without its extension].
+    #[arg(short, long, value_name = "DIR")]
+    pub out: Option<PathBuf>,
+    /// Do not write; list the files that would be written.
+    #[arg(long)]
+    pub dry_run: bool,
+    /// The file to split, or `-` for stdin (needs --out).
     #[arg(value_name = "FILE")]
     pub file: PathBuf,
 }

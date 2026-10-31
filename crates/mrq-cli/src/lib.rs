@@ -23,6 +23,7 @@ mod interpolate;
 mod lint;
 mod merge;
 mod query;
+mod split;
 mod stats;
 mod toc;
 mod validate;
@@ -108,6 +109,13 @@ pub fn run(cli: Cli) -> ExitCode {
             };
             interpolate::run(&args, &inputs, &options, &loaded, &cli.global)
         }
+        Command::Split(args) => match load_config(&cli.global) {
+            Ok(loaded) => split::run(&args, &document_options(&cli.global, &loaded), &cli.global),
+            Err(err) => {
+                report_config_error(&err, &cli.global);
+                ExitCode::from(EXIT_USAGE)
+            }
+        },
         Command::Merge(args) => {
             let Some((options, inputs)) = prepare(&cli.global, &args.inputs, false) else {
                 return ExitCode::from(EXIT_USAGE);

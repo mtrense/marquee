@@ -180,8 +180,17 @@ impl LinkRewrite<'_> {
         let (path, query) = rest.split_at(rest.find('?').unwrap_or(rest.len()));
         let anchor = fragment.map(|fragment| decode(fragment, syntax));
         if path.is_empty() {
-            let location = self.map?.anchor(&self.from, anchor.as_deref()?)?;
-            return Some(self.render(location));
+            let anchor = anchor?;
+            let location = self.map?.anchor(&self.from, &anchor)?;
+            // The same anchor of the output: kept as written.
+            let output = location
+                .file
+                .as_deref()
+                .is_none_or(|file| absolute(file) == self.to);
+            if output && location.anchor.as_deref() == Some(&anchor) {
+                return None;
+            }
+            return Some(self.render(location, fragment.zip(Some(anchor.as_str()))));
         }
         let decoded = decode(path, syntax);
         let file = match decoded.strip_prefix('/') {
@@ -189,7 +198,7 @@ impl LinkRewrite<'_> {
             None => normalize(&parent(&self.from).join(&decoded)),
         };
         if let Some(location) = self.map.and_then(|map| map.get(&file, anchor.as_deref())) {
-            return Some(self.render(&location));
+            return Some(self.render(&location, fragment.zip(anchor.as_deref())));
         }
         if path.starts_with('/') {
             return None;
@@ -237,10 +246,15 @@ impl LinkRewrite<'_> {
         Some(out)
     }
 
-    /// `location` as a destination written from `to`.
-    fn render(&self, location: &Location) -> String {
+    /// `location` as a destination written from `to`. `written` is the fragment of the
+    /// destination it replaces, as written and decoded: kept as written if it is the
+    /// same anchor.
+    fn render(&self, location: &Location, written: Option<(&str, &str)>) -> String {
         let anchor = location.anchor.as_deref().map_or(String::new(), |anchor| {
-            format!("#{}", encode(anchor, Syntax::Markdown))
+            match written.filter(|&(_, decoded)| decoded == anchor) {
+                Some((fragment, _)) => format!("#{fragment}"),
+                None => format!("#{}", encode(anchor, Syntax::Markdown)),
+            }
         });
         let file = location.file.as_deref().map(absolute);
         match file {
@@ -285,9 +299,11 @@ enum Syntax {
 ///
 /// 1. If the [`LinkMap`] knows the file and anchor, the whole destination (query
 ///    string included) is replaced by the [`Location`]: `#anchor` if it is in the output
-///    (`to`), else a path relative to `to` with the anchor. A same-document `#anchor`
-///    is looked up as an anchor of `from`, but only in the anchor entries, so the file
-///    entry of `from` does not apply to it.
+///    (`to`), else a path relative to `to` with the anchor. An anchor that stays the
+///    same keeps its fragment as written (`#%C3%BCber-uns`), and a same-document
+///    `#anchor` that maps to itself in the output is left alone. A same-document
+///    `#anchor` is looked up as an anchor of `from`, but only in the anchor entries, so
+///    the file entry of `from` does not apply to it.
 /// 2. Else a relative path is rebased: written from `to`'s directory, with the
 ///    segments, query string and fragment as written (`my%20file.md?raw=1#Set%20up`
 ///    keeps its encoding), and the new directory names percent-encoded where Markdown or
@@ -363,7 +379,8 @@ fn html_destinations(text: &str, span: ByteRange) -> Vec<ByteRange> {
     let mut found = Vec::new();
     let mut i = span.start;
     while i < span.end {
-        if text[i..span.end].starts_with("<!--") {
+        // Bytes, since `i` steps through multi-byte characters.
+        if bytes[i..span.end].starts_with(b"<!--") {
             i = text[i..span.end]
                 .find("-->")
                 .map_or(span.end, |close| i + close + 3);
@@ -781,7 +798,7 @@ mod tests {
         assert_eq!(
             mapped(src, "guide.md", "guide/01-intro.md", &map),
             "[a](02-install.md#install) [b](#intro) [c](02-install.md#install) \
-             [d](my%20part.md#über%20uns) [e](../img/x.png)\n"
+             [d](my%20part.md#%C3%BCber%20uns) [e](../img/x.png)\n"
         );
     }
 

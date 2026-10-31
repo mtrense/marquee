@@ -14,6 +14,9 @@
 //!   `select`, `shift`, `dedent` and `frontmatter`, and code includes of whole files,
 //!   line ranges or symbols ([`symbol`](crate::symbol)), and remote includes of http(s)
 //!   URLs (`mrq interpolate`).
+//! - [`split`]: the inverse of expanding includes: a document as one file per section,
+//!   with headings promoted and links between sections turned into file links, and an
+//!   `index.md` including them (`mrq split`).
 //!
 //! ```
 //! use mrq_core::Document;
@@ -51,6 +54,7 @@ mod include;
 mod links;
 mod merge;
 mod shift;
+mod split;
 
 pub use include::{
     Expanded, FileLoader, INCLUDE_CODE, IncludeTarget, Includer, Inclusion, Loader, RegionRefresh,
@@ -60,3 +64,4 @@ pub use include::{HttpLoader, HttpLoaderOptions, IncludeCache};
 pub use links::{LinkMap, LinkRewrite, Location, rewrite_links};
 pub use merge::{FrontmatterMerge, MERGE_ANCHORS_CODE, MergeOptions, Merged, merge};
 pub use shift::{HEADING_CLAMP_CODE, Overflow, ShiftOptions, Shifted, shift_headings};
+pub use split::{SPLIT_PROMOTE_CODE, Split, SplitFile, SplitOptions, split};

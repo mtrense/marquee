@@ -24,7 +24,14 @@
 //!    non-blank lines share.
 //! 5. `shift=N` shifts the headings by N levels ([`shift_headings`]).
 //! 6. Relative links and assets are rebased to work from the including file
-//!    ([`rewrite_links`]).
+//!    ([`rewrite_links`]). On [expansion](Includer::expand), links to anchors of a file
+//!    included whole or by `section` go to the headings they became in the expanded
+//!    document (`chapter.md#setup` to `#setup-1` when an earlier include also has a
+//!    Setup), in the included content and in the including file itself, whose own
+//!    `#anchor`s follow its headings the same way. Headings are matched in order, and a
+//!    file's links are left as they are if the numbers differ (after a `dedent` that
+//!    makes headings of code, say); a link to a file without an anchor, and the links of
+//!    `select` and remote includes, are not redirected.
 //! 7. Leading blank lines and trailing whitespace are dropped. `frontmatter=keep` puts
 //!    the frontmatter (as written) before the content; `frontmatter=merge` adds its keys
 //!    to the including file's frontmatter, where the including file and earlier includes
@@ -115,7 +122,7 @@ pub use self::http::{HttpLoader, HttpLoaderOptions, IncludeCache};
 pub use self::loader::{FileLoader, IncludeTarget, Loader};
 use super::links::join_url;
 use super::merge::{frontmatter_block, merge_into};
-use super::{LinkRewrite, ShiftOptions, rewrite_links, shift_headings};
+use super::{LinkMap, LinkRewrite, Location, ShiftOptions, rewrite_links, shift_headings};
 #[cfg(feature = "remote-include")]
 use crate::ast::DirectiveAttribute;
 use crate::ast::{FrontMatterFormat, NodeKind, Span};
@@ -296,6 +303,8 @@ impl Includer {
     /// has none). Lines after the first get the start marker's container prefix (`> `,
     /// list indentation); an empty content removes the markers' lines. A region whose
     /// start marker is inside the old content of another region goes with that content.
+    /// Links to the included files' anchors, and `doc`'s own `#anchor`s, are redirected to
+    /// the headings in the expansion (see the [module docs](self)).
     pub fn expand(&self, doc: &Document) -> Expanded {
         let mut run = Run::new(self, doc);
         let text = run.expand(doc);
@@ -394,6 +403,20 @@ struct Run<'i> {
 struct Included {
     text: String,
     frontmatter: Option<Map<String, Value>>,
+    /// For a local Markdown include, what redirecting its links into the expansion of
+    /// the host needs.
+    linked: Option<Linked>,
+}
+
+/// A local Markdown include before its links are rewritten for the host.
+struct Linked {
+    /// The content, at the included file's path, with its headings shifted.
+    content: Document,
+    /// The anchors the content's headings have in the included file, in order; `None`
+    /// for a `select`, whose pieces may come in any order.
+    anchors: Option<Vec<String>>,
+    /// The frontmatter block before the content (`frontmatter=keep`), or nothing.
+    front: String,
 }
 
 impl<'i> Run<'i> {
@@ -425,24 +448,160 @@ impl<'i> Run<'i> {
                     && span.end <= region.content.end
             })
         };
-        let mut edits = Vec::new();
+        let mut pieces = Vec::new();
         let mut merges = Vec::new();
         for &region in &regions {
             if inside_content(ast.span(region.start)) {
                 continue;
             }
-            let Some(included) = self.include(doc, region) else {
+            let Some(mut included) = self.include(doc, region) else {
                 continue;
             };
-            merges.extend(included.frontmatter);
-            edits.push(replace_region(src, region.span(ast), &included.text));
+            merges.extend(included.frontmatter.take());
+            pieces.push((region.span(ast), included));
         }
-        edits.extend(self.merge_frontmatter(doc, &merges));
-        if edits.is_empty() {
+        let front = self.merge_frontmatter(doc, &merges);
+        if pieces.is_empty() && front.is_none() {
             return src.to_owned();
         }
+        // Each edit with the index of its piece; the frontmatter's has none.
+        let mut edits: Vec<(Option<usize>, TextEdit)> = pieces
+            .iter()
+            .enumerate()
+            .map(|(i, (span, included))| (Some(i), replace_region(src, *span, &included.text)))
+            .chain(front.clone().map(|edit| (None, edit)))
+            .collect();
+        // In the order `apply_edits` applies them, to know where each piece goes.
+        edits.sort_by_key(|(_, edit)| (edit.range.start, edit.range.end));
+        let plain: Vec<TextEdit> = edits.iter().map(|(_, edit)| edit.clone()).collect();
+        let draft = apply_edits(src, &plain).expect("include edits do not overlap");
+        let Some(map) = self.link_map(doc, &pieces, &edits, draft.clone()) else {
+            return draft;
+        };
+
+        // Again, with the links redirected: the host's own, and those of the includes.
+        let host = self.host_path(doc);
+        let rewrite = LinkRewrite::new(&host, &host)
+            .root(&self.includer.root)
+            .map(&map);
+        let mut edits: Vec<TextEdit> = rewrite_links(doc, ByteRange::new(0, src.len()), &rewrite)
+            .into_iter()
+            .filter(|edit| {
+                !pieces
+                    .iter()
+                    .any(|(span, _)| span.start <= edit.range.start && edit.range.end <= span.end)
+            })
+            .collect();
+        for (span, included) in &pieces {
+            let text = match &included.linked {
+                Some(linked) => {
+                    let relinked = self.relink(doc, &linked.content, Some(&map));
+                    format!("{}{}", linked.front, trim_blank(&relinked))
+                }
+                None => included.text.clone(),
+            };
+            edits.push(replace_region(src, *span, &text));
+        }
+        edits.extend(front);
         edits.sort_by_key(|edit| edit.range.start);
-        apply_edits(src, &edits).expect("include edits do not overlap")
+        apply_edits(src, &edits).expect("include and link edits do not overlap")
+    }
+
+    /// Where links in the expansion of `doc` go now, for the includes `pieces` (region
+    /// span and content) that `edits` (sorted) put into `draft`, the expansion before
+    /// links are redirected: the anchors of each included file go to the headings they
+    /// became, and the anchors of `doc` itself to its headings, which may have new
+    /// anchors next to the included ones. Headings are matched in order, for each
+    /// include and for the rest of `doc`, and only if their numbers agree; `None` if
+    /// nothing is mapped.
+    fn link_map(
+        &self,
+        doc: &Document,
+        pieces: &[(Span, Included)],
+        edits: &[(Option<usize>, TextEdit)],
+        draft: String,
+    ) -> Option<LinkMap> {
+        // Where each piece's content is in the draft.
+        let mut replaced = vec![ByteRange::empty(0); pieces.len()];
+        let mut shift = 0isize;
+        for (piece, edit) in edits {
+            let start = edit
+                .range
+                .start
+                .checked_add_signed(shift)
+                .expect("in the draft");
+            if let Some(piece) = piece {
+                replaced[*piece] = ByteRange::new(start, start + edit.replacement.len());
+            }
+            shift += edit.replacement.len().cast_signed() - edit.range.len().cast_signed();
+        }
+        let draft = doc.reparse(SourceFile::new(doc.path().map(Into::into), draft));
+        let anchors: Vec<(usize, &str)> = draft
+            .anchors()
+            .iter()
+            .map(|(id, anchor)| (draft.ast().span(id).start, anchor))
+            .collect();
+        let within = |range: ByteRange| -> Vec<&str> {
+            anchors
+                .iter()
+                .filter(|&&(at, _)| range.start <= at && at < range.end)
+                .map(|&(_, anchor)| anchor)
+                .collect()
+        };
+        let mut map = LinkMap::new();
+        let mut mapped = false;
+        for ((_, included), &range) in pieces.iter().zip(&replaced) {
+            let Some(linked) = &included.linked else {
+                continue;
+            };
+            let (Some(from), Some(path)) = (&linked.anchors, linked.content.path()) else {
+                continue;
+            };
+            let to = within(range);
+            if from.len() != to.len() {
+                continue;
+            }
+            for (from, to) in from.iter().zip(to) {
+                // The first include of a file wins.
+                if map.get(path, Some(from)).is_none() {
+                    map.insert_anchor(path, from, Location::output().with_anchor(to));
+                    mapped = true;
+                }
+            }
+        }
+        let own: Vec<&str> = doc
+            .anchors()
+            .iter()
+            .filter(|&(id, _)| {
+                let at = doc.ast().span(id).start;
+                !pieces
+                    .iter()
+                    .any(|(span, _)| span.start <= at && at < span.end)
+            })
+            .map(|(_, anchor)| anchor)
+            .collect();
+        let rest: Vec<&str> = anchors
+            .iter()
+            .filter(|&&(at, _)| !replaced.iter().any(|r| r.start <= at && at < r.end))
+            .map(|&(_, anchor)| anchor)
+            .collect();
+        if own.len() == rest.len() {
+            let host = self.host_path(doc);
+            for (from, to) in own.into_iter().zip(rest) {
+                if map.get(&host, Some(from)).is_none() {
+                    map.insert_anchor(&host, from, Location::output().with_anchor(to));
+                    mapped = true;
+                }
+            }
+        }
+        mapped.then_some(map)
+    }
+
+    /// The path links in `host`'s expansion are written from: its own, or a file in the
+    /// root for stdin.
+    fn host_path(&self, host: &Document) -> PathBuf {
+        host.path()
+            .map_or_else(|| self.includer.root.join("-"), Path::to_path_buf)
     }
 
     /// The content of the include `region` of `host`; `None` after reporting why there
@@ -507,35 +666,48 @@ impl<'i> Run<'i> {
             included.reparse(SourceFile::new(path, expanded))
         };
 
-        let text = self.select(host, &spec, &included)?;
+        let (text, selected) = self.select(host, &spec, &included)?;
         let text = if spec.dedent() { dedent(&text) } else { text };
-        let text = self.adjust(host, &spec, &included, text);
-        let text = trim_blank(&text);
+        let content = self.shifted(host, &spec, &included, text);
+        let text = trim_blank(&self.relink(host, &content, None));
         let front = included.frontmatter();
-        Some(match spec.frontmatter {
-            FrontmatterMode::Strip => Included {
-                text,
-                frontmatter: None,
-            },
-            FrontmatterMode::Keep => {
-                let block = front.map_or(String::new(), |front| {
-                    format!(
-                        "{}\n",
-                        &included.text()[front.span().start..front.span().end]
-                    )
-                });
-                Included {
-                    text: block + &text,
-                    frontmatter: None,
-                }
-            }
-            FrontmatterMode::Merge => Included {
-                text,
-                frontmatter: front
-                    .and_then(Frontmatter::value)
-                    .and_then(Value::as_object)
-                    .cloned(),
-            },
+        let block = match (spec.frontmatter, front) {
+            (FrontmatterMode::Keep, Some(front)) => format!(
+                "{}\n",
+                &included.text()[front.span().start..front.span().end]
+            ),
+            _ => String::new(),
+        };
+        let frontmatter = match spec.frontmatter {
+            FrontmatterMode::Merge => front
+                .and_then(Frontmatter::value)
+                .and_then(Value::as_object)
+                .cloned(),
+            FrontmatterMode::Strip | FrontmatterMode::Keep => None,
+        };
+        let remote = included
+            .path()
+            .and_then(Path::to_str)
+            .is_some_and(is_remote);
+        let linked = (!remote).then(|| Linked {
+            anchors: selected.map(|span| {
+                included
+                    .anchors()
+                    .iter()
+                    .filter(|&(id, _)| {
+                        let at = included.ast().span(id).start;
+                        span.start <= at && at < span.end
+                    })
+                    .map(|(_, anchor)| anchor.to_owned())
+                    .collect()
+            }),
+            content,
+            front: block.clone(),
+        });
+        Some(Included {
+            text: block + &text,
+            frontmatter,
+            linked,
         })
     }
 
@@ -600,8 +772,14 @@ impl<'i> Run<'i> {
         Some(text)
     }
 
-    /// The part of `included` that `spec`'s `section` and `select` keep, else its body.
-    fn select(&mut self, host: &Document, spec: &Spec<'_>, included: &Document) -> Option<String> {
+    /// The part of `included` that `spec`'s `section` and `select` keep, else its body,
+    /// and where that is in `included` unless it was selected.
+    fn select(
+        &mut self,
+        host: &Document,
+        spec: &Spec<'_>,
+        included: &Document,
+    ) -> Option<(String, Option<Span>)> {
         let written = &spec.path.value;
         let report = |span: Span, message: String| {
             Diagnostic::new(INCLUDE_CODE, Severity::Error, host.name(), span, message)
@@ -615,15 +793,19 @@ impl<'i> Run<'i> {
                 ));
                 return None;
             };
-            sectioned = Some(piece(included.text(), span));
+            sectioned = Some((piece(included.text(), span), span));
         }
         let Some((query, attr)) = &spec.select else {
-            return Some(sectioned.unwrap_or_else(|| {
-                let body = included.frontmatter().map_or(0, Frontmatter::body_start);
-                included.text()[body..].to_owned()
-            }));
+            return Some(sectioned.map_or_else(
+                || {
+                    let body = included.frontmatter().map_or(0, Frontmatter::body_start);
+                    let span = Span::new(body, included.text().len());
+                    (included.text()[body..].to_owned(), Some(span))
+                },
+                |(text, span)| (text, Some(span)),
+            ));
         };
-        let scope = match sectioned {
+        let scope = match sectioned.map(|(text, _)| text) {
             Some(text) => included.reparse(SourceFile::new(included.path().map(Into::into), text)),
             None => included.clone(),
         };
@@ -654,18 +836,18 @@ impl<'i> Run<'i> {
             .into_iter()
             .map(|span| piece(scope.text(), span).trim_end().to_owned())
             .collect();
-        Some(pieces.join("\n\n"))
+        Some((pieces.join("\n\n"), None))
     }
 
-    /// `text`, a part of `included`, with its headings shifted and its links rebased for
-    /// `host`.
-    fn adjust(
+    /// `text`, a part of `included`, as a document at `included`'s path with its headings
+    /// shifted.
+    fn shifted(
         &mut self,
         host: &Document,
         spec: &Spec<'_>,
         included: &Document,
         text: String,
-    ) -> String {
+    ) -> Document {
         let path = included.path().map(Path::to_path_buf);
         let mut doc = included.reparse(SourceFile::new(path, text));
         if let Some((by, attr)) = spec.shift
@@ -690,23 +872,26 @@ impl<'i> Run<'i> {
                 doc = doc.reparse(SourceFile::new(doc.path().map(Into::into), text));
             }
         }
-        let Some(from) = included.path() else {
-            return doc.text().to_owned();
+        doc
+    }
+
+    /// The text of `content`, included in `host`, with its links rebased for `host` and
+    /// redirected as `map` says.
+    fn relink(&self, host: &Document, content: &Document, map: Option<&LinkMap>) -> String {
+        let Some(from) = content.path() else {
+            return content.text().to_owned();
         };
+        let range = ByteRange::new(0, content.text().len());
         if let Some(url) = from.to_str().filter(|from| is_remote(from)) {
-            let edits = rewrite_links(
-                &doc,
-                ByteRange::new(0, doc.text().len()),
-                &LinkRewrite::from_url(url),
-            );
-            return apply_edits(doc.text(), &edits).expect("link edits do not overlap");
+            let edits = rewrite_links(content, range, &LinkRewrite::from_url(url));
+            return apply_edits(content.text(), &edits).expect("link edits do not overlap");
         }
-        let to = host
-            .path()
-            .map_or_else(|| self.includer.root.join("-"), Path::to_path_buf);
-        let rewrite = LinkRewrite::new(from, to).root(&self.includer.root);
-        let edits = rewrite_links(&doc, ByteRange::new(0, doc.text().len()), &rewrite);
-        apply_edits(doc.text(), &edits).expect("link edits do not overlap")
+        let mut rewrite = LinkRewrite::new(from, self.host_path(host)).root(&self.includer.root);
+        if let Some(map) = map {
+            rewrite = rewrite.map(map);
+        }
+        let edits = rewrite_links(content, range, &rewrite);
+        apply_edits(content.text(), &edits).expect("link edits do not overlap")
     }
 
     /// `Some` if `text`, the content of the include `written` in `host`, has the SHA-256
@@ -948,7 +1133,8 @@ fn strip_markers(options: &DocumentOptions, text: &str) -> String {
 
 /// The edit replacing the region spanning `span` in `src` by `content`: lines after the
 /// first get the container prefix of the start marker's line, in the marker line's line
-/// ending. An empty `content` removes the markers' lines if nothing else is on them.
+/// ending; spaces after the end marker stay after it. An empty `content` removes the
+/// markers' lines if nothing else is on them.
 fn replace_region(src: &str, span: Span, content: &str) -> TextEdit {
     let line_start = src[..span.start].rfind('\n').map_or(0, |i| i + 1);
     let lead = &src[line_start..span.start];
@@ -991,8 +1177,9 @@ fn replace_region(src: &str, span: Span, content: &str) -> TextEdit {
         }
         replacement.push_str(line);
     }
+    let marked = src[span.start..span.end].trim_end_matches([' ', '\t']);
     TextEdit {
-        range: ByteRange::new(span.start, span.end),
+        range: ByteRange::new(span.start, span.start + marked.len()),
         replacement,
     }
 }
@@ -1098,6 +1285,44 @@ mod tests {
                 "<!-- mrq:include path=a.md -->\n\n<!-- mrq:include path=b.md -->\n"
             ),
             "D\n\nD\n"
+        );
+    }
+
+    #[test]
+    fn links_to_included_files_and_their_anchors_go_into_the_expansion() {
+        let files = [
+            (
+                "a.md",
+                "# Setup\n\nSee [b setup](b.md#setup), [own](#set%75p) and [b](b.md).\n",
+            ),
+            (
+                "b.md",
+                "# Guide B\n\n## Setup\n\nBack to [a](a.md#setup), [self](#setup), [gone](a.md#gone).\n",
+            ),
+        ];
+        let host = "# Book\n\n[Setup](a.md#setup), [B's](./b.md#setup), [top](#book)\n\n\
+                    <!-- mrq:include path=a.md -->\n\n<!-- mrq:include path=b.md -->\n";
+        assert_eq!(
+            expanded(&files, host),
+            "# Book\n\n[Setup](#setup), [B's](#setup-1), [top](#book)\n\n\
+             # Setup\n\nSee [b setup](#setup-1), [own](#set%75p) and [b](b.md).\n\n\
+             # Guide B\n\n## Setup\n\nBack to [a](#setup), [self](#setup-1), [gone](a.md#gone).\n"
+        );
+    }
+
+    #[test]
+    fn anchors_of_the_host_and_of_sections_follow_the_expansion() {
+        let files = [
+            ("a.md", "## Usage\n"),
+            ("c.md", "# One\n\n## Setup\n\n# Two\n\n## Setup\n"),
+        ];
+        let host = "<!-- mrq:include path=a.md -->\n\n# Usage\n\n[mine](#usage), \
+                    [two](c.md#setup-1), [one](c.md#setup)\n\n\
+                    <!-- mrq:include path=c.md section=two -->\n";
+        assert_eq!(
+            expanded(&files, host),
+            "## Usage\n\n# Usage\n\n[mine](#usage-1), [two](#setup), [one](c.md#setup)\n\n\
+             # Two\n\n## Setup\n"
         );
     }
 
