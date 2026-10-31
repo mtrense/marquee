@@ -2,11 +2,15 @@
 //!
 //! The screen is a sidebar on the left (the file list above the outline), the document
 //! on the right and a status line at the bottom (the file name, or the app's status
-//! message). The focused panel has a thick border.
+//! message; the open prompt, with the status message on the right). The focused panel
+//! has a thick border.
 //! The sidebar is left out below [`SIDEBAR_MIN_SCREEN`] columns. The document panel
-//! draws only the lines on screen, behind a [`GUTTER`] that marks the selected block.
+//! draws only the lines on screen, behind a [`GUTTER`] that marks the selected block and
+//! the blocks of query matches; search matches are highlighted in the text.
 
-use mrq_render::ansi::{self, ColorLevel, TextStyle};
+use std::ops::Range;
+
+use mrq_render::ansi::{self, ColorLevel, StyledSpan, TextStyle};
 use mrq_render::theme::Color as ThemeColor;
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -18,6 +22,8 @@ use ratatui::widgets::{
 
 use crate::app::{App, Overlay, Panel};
 use crate::event::KEYS;
+use crate::find::Find;
+use crate::prompt::Prompt;
 
 /// The narrowest terminal that gets a sidebar.
 pub const SIDEBAR_MIN_SCREEN: u16 = 40;
@@ -27,6 +33,15 @@ pub const GUTTER: u16 = 2;
 
 /// The selection mark in the gutter.
 const SELECTION_MARK: &str = "▌ ";
+
+/// The gutter mark of the blocks of query matches.
+const MATCH_MARK: &str = "│ ";
+
+/// A search match in the text.
+const MATCH: Style = Style::new().fg(Color::Black).bg(Color::Yellow);
+
+/// The search match `n`/`N` went to last.
+const CURRENT_MATCH: Style = Style::new().fg(Color::Black).bg(Color::Cyan);
 
 /// Where the panels of an app go; a panel that is not shown is `None`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -166,7 +181,8 @@ fn draw_outline(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 /// The lines on screen, each behind the gutter, which has the selection mark on the
-/// selected block's lines: cyan while the document is focused, else dark grey.
+/// selected block's lines (cyan while the document is focused, else dark grey) and the
+/// match mark on the other lines of query matches; search matches are highlighted.
 fn draw_document(frame: &mut Frame, app: &App, area: Rect) {
     let file = app.file();
     let view = file.view();
@@ -180,14 +196,25 @@ fn draw_document(frame: &mut Frame, app: &App, area: Rect) {
             Color::DarkGray
         }),
     );
+    let matched = Span::styled(MATCH_MARK, Style::new().fg(Color::Yellow));
     let blank = Span::raw(" ".repeat(usize::from(GUTTER)));
+    let find = app.find();
     let visible = view.visible();
     let lines: Vec<Line> = file.lines()[visible.clone()]
         .iter()
         .zip(visible)
         .map(|(styled, i)| {
-            let gutter = if selected.contains(&i) { &mark } else { &blank };
-            let mut line = line(styled, app.color_level());
+            let marked = find
+                .is_some_and(|find| view.block_at(i).is_some_and(|block| find.is_marked(block)));
+            let gutter = if selected.contains(&i) {
+                &mark
+            } else if marked {
+                &matched
+            } else {
+                &blank
+            };
+            let highlights = find.map_or_else(Vec::new, |find| highlights(find, i));
+            let mut line = line(styled, app.color_level(), &highlights);
             line.spans.insert(0, gutter.clone());
             line
         })
@@ -197,6 +224,9 @@ fn draw_document(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
+    if let Some(prompt) = app.prompt() {
+        return draw_prompt(frame, prompt, app.status(), area);
+    }
     let name = app.file().document().name().display().to_string();
     let left = if let Some(message) = app.status() {
         format!(" {message}")
@@ -213,6 +243,29 @@ fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
             .right_aligned(),
         area,
     );
+}
+
+/// The prompt with the cursor in it, and `status` on the right of its text, cut off
+/// where it does not fit.
+fn draw_prompt(frame: &mut Frame, prompt: &Prompt, status: Option<&str>, area: Rect) {
+    let text = format!("{}{}", prompt.label(), prompt.text());
+    let width = u16::try_from(text.chars().count() + 1).unwrap_or(u16::MAX);
+    let [left, right] =
+        Layout::horizontal([Constraint::Length(width), Constraint::Fill(1)]).areas(area);
+    frame.render_widget(Paragraph::new(text), left);
+    if let Some(status) = status {
+        let style = Style::new().add_modifier(Modifier::REVERSED);
+        let status = format!(" {status} ");
+        let paragraph = if status.chars().count() > usize::from(right.width) {
+            Paragraph::new(status)
+        } else {
+            Paragraph::new(status).right_aligned()
+        };
+        frame.render_widget(paragraph.style(style), right);
+    }
+    let before = prompt.label().chars().count() + prompt.cursor_column();
+    let x = area.x + u16::try_from(before).unwrap_or(u16::MAX);
+    frame.set_cursor_position((x.min(area.right().saturating_sub(1)), area.y));
 }
 
 /// The key bindings in a box in the middle of `area`.
@@ -247,19 +300,66 @@ fn draw_help(frame: &mut Frame, area: Rect) {
     );
 }
 
-/// A styled line of the ANSI layout as a ratatui line, with colours for `level`.
-fn line(line: &ansi::Line, level: ColorLevel) -> Line<'_> {
-    let spans = match &line.graphic {
+/// The spans of a line of the ANSI layout that are drawn: what a search looks through.
+pub(crate) fn drawn(line: &ansi::Line) -> &[StyledSpan] {
+    match &line.graphic {
         // Images come with M10.7; until then, their text fallback.
         Some(graphic) => &graphic.fallback,
         None => &line.spans,
-    };
-    Line::from(
-        spans
-            .iter()
-            .map(|span| Span::styled(span.text.as_str(), style(span.style, level)))
-            .collect::<Vec<_>>(),
-    )
+    }
+}
+
+/// The search matches of `find` on line `line`, with their styles.
+fn highlights(find: &Find, line: usize) -> Vec<(Range<usize>, Style)> {
+    let current = find.current().map(|index| &find.hits()[index]);
+    find.hits_on(line)
+        .iter()
+        .map(|hit| {
+            let style = if Some(hit) == current {
+                CURRENT_MATCH
+            } else {
+                MATCH
+            };
+            (hit.columns.clone(), style)
+        })
+        .collect()
+}
+
+/// A styled line of the ANSI layout as a ratatui line, with colours for `level` and
+/// `highlights` over it: byte ranges of its drawn text, in order and without overlaps.
+fn line<'a>(
+    line: &'a ansi::Line,
+    level: ColorLevel,
+    highlights: &[(Range<usize>, Style)],
+) -> Line<'a> {
+    let mut spans = Vec::new();
+    let mut start = 0;
+    for span in drawn(line) {
+        let text = span.text.as_str();
+        let base = style(span.style, level);
+        let end = start + text.len();
+        // The part of the span not drawn yet starts at `at`.
+        let mut at = start;
+        for (range, highlight) in highlights {
+            if range.end <= at || range.start >= end {
+                continue;
+            }
+            let (from, to) = (range.start.max(at), range.end.min(end));
+            if from > at {
+                spans.push(Span::styled(&text[at - start..from - start], base));
+            }
+            spans.push(Span::styled(
+                &text[from - start..to - start],
+                base.patch(*highlight),
+            ));
+            at = to;
+        }
+        if at < end {
+            spans.push(Span::styled(&text[at - start..], base));
+        }
+        start = end;
+    }
+    Line::from(spans)
 }
 
 /// The ratatui style of `text`, with its colours for `level`. Without colours, bold,

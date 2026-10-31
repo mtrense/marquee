@@ -12,6 +12,8 @@
 //!   block (`←`/`→` choose among several) to a heading, another file or, through the
 //!   injectable [`Opener`], to the operating system; `Backspace` goes back through
 //!   [`App::history`]. What went wrong is an [`App::status`] message.
+//! - `/` and `>` open a [`Prompt`](prompt::Prompt) in the status line for a search or
+//!   a query; their hits are the [`App::find`] ([`find`]), and `n`/`N` go through them.
 //! - [`ui::draw`] renders an [`App`] into a ratatui [`Frame`](ratatui::Frame), so tests
 //!   draw to a `TestBackend` and snapshot the text. The document panel draws only its
 //!   visible lines.
@@ -40,7 +42,9 @@ use ratatui::backend::Backend;
 
 mod app;
 pub mod event;
+pub mod find;
 pub mod open;
+pub mod prompt;
 pub mod ui;
 pub mod view;
 

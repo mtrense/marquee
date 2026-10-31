@@ -405,6 +405,7 @@ An interactive viewer for one or more files, or a directory, with colors, syntax
 | `Alt-↑` / `Alt-↓`       | move the selected section up / down                   |
 | `/`, `n`, `N`           | search, next / previous match                         |
 | `>`                     | run a query; matches are highlighted and navigable    |
+| `Esc`                   | clear the search or query highlighting                |
 | `u` / `Ctrl-r`          | undo / redo                                           |
 | `w`                     | save                                                  |
 | `e`                     | open `$EDITOR` at the current line                    |
@@ -412,6 +413,8 @@ An interactive viewer for one or more files, or a directory, with colors, syntax
 | `q`                     | quit (asks if there are unsaved changes)              |
 
 `Enter` follows the first link (or wikilink) of the selected block, or the one chosen with `←`/`→`. Links resolve as for `mrq validate`: `#anchor` jumps to the heading in the same file, another Markdown file opens in the viewer (added to the file list, at its `#anchor` if given), and web links, `mailto:` addresses and other local files open in the system's opener (`open`, `xdg-open` or `explorer`). `Backspace` goes back to where each jump came from, including jumps from the outline and the file list. A link whose target is missing says so in the status line.
+
+`/` opens a search prompt in the status line. The search runs as you type over the text as it is shown (not the Markdown source), highlighting every match and selecting the first one at or after the selection. It is smart-case: a pattern in lower case ignores case, and one with an upper-case letter matches it exactly. A match never spans two lines. `Enter` keeps the search, and `Esc` cancels it and goes back to where it started. `>` opens a query prompt for the [selector syntax](#mrq-query), or CSS after `css:` and jq after `jq:` (`>css:link[url^="http"]`). It runs on `Enter`; the blocks of its matches are marked in the gutter, and the first match at or after the selection is selected. A query that does not parse keeps the prompt open, with the error and its column in the status line and the cursor on the problem. jq outputs that aren't nodes of the document are skipped. Either way, `n` and `N` go to the next and previous match, wrapping around, with `match i/n` in the status line, and `Backspace` goes back to where the search or query started. The search or query applies to whichever file is shown; `Esc` clears it.
 
 Files are reloaded when they change on disk.
 

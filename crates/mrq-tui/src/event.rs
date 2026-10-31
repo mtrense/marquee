@@ -55,6 +55,15 @@ pub enum Action {
     PreviousLink,
     /// Go back to where the last jump came from.
     Back,
+    /// Open the search prompt.
+    Search,
+    /// Open the query prompt.
+    Query,
+    /// Go to the next match of the search or query, wrapping around.
+    NextMatch,
+    PreviousMatch,
+    /// Forget the search or query and its highlighting.
+    ClearMatches,
 }
 
 /// The key bindings for the help overlay: keys and what they do.
@@ -69,20 +78,27 @@ pub const KEYS: &[(&str, &str)] = &[
     ),
     ("← →", "choose a link in the selected block"),
     ("Backspace", "go back"),
+    ("/", "search (Enter: done, Esc: cancel)"),
+    (">", "query (css: or jq: for those syntaxes)"),
+    ("n / N", "next / previous match"),
     ("o", "toggle the outline"),
     ("?", "toggle this help"),
-    ("Esc", "close this help"),
+    ("Esc", "close this help / clear the matches"),
     ("q / Ctrl-c", "quit"),
 ];
 
 /// The action `key` stands for in the current state of `app`, if any. `Ctrl-c` always
-/// quits; while an overlay is open, the other keys only close it.
+/// quits; while an overlay is open, the other keys only close it, and while a prompt is
+/// open, they are its text (see [`App::handle`]) and stand for nothing.
 pub fn action(key: &KeyEvent, app: &App) -> Option<Action> {
     if key.kind == KeyEventKind::Release {
         return None;
     }
     if key.modifiers.contains(KeyModifiers::CONTROL) {
         return (key.code == KeyCode::Char('c')).then_some(Action::Quit);
+    }
+    if app.prompt().is_some() {
+        return None;
     }
     if let Some(Overlay::Help) = app.overlay() {
         return matches!(key.code, KeyCode::Char('?' | 'q') | KeyCode::Esc)
@@ -104,6 +120,11 @@ pub fn action(key: &KeyEvent, app: &App) -> Option<Action> {
         KeyCode::Right => Action::NextLink,
         KeyCode::Left => Action::PreviousLink,
         KeyCode::Backspace => Action::Back,
+        KeyCode::Char('/') => Action::Search,
+        KeyCode::Char('>') => Action::Query,
+        KeyCode::Char('n') => Action::NextMatch,
+        KeyCode::Char('N') => Action::PreviousMatch,
+        KeyCode::Esc => Action::ClearMatches,
         _ => return None,
     })
 }

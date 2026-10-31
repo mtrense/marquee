@@ -284,6 +284,31 @@ fn jump_selects_by_offset_and_scrolls_the_block_to_the_top() {
 }
 
 #[test]
+fn select_line_selects_its_block_and_shows_the_line() {
+    let code = (0..20).fold(String::new(), |mut code, i| {
+        writeln!(code, "line {i}").unwrap();
+        code
+    });
+    let text = format!("Before.\n\n```\n{code}```\n\nAfter.\n");
+    let (_, lines, mut view) = laid_out(&text, 40, 5);
+    let code = view.blocks()[1].lines.clone();
+    // A line deep inside a block taller than the view is scrolled into view.
+    let deep = code.start + 15;
+    assert!(view.select_line(deep));
+    assert_eq!(view.selected_index(), Some(1));
+    assert!(view.visible().contains(&deep), "{:?}", view.visible());
+    // A line on screen does not scroll.
+    let top = view.top();
+    assert!(view.select_line(deep + 1));
+    assert_eq!(view.top(), top);
+    // A blank line selects the next block.
+    assert!(view.select_line(code.end));
+    assert_eq!(selected(&lines, &view), "After.");
+    assert!(view.select_line(0));
+    assert_eq!((view.selected_index(), view.top()), (Some(0), 0));
+}
+
+#[test]
 fn the_height_keeps_the_selection_in_view() {
     let (_, _, mut view) = laid_out(MIXED, 40, 100);
     view.select(9);

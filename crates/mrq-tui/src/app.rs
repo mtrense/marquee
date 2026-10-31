@@ -1,6 +1,7 @@
 //! The app state: the open files, which one is shown, the focused panel, the outline
 //! toggle, the overlay, the terminal size and colour level, and the navigation state
-//! (history, chosen link, status message) with link following in `navigate`.
+//! (history, chosen link, status message) with link following in `navigate`, and the
+//! prompt with search and query in `search`.
 
 use std::path::PathBuf;
 
@@ -10,15 +11,18 @@ use mrq_core::document::{DocumentOptions, Workspace};
 use mrq_core::toc::TocEntry;
 use mrq_core::validate::Vault;
 use mrq_render::ansi::{AnsiRenderer, ColorLevel, Line, StyledDocument};
-use ratatui::crossterm::event::KeyEventKind;
+use ratatui::crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::layout::Rect;
 
 use crate::event::{self, Action, Event};
+use crate::find::Find;
 use crate::open::{Opener, SystemOpener};
+use crate::prompt::Prompt;
 use crate::ui;
 use crate::view::DocumentView;
 
 mod navigate;
+mod search;
 
 /// A panel that can have the focus.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -157,6 +161,10 @@ pub struct App {
     link: Option<(usize, NodeId, usize)>,
     /// A message for the status line, until the next key.
     status: Option<String>,
+    /// The open prompt, which takes the keys.
+    asking: Option<search::Asking>,
+    /// The active search or query.
+    find: Option<Find>,
 }
 
 impl App {
@@ -189,6 +197,8 @@ impl App {
             history: Vec::new(),
             link: None,
             status: None,
+            asking: None,
+            find: None,
         };
         app.relayout();
         app
@@ -224,12 +234,17 @@ impl App {
         self.color_level
     }
 
-    /// Reacts to `event`.
+    /// Reacts to `event`. While a prompt is open, keys other than `Ctrl-c` edit it.
     pub fn handle(&mut self, event: Event) {
         match event {
             Event::Key(key) => {
                 if key.kind != KeyEventKind::Release {
                     self.status = None;
+                }
+                let quit =
+                    key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c');
+                if self.asking.is_some() && !quit {
+                    return self.prompt_key(&key);
                 }
                 if let Some(action) = event::action(&key, self) {
                     self.apply(action);
@@ -270,6 +285,11 @@ impl App {
             Action::NextLink => self.choose_link(1),
             Action::PreviousLink => self.choose_link(-1),
             Action::Back => self.back(),
+            Action::Search => self.ask(search::Purpose::Search),
+            Action::Query => self.ask(search::Purpose::Query),
+            Action::NextMatch => self.next_match(1),
+            Action::PreviousMatch => self.next_match(-1),
+            Action::ClearMatches => self.find = None,
         }
     }
 
@@ -343,6 +363,16 @@ impl App {
         self.status.as_deref()
     }
 
+    /// The open prompt (search or query), which takes the keys.
+    pub fn prompt(&self) -> Option<&Prompt> {
+        self.asking.as_ref().map(|asking| &asking.prompt)
+    }
+
+    /// The active search or query, with its hits in the shown file.
+    pub fn find(&self) -> Option<&Find> {
+        self.find.as_ref()
+    }
+
     /// Where `Backspace` goes, the latest jump last.
     pub fn history(&self) -> &[Location] {
         &self.history
@@ -412,7 +442,8 @@ impl App {
     }
 
     /// After a change to the size or the panels: moves the focus off a panel that is no
-    /// longer shown, and lays the shown file out for the document panel.
+    /// longer shown, lays the shown file out for the document panel, and finds the hits
+    /// of the search or query in it.
     fn relayout(&mut self) {
         if !self.panels().contains(&self.focus) {
             self.focus = Panel::Document;
@@ -420,6 +451,10 @@ impl App {
         let width = usize::from(self.document_width());
         let height = usize::from(self.document_height());
         self.files[self.current].lay_out(&self.renderer, width, height);
+        if let Some(find) = &mut self.find {
+            // A query that fails in this file finds nothing in it.
+            let _ = find.refresh(self.current, width, &self.files[self.current]);
+        }
     }
 }
 

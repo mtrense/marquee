@@ -212,7 +212,7 @@ impl App {
     }
 
     /// The shown file and its selected block.
-    fn location(&self) -> Location {
+    pub(super) fn location(&self) -> Location {
         let offset = self
             .file()
             .view

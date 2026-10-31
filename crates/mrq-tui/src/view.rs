@@ -212,6 +212,30 @@ impl DocumentView {
         true
     }
 
+    /// Selects the block that line `line` of the layout is in, else the first one after
+    /// it, else the last one, and scrolls as [`select`](Self::select) does, then on to
+    /// the line if it is still off screen (in a block taller than the screen): where a
+    /// search or query match lands. `false` without blocks.
+    pub fn select_line(&mut self, line: usize) -> bool {
+        let index = self
+            .block_at(line)
+            .or_else(|| self.blocks.iter().position(|b| b.lines.start >= line))
+            .or_else(|| self.blocks.len().checked_sub(1));
+        let Some(index) = index else {
+            return false;
+        };
+        let on_screen = |view: &Self| (view.top..view.top + view.height.max(1)).contains(&line);
+        if self.selected == Some(index) && on_screen(self) {
+            return true;
+        }
+        self.select(index);
+        if !on_screen(self) {
+            self.top = line;
+            self.clamp();
+        }
+        true
+    }
+
     /// Selects the next block, or scrolls one line down while the selected block goes on
     /// below the screen (or the last block is selected).
     pub fn down(&mut self) {
