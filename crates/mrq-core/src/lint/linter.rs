@@ -22,6 +22,8 @@ pub struct Linter {
     rules: Vec<(Arc<dyn DynRule>, AnyOptions)>,
     /// Indices into `rules` of the rules the config enables.
     enabled: BTreeSet<usize>,
+    /// The names given to [`restrict_to`](Self::restrict_to), if any.
+    only: Option<Vec<String>>,
 }
 
 impl std::fmt::Debug for Linter {
@@ -88,7 +90,46 @@ impl Linter {
             config: config.clone(),
             rules,
             enabled,
+            only: None,
         })
+    }
+
+    /// Runs only the rules with one of `names` as id, alias or tag (ignoring ASCII
+    /// case), as `mrq lint --rule` does: they are on even if the config turns them off,
+    /// with their configured options, and no other rule runs. Inline comments can still
+    /// turn them off, but not turn other rules on; `configure-file` comments still set
+    /// their options.
+    ///
+    /// Fails on a name that is neither a rule nor a tag of the registry.
+    pub fn restrict_to<I, S>(mut self, names: I) -> Result<Self, RuleSettingError>
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        let names: Vec<String> = names.into_iter().map(|n| n.as_ref().to_owned()).collect();
+        if let Some(unknown) = names
+            .iter()
+            .find(|name| self.registry.get(name).is_none() && !self.registry.is_tag(name))
+        {
+            return Err(RuleSettingError {
+                key: unknown.clone(),
+                message: format!("unknown lint rule or tag `{unknown}`"),
+            });
+        }
+        self.enabled = self
+            .rules
+            .iter()
+            .enumerate()
+            .filter(|(_, (rule, _))| {
+                let meta = rule.meta();
+                names
+                    .iter()
+                    .any(|name| meta.is_named(name) || meta.has_tag(name))
+            })
+            .map(|(index, _)| index)
+            .collect();
+        self.only = Some(names);
+        Ok(self)
     }
 
     /// The rules the config enables, sorted by id.
@@ -104,7 +145,13 @@ impl Linter {
         let directives = suppress::directives(doc);
         let configured = configure_file(&self.config, &self.registry, &directives);
         let linter = match &configured {
-            Some(config) => &Self::new(&self.registry, config).expect("validated settings"),
+            Some(config) => {
+                let linter = Self::new(&self.registry, config).expect("validated settings");
+                &match &self.only {
+                    Some(names) => linter.restrict_to(names).expect("validated names"),
+                    None => linter,
+                }
+            }
             None => self,
         };
         linter.check_lines(doc, &directives)
@@ -128,7 +175,9 @@ impl Linter {
             .rules
             .iter()
             .enumerate()
-            .filter(|&(index, _)| states.any(index))
+            .filter(|&(index, _)| {
+                states.any(index) && (self.only.is_none() || self.enabled.contains(&index))
+            })
             .flat_map(|(index, (rule, options))| {
                 rule.check(doc, &**options)
                     .into_iter()

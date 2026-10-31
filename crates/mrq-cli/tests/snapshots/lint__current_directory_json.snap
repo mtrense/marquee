@@ -1,0 +1,176 @@
+---
+source: crates/mrq-cli/tests/lint.rs
+expression: out
+---
+[
+  {
+    "code": "MD022",
+    "severity": "warning",
+    "message": "Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: \"# Fixable\"]",
+    "file": "docs/fixable.md",
+    "range": {
+      "start_offset": 0,
+      "end_offset": 9,
+      "start": {
+        "line": 1,
+        "column": 1
+      },
+      "end": {
+        "line": 1,
+        "column": 10
+      }
+    },
+    "fix": {
+      "message": "Insert blank lines",
+      "edits": [
+        {
+          "range": {
+            "start_offset": 10,
+            "end_offset": 10,
+            "start": {
+              "line": 2,
+              "column": 1
+            },
+            "end": {
+              "line": 2,
+              "column": 1
+            }
+          },
+          "replacement": "\n"
+        }
+      ]
+    }
+  },
+  {
+    "code": "MD009",
+    "severity": "warning",
+    "message": "Trailing spaces [Expected: 0 or 2; Actual: 3]",
+    "file": "docs/fixable.md",
+    "range": {
+      "start_offset": 36,
+      "end_offset": 39,
+      "start": {
+        "line": 2,
+        "column": 27
+      },
+      "end": {
+        "line": 2,
+        "column": 30
+      }
+    },
+    "fix": {
+      "message": "Delete the trailing spaces",
+      "edits": [
+        {
+          "range": {
+            "start_offset": 36,
+            "end_offset": 39,
+            "start": {
+              "line": 2,
+              "column": 27
+            },
+            "end": {
+              "line": 2,
+              "column": 30
+            }
+          },
+          "replacement": ""
+        }
+      ]
+    }
+  },
+  {
+    "code": "MD032",
+    "severity": "warning",
+    "message": "Lists should be surrounded by blank lines [Context: \"* one\"]",
+    "file": "docs/fixable.md",
+    "range": {
+      "start_offset": 40,
+      "end_offset": 45,
+      "start": {
+        "line": 3,
+        "column": 1
+      },
+      "end": {
+        "line": 3,
+        "column": 6
+      }
+    },
+    "fix": {
+      "message": "Insert a blank line",
+      "edits": [
+        {
+          "range": {
+            "start_offset": 40,
+            "end_offset": 40,
+            "start": {
+              "line": 3,
+              "column": 1
+            },
+            "end": {
+              "line": 3,
+              "column": 1
+            }
+          },
+          "replacement": "\n"
+        }
+      ]
+    }
+  },
+  {
+    "code": "MD001",
+    "severity": "warning",
+    "message": "Heading levels should only increment by one level at a time [Expected: h2; Actual: h3]",
+    "file": "docs/mixed.md",
+    "range": {
+      "start_offset": 9,
+      "end_offset": 26,
+      "start": {
+        "line": 3,
+        "column": 1
+      },
+      "end": {
+        "line": 3,
+        "column": 18
+      }
+    }
+  },
+  {
+    "code": "MD022",
+    "severity": "warning",
+    "message": "Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: \"### Skipped level\"]",
+    "file": "docs/mixed.md",
+    "range": {
+      "start_offset": 9,
+      "end_offset": 26,
+      "start": {
+        "line": 3,
+        "column": 1
+      },
+      "end": {
+        "line": 3,
+        "column": 18
+      }
+    },
+    "fix": {
+      "message": "Insert blank lines",
+      "edits": [
+        {
+          "range": {
+            "start_offset": 27,
+            "end_offset": 27,
+            "start": {
+              "line": 4,
+              "column": 1
+            },
+            "end": {
+              "line": 4,
+              "column": 1
+            }
+          },
+          "replacement": "\n"
+        }
+      ]
+    }
+  }
+]

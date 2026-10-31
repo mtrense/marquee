@@ -18,6 +18,7 @@ use mrq_core::input::{Input, InputResolver};
 use mrq_core::source::SourceFile;
 
 pub mod cli;
+mod lint;
 mod query;
 mod stats;
 mod toc;
@@ -82,6 +83,13 @@ pub fn run(cli: Cli) -> ExitCode {
                 return ExitCode::from(EXIT_USAGE);
             };
             validate::run(&args, &inputs, &options, &loaded, &cli.global)
+        }
+        Command::Lint(args) => {
+            let Some((loaded, options, inputs)) = prepare_loaded(&cli.global, &args.inputs, true)
+            else {
+                return ExitCode::from(EXIT_USAGE);
+            };
+            lint::run(&args, &inputs, &options, &loaded, &cli.global)
         }
         other => {
             let _ = writeln!(

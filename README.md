@@ -191,8 +191,21 @@ Applies style rules. The rule set is compatible with markdownlint (`MD001`–`MD
 mrq lint docs/
 mrq lint --fix docs/
 mrq lint --rule MD013 --rule MD022 README.md
+mrq lint --diff docs/        # show what --fix would change, write nothing
 mrq lint --format github     # annotations for GitHub Actions (auto-detected in CI)
 ```
+
+`--fix` applies every fix that does not overlap another, re-parses and re-lints, and repeats until nothing changes (at most 10 passes). Changed files are rewritten atomically, and the findings left are reported. `--fix-only` fixes without reporting what is left, and `--diff` prints the fixes as a unified diff instead of writing them. With stdin, `--fix` prints the fixed text to stdout and the findings to stderr. `--rule` takes an ID, alias or tag, runs only those rules, and turns them on even if the configuration turns them off. `lint` exits 1 when findings are left (never with `--fix-only`) and `--diff` exits 1 when there is something to fix.
+
+mrq's own rules are documented in [docs/rules](docs/rules/README.md):
+
+| Rule | Alias | Default | Description |
+| --- | --- | --- | --- |
+| [MRQ001](docs/rules/MRQ001.md) | `valid-anchors` | off | Link to a missing anchor, flavor-aware and across files |
+| [MRQ002](docs/rules/MRQ002.md) | `heading-punctuation` | off | Heading text ends with punctuation |
+| [MRQ003](docs/rules/MRQ003.md) | `frontmatter-key-order` | off | Frontmatter keys out of order |
+| [MRQ004](docs/rules/MRQ004.md) | `stale-include` | on | `mrq:include` region out of date |
+| [MRQ005](docs/rules/MRQ005.md) | `no-url-wikilinks` | on | Bare URL in a wikilink |
 
 Rules can be suppressed inline:
 
@@ -472,7 +485,7 @@ mrq-core = "1"
 ```
 
 ```rust no_run
-use mrq_core::{Document, query::Query};
+use mrq_core::{Document, config::LintConfig, lint::{Linter, Registry}, query::Query};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Flavor from frontmatter `mrq.flavor`, else gfm. `DocumentOptions` adds
@@ -486,6 +499,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let snippets = doc.select(&Query::selector("# Install | ```sh")?)?;
     for node in snippets {
         println!("{}", node.text());
+    }
+
+    let linter = Linter::new(&Registry::builtin(), &LintConfig::default())?;
+    for finding in linter.check(&doc) {
+        println!("{}: {}", finding.code, finding.message);
     }
 
     Ok(())

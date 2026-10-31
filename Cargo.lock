@@ -1425,6 +1425,7 @@ dependencies = [
  "mrq-tui",
  "predicates",
  "serde_json",
+ "similar",
  "tempfile",
 ]
 

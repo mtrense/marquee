@@ -228,10 +228,16 @@ pub struct ValidateArgs {
 
 #[derive(Debug, Args)]
 pub struct LintArgs {
-    /// Apply automatic fixes in place.
+    /// Apply automatic fixes in place (stdin: print the fixed text), then report what is left.
     #[arg(long)]
     pub fix: bool,
-    /// Only run this rule (repeatable), e.g. MD013.
+    /// Like --fix, but report nothing and exit 0 even if findings without a fix remain.
+    #[arg(long)]
+    pub fix_only: bool,
+    /// Do not write; print the fixes as a unified diff and exit 1 if there are any.
+    #[arg(long, conflicts_with_all = ["fix", "fix_only"])]
+    pub diff: bool,
+    /// Only run this rule, alias or tag (repeatable), even if the config turns it off.
     #[arg(long, value_name = "RULE")]
     pub rule: Vec<String>,
     #[command(flatten)]

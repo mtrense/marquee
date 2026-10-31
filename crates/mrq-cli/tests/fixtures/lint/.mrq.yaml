@@ -1,0 +1,3 @@
+# Stops config discovery here, so no `.markdownlint.*` above the repository leaks in.
+lint:
+  extends: default

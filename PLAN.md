@@ -242,7 +242,7 @@ flowchart LR
 - [x] **M5.4 Rules MD021–MD040.** Same AC.
 - [x] **M5.5 Rules MD041–MD059.** Same AC.
 - [x] **M5.6 MRQ rules.** Initial set: `MRQ001` (link to a missing anchor, as a lint mirror of validate), `MRQ002` (heading text ends with punctuation; configurable), `MRQ003` (frontmatter key order), `MRQ004` (stale include region), `MRQ005` (bare URL in an obsidian/wikilink context). **AC:** documented in `docs/rules/`.
-- [ ] **M5.7 `mrq lint` command and `--fix`.** Apply non-overlapping fixes, iterating until a fixpoint (at most 10 passes), and write atomically. `--rule`, `--fix-only`, `--diff` (show fixes without writing). **AC:** fixed output re-lints clean for every fixable rule's fixture.
+- [x] **M5.7 `mrq lint` command and `--fix`.** Apply non-overlapping fixes, iterating until a fixpoint (at most 10 passes), and write atomically. `--rule`, `--fix-only`, `--diff` (show fixes without writing). **AC:** fixed output re-lints clean for every fixable rule's fixture.
 
 ### M6: fmt
 

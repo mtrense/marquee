@@ -12,10 +12,16 @@ Arguments:
 
 Options:
       --fix
-          Apply automatic fixes in place
+          Apply automatic fixes in place (stdin: print the fixed text), then report what is left
+
+      --fix-only
+          Like --fix, but report nothing and exit 0 even if findings without a fix remain
+
+      --diff
+          Do not write; print the fixes as a unified diff and exit 1 if there are any
 
       --rule <RULE>
-          Only run this rule (repeatable), e.g. MD013
+          Only run this rule, alias or tag (repeatable), even if the config turns it off
 
   -h, --help
           Print help (see a summary with '-h')

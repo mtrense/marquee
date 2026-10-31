@@ -1,10 +1,11 @@
 //! The lint rule framework: rules with typed options, the registry, rule selection
-//! from `lint` config, and the proof rules MD012 and MD047.
+//! from `lint` config and `--rule`, applying fixes, and the proof rules MD012 and MD047.
 
 use mrq_core::Document;
 use mrq_core::config::{LintConfig, LintExtends, RuleSetting, RuleSettings};
-use mrq_core::diag::{Diagnostic, Severity};
-use mrq_core::lint::{Linter, NoOptions, Registry, Rule, RuleMeta};
+use mrq_core::diag::{Diagnostic, Fix, Severity};
+use mrq_core::document::DocumentOptions;
+use mrq_core::lint::{Linter, MAX_FIX_PASSES, NoOptions, Registry, Rule, RuleMeta, apply_fixes};
 use mrq_core::source::{ByteRange, TextEdit};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -68,6 +69,99 @@ fn registry() -> Registry {
     let mut registry = Registry::new();
     registry.register(LongLine);
     registry.register(Always);
+    registry
+}
+
+/// A replacement of `range` with `replacement`, as a fixable finding of `meta`.
+fn fixable(meta: RuleMeta, doc: &Document, range: ByteRange, replacement: &str) -> Diagnostic {
+    let edit = TextEdit {
+        range,
+        replacement: replacement.to_owned(),
+    };
+    meta.diagnostic(doc, range, "fixable")
+        .with_fix(Fix::new("fix", vec![edit]))
+}
+
+/// Squashes every `aa` into `a`, one pair per match, so `aaaa` needs two passes.
+struct Squash;
+
+impl Rule for Squash {
+    type Options = NoOptions;
+
+    const META: RuleMeta = RuleMeta {
+        id: "TEST003",
+        aliases: &["squash"],
+        tags: &["fixing"],
+        description: "Doubled a",
+        default_enabled: false,
+    };
+
+    fn check(&self, doc: &Document, _: &NoOptions) -> Vec<Diagnostic> {
+        doc.text()
+            .match_indices("aa")
+            .map(|(at, _)| fixable(Self::META, doc, ByteRange::new(at, at + 2), "a"))
+            .collect()
+    }
+}
+
+/// Reports a missing final newline twice, with identical fixes.
+struct Twice;
+
+impl Rule for Twice {
+    type Options = NoOptions;
+
+    const META: RuleMeta = RuleMeta {
+        id: "TEST004",
+        aliases: &["twice"],
+        tags: &["fixing"],
+        description: "No final newline",
+        default_enabled: false,
+    };
+
+    fn check(&self, doc: &Document, _: &NoOptions) -> Vec<Diagnostic> {
+        let end = doc.text().len();
+        if doc.text().ends_with('\n') {
+            return Vec::new();
+        }
+        let at = ByteRange::new(end, end);
+        vec![
+            fixable(Self::META, doc, at, "\n"),
+            fixable(Self::META, doc, at, "\n"),
+        ]
+    }
+}
+
+/// Swaps `x` and `y` forever: never reaches a fixpoint.
+struct Flip;
+
+impl Rule for Flip {
+    type Options = NoOptions;
+
+    const META: RuleMeta = RuleMeta {
+        id: "TEST005",
+        aliases: &["flip"],
+        tags: &[],
+        description: "x or y",
+        default_enabled: false,
+    };
+
+    fn check(&self, doc: &Document, _: &NoOptions) -> Vec<Diagnostic> {
+        doc.text()
+            .match_indices(['x', 'y'])
+            .map(|(at, c)| {
+                let other = if c == "x" { "y" } else { "x" };
+                fixable(Self::META, doc, ByteRange::new(at, at + 1), other)
+            })
+            .collect()
+    }
+}
+
+/// [`registry`] plus the fixing rules.
+fn fixing() -> Registry {
+    let mut registry = registry();
+    registry.register(Squash);
+    registry.register(Twice);
+    registry.register(Flip);
     registry
 }
 
@@ -304,4 +398,157 @@ fn config_schema_includes_every_rules_options() {
     assert!(!validator.is_valid(&rules(serde_json::json!({ "MD012": { "maximum": "x" } }))));
     assert!(!validator.is_valid(&rules(serde_json::json!({ "MD999": true }))));
     assert!(validator.is_valid(&rules(serde_json::json!({ "whitespace": false }))));
+}
+
+fn replace(doc: &Document, start: usize, end: usize, replacement: &str) -> Diagnostic {
+    fixable(Squash::META, doc, ByteRange::new(start, end), replacement)
+}
+
+#[test]
+fn apply_fixes_dedupes_identical_fixes() {
+    let linter = Linter::new(
+        &fixing(),
+        &config(LintExtends::None, &[("twice", true.into())]),
+    );
+    let doc = Document::parse("a");
+    let diagnostics = linter.unwrap().check(&doc);
+    assert_eq!(diagnostics.len(), 2);
+    assert_eq!(apply_fixes(doc.text(), &diagnostics).unwrap(), "a\n");
+}
+
+#[test]
+fn apply_fixes_skips_fixes_overlapping_an_earlier_one() {
+    let doc = Document::parse("abcdef");
+    let diagnostics = [
+        replace(&doc, 2, 4, "Y"),
+        replace(&doc, 0, 3, "X"),
+        replace(&doc, 3, 3, "-"),
+        replace(&doc, 4, 6, "Z"),
+        Squash::META.diagnostic(&doc, ByteRange::new(0, 6), "no fix"),
+    ];
+    // 0..3 starts first; 2..4 overlaps it, the insertion at its end and 4..6 do not.
+    assert_eq!(apply_fixes(doc.text(), &diagnostics).unwrap(), "X-dZ");
+    assert_eq!(
+        apply_fixes(doc.text(), &diagnostics[4..]).unwrap(),
+        "abcdef"
+    );
+}
+
+#[test]
+fn apply_fixes_rejects_invalid_edits() {
+    let doc = Document::parse("ab");
+    assert!(apply_fixes(doc.text(), &[replace(&doc, 1, 9, "")]).is_err());
+}
+
+#[test]
+fn fix_reparses_and_relints_until_nothing_changes() {
+    let linter = Linter::new(
+        &fixing(),
+        &config(LintExtends::None, &[("squash", true.into())]),
+    )
+    .unwrap();
+    let fixed = linter
+        .fix(Document::parse("aaaa\n"), &DocumentOptions::new())
+        .unwrap();
+    assert_eq!(fixed.document.text(), "a\n");
+    assert_eq!(fixed.passes, 2);
+    assert_eq!(fixed.diagnostics, []);
+
+    let clean = linter
+        .fix(Document::parse("b\n"), &DocumentOptions::new())
+        .unwrap();
+    assert_eq!(clean.passes, 0);
+    assert_eq!(clean.document.text(), "b\n");
+}
+
+#[test]
+fn fix_stops_after_max_passes() {
+    let linter = Linter::new(
+        &fixing(),
+        &config(LintExtends::None, &[("flip", true.into())]),
+    )
+    .unwrap();
+    let fixed = linter
+        .fix(Document::parse("x\n"), &DocumentOptions::new())
+        .unwrap();
+    assert_eq!(fixed.passes, MAX_FIX_PASSES);
+    assert_eq!(MAX_FIX_PASSES, 10);
+    // Ten flips: back to `x`, still reported.
+    assert_eq!(fixed.document.text(), "x\n");
+    assert_eq!(fixed.diagnostics.len(), 1);
+}
+
+#[test]
+fn fix_reports_what_remains_in_the_fixed_text() {
+    let cfg = config(
+        LintExtends::None,
+        &[("squash", true.into()), ("long-line", true.into())],
+    );
+    let linter = Linter::new(&fixing(), &cfg).unwrap();
+    let options = DocumentOptions::new().flavor("obsidian");
+    let doc = options
+        .parse_source(mrq_core::source::SourceFile::new(
+            Some("notes.md".into()),
+            "bbbbbbbbbbbbaa\n",
+        ))
+        .unwrap();
+    let fixed = linter.fix(doc, &options).unwrap();
+    assert_eq!(fixed.document.text(), "bbbbbbbbbbbba\n");
+    assert_eq!(fixed.document.name(), std::path::Path::new("notes.md"));
+    assert_eq!(fixed.document.flavor().name(), "obsidian");
+    let remaining: Vec<_> = fixed
+        .diagnostics
+        .iter()
+        .map(|diag| (diag.code.as_str(), diag.range, diag.fix.is_some()))
+        .collect();
+    assert_eq!(remaining, [("TEST001", ByteRange::new(0, 13), false)]);
+}
+
+#[test]
+fn restrict_to_runs_only_the_named_rules_even_if_config_disables_them() {
+    let reg = registry();
+    let cfg = config(
+        LintExtends::Default,
+        &[("TEST001", serde_json::json!({ "max": 3 }))],
+    );
+    let only = |names: &[&str]| Linter::new(&reg, &cfg).unwrap().restrict_to(names);
+    assert_eq!(ids(&only(&["always"]).unwrap()), ["TEST002"]);
+    assert_eq!(ids(&only(&["Test"]).unwrap()), ["TEST001", "TEST002"]);
+    // A disabled rule is switched on, with its configured options.
+    let off = config(
+        LintExtends::None,
+        &[
+            ("TEST001", serde_json::json!({ "max": 3 })),
+            ("test", false.into()),
+        ],
+    );
+    let linter = Linter::new(&reg, &off)
+        .unwrap()
+        .restrict_to(["long-line"])
+        .unwrap();
+    assert_eq!(ids(&linter), ["TEST001"]);
+    assert_eq!(codes(&linter, "abc\nabcd\n"), ["TEST001"]);
+
+    let err = only(&["TEST001", "nope"]).unwrap_err();
+    assert!(err.to_string().contains("`nope`"), "{err}");
+}
+
+#[test]
+fn restrict_to_is_kept_by_inline_configuration() {
+    let reg = registry();
+    let linter = Linter::new(&reg, &LintConfig::default())
+        .unwrap()
+        .restrict_to(["TEST001"])
+        .unwrap();
+    // Enabling comments cannot add rules beyond the restriction ...
+    let text = "<!-- mrq-enable TEST002 -->\n<!-- markdownlint-configure-file { \"TEST002\": true, \"TEST001\": { \"max\": 200 } } -->\n";
+    let codes_found = codes(&linter, text);
+    assert!(
+        !codes_found.contains(&"TEST002".to_owned()),
+        "{codes_found:?}"
+    );
+    // ... configure-file still sets the options, and disabling comments still apply.
+    assert_eq!(codes_found, Vec::<String>::new());
+    let disabled = "<!-- mrq-disable-line --> a line that is long\n";
+    assert_eq!(codes(&linter, disabled), Vec::<String>::new());
 }

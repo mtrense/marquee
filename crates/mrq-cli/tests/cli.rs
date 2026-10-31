@@ -77,7 +77,6 @@ fn no_subcommand_is_a_usage_error() {
 fn stubbed_subcommands_report_not_implemented_and_exit_2() {
     let invocations: &[&[&str]] = &[
         &["render", "-o", "html", "README.md"],
-        &["lint", "--fix", "docs/"],
         &["fmt", "--check", "."],
         &["merge", "a.md", "b.md"],
         &["interpolate", "--in-place", "README.md"],
@@ -107,7 +106,7 @@ fn global_flags_are_accepted_anywhere() {
         .code(2)
         .stderr(predicate::str::contains("not implemented"));
     mrq()
-        .args(["lint", "-q", "--format", "sarif", "--flavor", "mkdocs"])
+        .args(["fmt", "-q", "--format", "sarif", "--flavor", "mkdocs"])
         .assert()
         .code(2)
         .stderr(predicate::str::contains("not implemented"));

@@ -70,6 +70,28 @@
 //! Every lint diagnostic is a [`Warning`](crate::diag::Severity::Warning) whose code is
 //! the rule id.
 //!
+//! [`Linter::restrict_to`] (`mrq lint --rule`) narrows the selection to named rules,
+//! aliases or tags, switching them on even where the config turns them off.
+//!
+//! # Fixes
+//!
+//! [`apply_fixes`] applies the fixes of one lint run that do not overlap, applying
+//! identical fixes once; [`Linter::fix`] repeats fix, re-parse and re-lint until nothing
+//! changes (at most [`MAX_FIX_PASSES`] times) and reports what is left:
+//!
+//! ```
+//! use mrq_core::Document;
+//! use mrq_core::config::LintConfig;
+//! use mrq_core::document::DocumentOptions;
+//! use mrq_core::lint::{Linter, Registry};
+//!
+//! let linter = Linter::new(&Registry::builtin(), &LintConfig::default())?.restrict_to(["MD022", "MD047"])?;
+//! let fixed = linter.fix(Document::parse("# Title\ntext"), &DocumentOptions::new())?;
+//! assert_eq!(fixed.document.text(), "# Title\n\ntext\n");
+//! assert!(fixed.diagnostics.is_empty());
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
 //! # Inline configuration
 //!
 //! HTML comments switch rules inside a document, with markdownlint's semantics.
@@ -99,12 +121,14 @@
 //! `configure-file` silently drops invalid JSON and entries that are not valid
 //! `lint.rules` settings; `default: true/false` sets `extends`.
 
+mod fix;
 mod linter;
 mod registry;
 mod rule;
 pub mod rules;
 mod suppress;
 
+pub use fix::{FixError, Fixed, MAX_FIX_PASSES, apply_fixes};
 pub use linter::Linter;
 pub use registry::Registry;
 pub use rule::{NoOptions, Rule, RuleMeta, RuleOptions};

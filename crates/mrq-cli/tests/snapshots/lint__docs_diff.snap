@@ -1,0 +1,22 @@
+---
+source: crates/mrq-cli/tests/lint.rs
+expression: out
+---
+--- a/docs/fixable.md
++++ b/docs/fixable.md
+@@ -1,4 +1,6 @@
+ # Fixable
+-Text with trailing spaces.   
++
++Text with trailing spaces.
++
+ * one
+ * two
+--- a/docs/mixed.md
++++ b/docs/mixed.md
+@@ -1,4 +1,5 @@
+ # Mixed
+ 
+ ### Skipped level
++
+ Text.

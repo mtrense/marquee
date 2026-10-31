@@ -7,7 +7,9 @@
 //!
 //! - `pass*.md` must be clean, `fail*.md` must not;
 //! - the findings and the text after applying every fix are an insta snapshot;
-//! - the fixed text must have no fixable findings left;
+//! - the text after one pass of fixes ([`apply_fixes`]) must have no fixable findings
+//!   left, and [`Linter::fix`] (fix, re-parse, re-lint until nothing changes) must leave
+//!   only the findings without a fix, none at all if every finding had one;
 //! - `<name>.markdownlint.txt` (what markdownlint-cli2 reported, recorded by
 //!   `cargo xtask lint-parity`) must match mrq's findings: line, column where
 //!   markdownlint gives one, rule and message; `<name>.markdownlint.fixed` (its `--fix`
@@ -21,8 +23,9 @@ use std::path::{Path, PathBuf};
 use mrq_core::Document;
 use mrq_core::config::{LintConfig, LintExtends};
 use mrq_core::diag::Diagnostic;
-use mrq_core::lint::{Linter, Registry};
-use mrq_core::source::{PositionEncoding, TextEdit};
+use mrq_core::document::DocumentOptions;
+use mrq_core::lint::{Linter, Registry, apply_fixes};
+use mrq_core::source::PositionEncoding;
 
 fn fixture_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/lint")
@@ -84,29 +87,6 @@ fn findings(doc: &Document, diagnostics: &[Diagnostic]) -> Vec<(usize, usize, St
     findings
 }
 
-/// The text after applying every fix whose edits do not overlap an earlier one. Like
-/// markdownlint, identical fixes (two findings inserting the same blank line) apply
-/// once.
-fn apply_fixes(doc: &Document, diagnostics: &[Diagnostic]) -> String {
-    let mut fixes: Vec<&Vec<TextEdit>> = diagnostics
-        .iter()
-        .filter_map(|diag| diag.fix.as_ref().map(|fix| &fix.edits))
-        .collect();
-    fixes.sort_by_key(|edits| edits.iter().map(|edit| edit.range.start).min());
-    fixes.dedup();
-    let mut edits = Vec::new();
-    let mut end = 0;
-    for fix in fixes {
-        let start = fix.iter().map(|edit| edit.range.start).min().unwrap_or(end);
-        if start < end && !edits.is_empty() {
-            continue;
-        }
-        end = fix.iter().map(|edit| edit.range.end).max().unwrap_or(start);
-        edits.extend(fix.iter().cloned());
-    }
-    doc.source().apply_edits(&edits).unwrap().text().to_owned()
-}
-
 /// Parses `line[:column] RULE message` lines recorded from markdownlint-cli2.
 fn recorded(text: &str) -> Vec<(usize, Option<usize>, String)> {
     let mut findings: Vec<_> = text
@@ -135,7 +115,7 @@ fn rule_fixtures() {
         let linter = linter(&rule);
         let diagnostics = linter.check(&doc);
         let found = findings(&doc, &diagnostics);
-        let fixed = apply_fixes(&doc, &diagnostics);
+        let fixed = apply_fixes(doc.text(), &diagnostics).unwrap();
         let label = format!("{}/{name}", rule.to_ascii_lowercase());
 
         if name.starts_with("pass") && !found.is_empty() {
@@ -215,6 +195,52 @@ fn rule_fixtures() {
     for (name, snapshot) in snapshots {
         insta::assert_snapshot!(name, snapshot);
     }
+}
+
+#[test]
+fn fixes_reach_a_clean_fixpoint() {
+    let mut failures = String::new();
+    let mut fixable = 0;
+    for (rule, path) in fixtures() {
+        let label = format!("{rule}/{}", path.file_name().unwrap().display());
+        let doc = Document::load(&path).unwrap();
+        let linter = linter(&rule);
+        let before = linter.check(&doc);
+        if !before.iter().any(|diag| diag.fix.is_some()) {
+            continue;
+        }
+        fixable += 1;
+        let fixed = linter.fix(doc, &DocumentOptions::new()).unwrap();
+        // What `fix` reports is what linting the fixed text from scratch finds.
+        let reparsed = DocumentOptions::new()
+            .parse_source(fixed.document.source().clone())
+            .unwrap();
+        let relinted = linter.check(&reparsed);
+        if relinted != fixed.diagnostics {
+            let _ = writeln!(failures, "{label}: reported findings differ from a re-lint");
+        }
+        let left: Vec<_> = relinted
+            .iter()
+            .map(|diag| {
+                (
+                    diag.code.as_str(),
+                    diag.message.as_str(),
+                    diag.fix.is_some(),
+                )
+            })
+            .collect();
+        if left.iter().any(|(_, _, fix)| *fix) {
+            let _ = writeln!(failures, "{label}: fixable findings left: {left:?}");
+        }
+        if before.iter().all(|diag| diag.fix.is_some()) && !left.is_empty() {
+            let _ = writeln!(
+                failures,
+                "{label}: every finding was fixable, left: {left:?}"
+            );
+        }
+    }
+    assert!(failures.is_empty(), "{failures}");
+    assert!(fixable > 20, "only {fixable} fixtures with fixes");
 }
 
 #[test]

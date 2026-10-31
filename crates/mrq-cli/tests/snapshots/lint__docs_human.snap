@@ -1,0 +1,58 @@
+---
+source: crates/mrq-cli/tests/lint.rs
+expression: out
+---
+MD022
+
+  ⚠ Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "#
+  │ Fixable"]
+   ╭─[docs/fixable.md:1:1]
+ 1 │ # Fixable
+   · ─────────
+ 2 │ Text with trailing spaces.   
+   ╰────
+  help: fix: Insert blank lines
+
+MD009
+
+  ⚠ Trailing spaces [Expected: 0 or 2; Actual: 3]
+   ╭─[docs/fixable.md:2:27]
+ 1 │ # Fixable
+ 2 │ Text with trailing spaces.   
+   ·                           ───
+ 3 │ * one
+   ╰────
+  help: fix: Delete the trailing spaces
+
+MD032
+
+  ⚠ Lists should be surrounded by blank lines [Context: "* one"]
+   ╭─[docs/fixable.md:3:1]
+ 2 │ Text with trailing spaces.   
+ 3 │ * one
+   · ─────
+ 4 │ * two
+   ╰────
+  help: fix: Insert a blank line
+
+MD001
+
+  ⚠ Heading levels should only increment by one level at a time [Expected: h2; Actual: h3]
+   ╭─[docs/mixed.md:3:1]
+ 2 │ 
+ 3 │ ### Skipped level
+   · ─────────────────
+ 4 │ Text.
+   ╰────
+
+MD022
+
+  ⚠ Headings should be surrounded by blank lines [Expected: 1; Actual: 0; Below] [Context: "###
+  │ Skipped level"]
+   ╭─[docs/mixed.md:3:1]
+ 2 │ 
+ 3 │ ### Skipped level
+   · ─────────────────
+ 4 │ Text.
+   ╰────
+  help: fix: Insert blank lines
