@@ -227,6 +227,7 @@ A canonical formatter for Markdown, in the spirit of rustfmt and prettier. It no
 - table column alignment, with Unicode width taken into account
 - ordered-list numbering (`one`, `ordered` or `preserve`)
 - blank lines between blocks, trailing whitespace and the final newline
+- flavor syntax: callouts, wikilinks and tags (`obsidian`), admonitions with their bodies re-indented, heading attributes, definition lists and abbreviations (`mkdocs`)
 - prose wrapping: `preserve` (default), `never`, `width` (wrap at N columns) or `sentence` (one sentence per line)
 - code inside fenced blocks, optionally, by calling configured external formatters (e.g. `rustfmt` for `rust`)
 

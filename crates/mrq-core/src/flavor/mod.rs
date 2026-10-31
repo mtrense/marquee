@@ -1,5 +1,5 @@
-//! Markdown flavors: which syntax is recognized, how anchors are slugged, and (later) how
-//! flavor syntax is printed.
+//! Markdown flavors: which syntax is recognized, how anchors are slugged, and how flavor
+//! syntax is printed.
 //!
 //! A [`Flavor`] is data plus hooks:
 //!
@@ -7,7 +7,9 @@
 //! - [`slugger`](Flavor::slugger): a fresh per-document [`Slugger`] for heading anchors,
 //! - [`passes`](Flavor::passes): [`Pass`]es that rewrite the parsed tree to recognize
 //!   syntax the parser does not know (admonitions, wikilinks, tags, …),
-//! - [`printer_hooks`](Flavor::printer_hooks): flavor-specific printing (placeholder).
+//! - [`printer_hooks`](Flavor::printer_hooks): [`PrinterHooks`] that tell the printer
+//!   which text would be read as flavor syntax (and must be escaped) and which nodes to
+//!   print from their source.
 //!
 //! [`parse`] runs the whole pipeline for one document: split off frontmatter, parse the
 //! body with the flavor's options, run the passes, then recognize the flavor-independent
@@ -75,6 +77,7 @@ pub use slug::{
     GithubSlugger, MkdocsSlugger, ObsidianSlugger, Slugger, github_slug, mkdocs_slug,
     obsidian_anchor,
 };
+pub(crate) use text::repeated_prefix;
 
 use crate::ast::{Ast, NodeId, NodeKind};
 use crate::diag::Diagnostic;
@@ -123,12 +126,64 @@ pub trait Flavor: fmt::Debug + Send + Sync {
     }
 }
 
-/// Flavor-specific printing rules for the Markdown printer.
+/// Flavor-specific printing rules for the Markdown printer ([`crate::fmt`]).
 ///
-/// A placeholder: it has no methods yet. The printer (M6) and the flavor printers (M6.5)
-/// add methods here, each with a default that defers to the generic printer, so existing
-/// implementations keep compiling.
-pub trait PrinterHooks: fmt::Debug + Send + Sync {}
+/// The printer prints every node kind the same way in every flavor (an admonition as
+/// `!!! kind`, a wikilink as `[[…]]`); what depends on the flavor is which text would
+/// be read as its syntax when the printed document is parsed again, and so must be
+/// escaped, and which nodes are better printed from their source. Every method has a
+/// default that adds nothing to the generic rules (`CommonMark`, GFM and the enabled
+/// [`ParseOptions`]).
+pub trait PrinterHooks: fmt::Debug + Send + Sync {
+    /// Whether the character at byte `at` of `text.literal` must be escaped (written
+    /// with a `\` before it) so that it stays text; `false` by default.
+    fn escapes(&self, text: &EscapeContext<'_>, at: usize) -> bool {
+        let _ = (text, at);
+        false
+    }
+
+    /// Whether a backslash before the ASCII punctuation `c` makes it plain text in this
+    /// flavor; where it does not (mkdocs reads `\[` as the start of math), an escaped
+    /// `c` is written as a character reference (`&#91;`) instead. `true` by default.
+    fn backslash_escapes(&self, c: char) -> bool {
+        let _ = c;
+        true
+    }
+
+    /// The byte offset of the character to escape when a line of a paragraph (or the
+    /// text of another block) starts with `line`, for flavor syntax that starts a block
+    /// at the start of a line; `None` by default.
+    fn line_start_marker(&self, line: &str) -> Option<usize> {
+        let _ = line;
+        None
+    }
+
+    /// Whether nodes of `kind` are printed from their source, as written (with the
+    /// prefixes of the containers they are in replaced by the printed ones), instead of
+    /// by the generic printer: for extension nodes whose syntax the generic printer
+    /// does not write the way the flavor reads it. `false` by default.
+    fn verbatim(&self, kind: &NodeKind) -> bool {
+        let _ = kind;
+        false
+    }
+}
+
+/// A text node being escaped by the printer, for [`PrinterHooks::escapes`].
+#[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
+pub struct EscapeContext<'a> {
+    /// The text, with escapes resolved.
+    pub literal: &'a str,
+    /// What is printed right before the text: `Some('\n')` at the start of a line,
+    /// `None` at the start of its parent's children elsewhere (of emphasis, a link
+    /// text), else the last character printed.
+    pub before: Option<char>,
+    /// What is printed right after it, where that is known: `Some('\n')` at the end of a
+    /// line, `Some('\\')` before a hard break; `None` otherwise.
+    pub after: Option<char>,
+    /// The text is the last child of a heading.
+    pub ends_heading: bool,
+}
 
 /// One document parsed by [`parse`].
 #[derive(Debug, Clone)]

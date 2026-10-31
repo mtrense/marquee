@@ -20,3 +20,8 @@ cc 4e013c7a511eef02cfe48e6dc96dd11eb0df4fa0acb6a9f299c8cf9820d57935 # shrinks to
 cc d4b0da00b0545a7c455ec29aa771d69518853df3e565ced16be93e0dd7aa4762 # shrinks to src = "www.x.com\n\\\na\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
 cc 3b29c28f23b39b1d8803143171237503092698830662ab5403d7371e7b2e8531 # shrinks to src = "- > a\n  >\n  a a\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
 cc 8825bcf7b9b7cf6012a9b32c0bf76e525d97b845fed5b529dee13cf8b0a3152e # shrinks to src = "- a\n  :--\n  a a\n  |\n  a\n\n[ref]: /r\n\n[^1]: note\n", wrap = Never, width = 1
+cc 264b83273cc43975b9fd14ec3d387ceacd26957bdba19b16eeb0a340806e4745 # shrinks to (flavor, src) = ("mkdocs", "a\n:  \na\n"), wrap = Preserve, width = 1
+cc ba4ca5a0884c3926ec25176c3ca132981343cc3c1365b13677ff8c6f050ceb56 # shrinks to (flavor, src) = ("obsidian", "> [!note] T\n> --- -\n"), wrap = Preserve, width = 1
+cc 94386fdffde23d3d59af6f9bd5ea69c51c192be1f70c571f366430e357bfded3 # shrinks to (flavor, src) = ("mkdocs", "- !!! a\na\n:   x\n"), wrap = Preserve, width = 1
+cc 381aa36a1382a9c401818898315f5b5227de24ff0a378dec41e8f790a9ece278 # shrinks to (flavor, src) = ("mkdocs", "- !!! a\n  +\n"), wrap = Preserve, width = 1
+cc 013e5e056616aa7802d1a16c083a197b4a509994b1354d525463abd989d3b779 # shrinks to (flavor, src) = ("mkdocs", "- ---\n  a\n  a\n  -\n"), wrap = Preserve, width = 1

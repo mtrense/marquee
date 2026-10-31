@@ -37,6 +37,7 @@
 use std::collections::VecDeque;
 
 use crate::ast::{Admonition, Ast, Fold, NodeId, NodeKind, NodeType, Span};
+use crate::flavor::text::repeated_prefix;
 use crate::flavor::{Pass, PassContext};
 use crate::parse::Parser as _;
 
@@ -149,19 +150,6 @@ enum Line {
     Blank,
     /// Ends the body.
     End,
-}
-
-/// How many leading bytes of `line` repeat `prefix`: `>` and tabs as they are, a space
-/// for anything else.
-fn repeated_prefix(prefix: &str, line: &str) -> usize {
-    prefix
-        .bytes()
-        .zip(line.bytes())
-        .take_while(|&(p, l)| match p {
-            b'>' | b'\t' => l == p,
-            _ => l == b' ',
-        })
-        .count()
 }
 
 /// Classifies a body candidate `line` of a header with `prefix`.
@@ -318,14 +306,19 @@ fn convert(
     reparsed
 }
 
-/// Cuts `paragraph` down to the children before the line break that precedes `at`.
-/// Returns `false`, leaving it alone, if nothing would be left.
+/// Cuts `paragraph` down to the children before the line break that precedes `at`
+/// (and any breaks before that, as a hard break leaves). Returns `false`, leaving it
+/// alone, if nothing would be left.
 fn truncate_before(ast: &mut Ast, paragraph: NodeId, at: usize) -> bool {
-    let keep = ast
-        .children(paragraph)
+    let children = ast.children(paragraph);
+    let first = children
         .iter()
         .position(|&id| ast.span(id).start >= at)
-        .map_or(0, |first| first.saturating_sub(1));
+        .unwrap_or(0);
+    let keep = children[..first]
+        .iter()
+        .rposition(|&id| !matches!(ast.kind(id), NodeKind::SoftBreak | NodeKind::LineBreak))
+        .map_or(0, |last| last + 1);
     if keep == 0 {
         return false;
     }

@@ -7,6 +7,7 @@ use std::fs;
 use std::path::Path;
 
 use mrq_core::Document;
+use mrq_core::ast::NodeKind;
 use mrq_core::config::{CodeFence, Emphasis, FmtConfig, ListMarker, OrderedList, Strong, Wrap};
 use mrq_core::document::DocumentOptions;
 use mrq_core::fmt::format;
@@ -447,46 +448,186 @@ fn tables_and_footnotes_print() {
     );
 }
 
-/// The fixtures in `tests/fixtures/fmt/`: each `<name>.md` formats to `<name>.out.md`,
-/// which formats to itself, and both render to the same HTML. An optional
-/// `<name>.fmt.yml` holds the `fmt` settings to format with.
-#[test]
-fn fixtures_format_to_their_expected_output() {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/fmt");
-    let mut inputs: Vec<_> = fs::read_dir(&dir)
+/// The Markdown files of `dir` (not the `.out.md` ones), sorted.
+fn markdown_files(dir: &Path, outputs: bool) -> Vec<std::path::PathBuf> {
+    let mut files: Vec<_> = fs::read_dir(dir)
         .unwrap()
         .map(|entry| entry.unwrap().path())
         .filter(|path| {
             path.extension().is_some_and(|ext| ext == "md")
-                && !path
-                    .file_stem()
-                    .unwrap()
-                    .to_string_lossy()
-                    .ends_with(".out")
+                && (outputs
+                    || !path
+                        .file_stem()
+                        .unwrap()
+                        .to_string_lossy()
+                        .ends_with(".out"))
         })
         .collect();
-    inputs.sort();
-    assert!(inputs.len() > 1, "no fixtures in {}", dir.display());
-    for input in inputs {
-        let src = fs::read_to_string(&input).unwrap();
-        let expected = fs::read_to_string(input.with_extension("out.md")).unwrap();
-        let config = match fs::read_to_string(input.with_extension("fmt.yml")) {
-            Ok(yaml) => serde_saphyr::from_str(&yaml).unwrap(),
-            Err(_) => FmtConfig::default(),
+    files.sort();
+    assert!(files.len() > 1, "no fixtures in {}", dir.display());
+    files
+}
+
+/// The JSON projection of `doc` as a structure to compare documents by: without ids,
+/// positions and the choices the printer makes (heading style, list markers and
+/// delimiters, code fences, container prefixes inside verbatim literals), with adjacent
+/// text nodes joined. Unless `wrap` is
+/// `preserve`, soft breaks count as spaces and whitespace runs in text as one space.
+fn structure(doc: &Document, wrap: Wrap) -> serde_json::Value {
+    fn normalize(node: &mut serde_json::Value, wrap: Wrap) {
+        let serde_json::Value::Object(map) = node else {
+            return;
         };
-        let name = input.display();
-        assert_eq!(fmt_with(&src, &config), expected, "{name}");
-        assert_eq!(
-            fmt_with(&expected, &config),
-            expected,
-            "{name}: not idempotent"
+        for key in ["id", "position", "setext", "marker", "delimiter", "fence"] {
+            map.remove(key);
+        }
+        // An HTML block that the admonitions pass re-parsed lacks its line ending.
+        if map["type"] == "html"
+            && let Some(serde_json::Value::String(value)) = map.get_mut("value")
+        {
+            value.truncate(value.trim_end_matches('\n').len());
+        }
+        // Obsidian comments and mkdocs math hold their source verbatim, container
+        // prefixes included, which differ where a line continued a paragraph lazily.
+        let verbatim = map["type"] == "math" || map.get("syntax").is_some_and(|s| s == "percent");
+        if verbatim && let Some(serde_json::Value::String(value)) = map.get_mut("value") {
+            let lines: Vec<&str> = value.split('\n').collect();
+            *value = std::iter::once(lines[0])
+                .chain(
+                    lines[1..]
+                        .iter()
+                        .map(|line| line.trim_start_matches([' ', '\t', '>'])),
+                )
+                .collect::<Vec<_>>()
+                .join("\n");
+        }
+        if let Some(serde_json::Value::Object(attrs)) = map.get_mut("attrs") {
+            attrs.remove("position");
+        }
+        let Some(serde_json::Value::Array(children)) = map.get_mut("children") else {
+            return;
+        };
+        let mut joined: Vec<serde_json::Value> = Vec::new();
+        for mut child in children.drain(..) {
+            if wrap != Wrap::Preserve && child["type"] == "softBreak" {
+                child = serde_json::json!({ "type": "text", "value": " " });
+            }
+            normalize(&mut child, wrap);
+            match joined.last_mut() {
+                Some(last) if last["type"] == "text" && child["type"] == "text" => {
+                    let value = format!(
+                        "{}{}",
+                        last["value"].as_str().unwrap(),
+                        child["value"].as_str().unwrap()
+                    );
+                    last["value"] = value.into();
+                }
+                _ => joined.push(child),
+            }
+        }
+        if wrap != Wrap::Preserve {
+            for child in &mut joined {
+                if child["type"] == "text" {
+                    let value = child["value"].as_str().unwrap();
+                    let collapsed = value.split_whitespace().collect::<Vec<_>>().join(" ");
+                    let pad = |yes: bool| if yes { " " } else { "" };
+                    let value = format!(
+                        "{}{collapsed}{}",
+                        pad(value.starts_with(char::is_whitespace)),
+                        pad(value.ends_with(char::is_whitespace) && !collapsed.is_empty())
+                    );
+                    child["value"] = value.into();
+                }
+            }
+        }
+        *children = joined;
+    }
+    let mut json = serde_json::to_value(doc.to_json_ast()).unwrap();
+    normalize(&mut json, wrap);
+    json
+}
+
+/// Asserts that `after` has the [`structure`] of `before`, showing where it differs.
+fn assert_same_structure(before: &Document, after: &Document, wrap: Wrap, name: &str) {
+    let pretty = |doc| serde_json::to_string_pretty(&structure(doc, wrap)).unwrap();
+    let (before, after) = (pretty(before), pretty(after));
+    if before != after {
+        let (a, b): (Vec<_>, Vec<_>) = (before.lines().collect(), after.lines().collect());
+        let at = a
+            .iter()
+            .zip(&b)
+            .position(|(x, y)| x != y)
+            .unwrap_or(a.len().min(b.len()));
+        let from = at.saturating_sub(8);
+        panic!(
+            "{name}: the structure differs at line {at}\n--- before\n{}\n--- after\n{}",
+            a[from..(at + 4).min(a.len())].join("\n"),
+            b[from..(at + 4).min(b.len())].join("\n")
         );
-        let options = Document::parse(&src).flavor().parse_options();
-        let (before, after) = (html(&src, options), html(&expected, options));
-        assert!(
-            same_html(&before, &after, config.wrap),
-            "{name}: HTML differs\n{before}---\n{after}"
-        );
+    }
+}
+
+/// The fixtures in `tests/fixtures/fmt/`: each `<name>.md` formats to `<name>.out.md`,
+/// which formats to itself, and both parse to the same [`structure`]. Fixtures at the
+/// top level are GFM and also render to the same HTML; those in `obsidian/` and
+/// `mkdocs/` are parsed with that flavor (comrak's HTML knows nothing of it). An
+/// optional `<name>.fmt.yml` holds the `fmt` settings to format with.
+#[test]
+fn fixtures_format_to_their_expected_output() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/fmt");
+    for flavor in ["gfm", "obsidian", "mkdocs"] {
+        let dir = if flavor == "gfm" {
+            root.clone()
+        } else {
+            root.join(flavor)
+        };
+        for input in markdown_files(&dir, false) {
+            let src = fs::read_to_string(&input).unwrap();
+            let expected = fs::read_to_string(input.with_extension("out.md")).unwrap();
+            let config: FmtConfig = match fs::read_to_string(input.with_extension("fmt.yml")) {
+                Ok(yaml) => serde_saphyr::from_str(&yaml).unwrap(),
+                Err(_) => FmtConfig::default(),
+            };
+            let name = input.display();
+            let doc = parse(&src, flavor);
+            assert_eq!(format(&doc, &config), expected, "{name}");
+            let reparsed = parse(&expected, flavor);
+            assert_eq!(
+                format(&reparsed, &config),
+                expected,
+                "{name}: not idempotent"
+            );
+            assert_same_structure(&doc, &reparsed, config.wrap, &name.to_string());
+            if flavor == "gfm" {
+                let options = doc.flavor().parse_options();
+                let (before, after) = (html(&src, options), html(&expected, options));
+                assert!(
+                    same_html(&before, &after, config.wrap),
+                    "{name}: HTML differs\n{before}---\n{after}"
+                );
+            }
+        }
+    }
+}
+
+/// The flavor parser fixtures (`tests/fixtures/obsidian`, `tests/fixtures/mkdocs`) keep
+/// their structure under fmt, in every wrap mode, and format idempotently.
+#[test]
+fn flavor_parser_fixtures_keep_their_structure() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+    for flavor in ["obsidian", "mkdocs"] {
+        for input in markdown_files(&root.join(flavor), true) {
+            let src = fs::read_to_string(&input).unwrap();
+            let doc = parse(&src, flavor);
+            let configs = std::iter::once(FmtConfig::default()).chain(wrap_modes());
+            for config in configs {
+                let name = format!("{} ({:?} {})", input.display(), config.wrap, config.width);
+                let once = format(&doc, &config);
+                let reparsed = parse(&once, flavor);
+                assert_same_structure(&doc, &reparsed, config.wrap, &format!("{name}\n{once}"));
+                assert_eq!(format(&reparsed, &config), once, "{name}: not idempotent");
+            }
+        }
     }
 }
 
@@ -584,20 +725,114 @@ fn text_near_autolinks_and_html_keeps_its_meaning() {
     assert_eq!(fmt("\\<b> a\\&amp;\n"), "\\<b> a\\&amp;\n");
 }
 
+fn fmt_flavor(src: &str, flavor: &str) -> String {
+    format(&parse(src, flavor), &FmtConfig::default())
+}
+
 #[test]
-fn flavor_syntax_prints_with_generic_rules() {
+fn flavor_syntax_prints_in_its_canonical_form() {
     let obsidian = "---\ntags: [a]\n---\n\n# T\n\n> [!tip]- Title\n> body\n\n[[Note#H|alias]] ![[img.png]] #tag %%c%% ==hi==\n";
+    assert_eq!(fmt_flavor(obsidian, "obsidian"), obsidian);
     assert_eq!(
-        format(&parse(obsidian, "obsidian"), &FmtConfig::default()),
-        obsidian
+        fmt_flavor(">[!tip]-  A\nb\n\n[[ a # b | c ]]\n", "obsidian"),
+        "> [!tip]- A\n> b\n\n[[a#b|c]]\n"
     );
-    let mkdocs = "!!! note \"T\"\n    body\n\n*[HTML]: Hyper\n\n## H {#id .c}\n";
+    let mkdocs = "!!! note \"T\"\n    body\n\n*[HTML]: Hyper\n*[CSS]: Style\n\n## H {#id .c}\n";
+    assert_eq!(fmt_flavor(mkdocs, "mkdocs"), mkdocs);
+    // Bodies are re-indented by four spaces, attributes and definitions normalized.
     assert_eq!(
-        format(&parse(mkdocs, "mkdocs"), &FmtConfig::default()),
-        mkdocs
+        fmt_flavor(
+            "!!!note   \"T\"\n\tbody\n\n## H {: .c  #id k='v w' b }\n",
+            "mkdocs"
+        ),
+        "!!! note \"T\"\n    body\n\n## H {#id .c k=\"v w\" b}\n"
+    );
+    assert_eq!(
+        fmt_flavor("T\n: a\n\nU\n\n:  b\n", "mkdocs"),
+        "T\n:   a\n\nU\n\n:   b\n"
     );
     let gfm = "> [!NOTE]\n> Be careful\n\n$x^2$ and $$y$$\n";
     assert_eq!(fmt(gfm), gfm);
+}
+
+#[test]
+fn text_that_looks_like_flavor_syntax_is_escaped() {
+    // Tags where a tag may start, and every `%%`.
+    assert_eq!(
+        fmt_flavor(
+            "\\#tag *\\#em* a\\#b \\#1984 \\# x \\%%a\\%% 100%%%\n",
+            "obsidian"
+        ),
+        "\\#tag *\\#em* a#b #1984 # x \\%%a\\%% 100\\%\\%%\n"
+    );
+    // Heading attributes, admonition headers, and `\\[`, which opens math.
+    assert_eq!(
+        fmt_flavor("## A \\{#x}\n\nb\n\\!!! c\n\n[d] \\(e\n", "mkdocs"),
+        "## A \\{#x}\n\nb\n\\!!! c\n\n&#91;d\\] (e\n"
+    );
+    // Other flavors read none of it.
+    assert_eq!(
+        fmt("\\#tag \\%%a%% ## A {#x}\nb\n!!! c\n"),
+        "#tag %%a%% ## A {#x}\nb\n!!! c\n"
+    );
+}
+
+#[test]
+fn verbatim_flavor_syntax_keeps_its_source_in_containers() {
+    // `%%` comments and backslash math are literal source, prefixes included.
+    for (src, flavor) in [
+        ("> a %%b\n> c%% d\n", "obsidian"),
+        ("> %%\n> x\n>\n> y\n> %%\n", "obsidian"),
+        ("- a %%b\n  c%%\n", "obsidian"),
+        ("> \\[\n> a\n> \\] \\( b \\)\n", "mkdocs"),
+    ] {
+        assert_eq!(fmt_flavor(src, flavor), src);
+    }
+}
+
+/// A flavor that prints GFM alerts as they were written.
+#[derive(Debug)]
+struct KeepAlerts;
+
+impl mrq_core::flavor::PrinterHooks for KeepAlerts {
+    fn verbatim(&self, kind: &mrq_core::ast::NodeKind) -> bool {
+        matches!(kind, NodeKind::Callout(_))
+    }
+}
+
+impl mrq_core::flavor::Flavor for KeepAlerts {
+    fn name(&self) -> &'static str {
+        "keep-alerts"
+    }
+
+    fn parse_options(&self) -> ParseOptions {
+        ParseOptions::gfm()
+    }
+
+    fn slugger(&self) -> Box<dyn mrq_core::flavor::Slugger> {
+        Box::new(mrq_core::flavor::GithubSlugger::new())
+    }
+
+    fn printer_hooks(&self) -> Option<&dyn mrq_core::flavor::PrinterHooks> {
+        Some(self)
+    }
+}
+
+#[test]
+fn printer_hooks_can_print_nodes_from_their_source() {
+    let mut registry = mrq_core::flavor::Registry::builtin();
+    registry.register(std::sync::Arc::new(KeepAlerts));
+    let options = DocumentOptions::new()
+        .registry(registry)
+        .flavor("keep-alerts");
+    // The alert keeps its spacing; the list item's indentation is the printer's.
+    let doc = options
+        .parse("* > [!NOTE]\n  >Be  *careful*\n\n  _x_\n")
+        .unwrap();
+    assert_eq!(
+        format(&doc, &FmtConfig::default()),
+        "- > [!NOTE]\n  >Be  *careful*\n\n  *x*\n"
+    );
 }
 
 #[test]
@@ -726,10 +961,10 @@ fn wrapping_never_breaks_inside_atoms() {
 
 #[test]
 fn wrapped_lines_never_start_a_block() {
-    let src = "x - x + x * x # x > x 1. x 2) x === x --- x _ _ _ x <div> x ~~~ x !!! note x\n";
+    let src = "x - x + x * x # x > x 1. x 2) x === x --- x _ _ _ x <div> x ~~~ x\n";
     assert_eq!(
         wrapped(src, Wrap::Width, 1),
-        "x\n\\-\nx\n\\+\nx\n\\*\nx\n\\#\nx\n\\>\nx\n1\\.\nx\n2\\)\nx\n\\===\nx\n\\---\nx\n_\n_\n_\nx <div>\nx\n\\~\\~\\~\nx\n\\!!!\nnote\nx\n"
+        "x\n\\-\nx\n\\+\nx\n\\*\nx\n\\#\nx\n\\>\nx\n1\\.\nx\n2\\)\nx\n\\===\nx\n\\---\nx\n_\n_\n_\nx <div>\nx\n\\~\\~\\~\nx\n"
     );
     assert_eq!(wrapped("aaaaa _ _ _\n", Wrap::Width, 5), "aaaaa\n\\_ _ _\n");
     // A table delimiter row and an HTML block start from plain text, a definition.
@@ -742,7 +977,15 @@ fn wrapped_lines_never_start_a_block() {
         format(&parse("a|b -|- \\<div\n", "gfm"), &config),
         "a|b\n\\-|-\n\\<div\n"
     );
-    assert_eq!(format(&parse("a : b\n", "mkdocs"), &config), "a\n\\:\nb\n");
+    // Flavor syntax only where the flavor reads it: admonition headers in mkdocs.
+    assert_eq!(
+        format(&parse("a : b !!! c ??? d\n", "mkdocs"), &config),
+        "a\n\\:\nb\n\\!!!\nc\n\\???\nd\n"
+    );
+    assert_eq!(
+        format(&parse("a !!! c ??? d\n", "gfm"), &config),
+        "a\n!!!\nc\n???\nd\n"
+    );
 }
 
 #[test]
@@ -845,5 +1088,134 @@ proptest! {
         );
         let twice = format(&parse(&once, "gfm"), &config);
         prop_assert_eq!(&once, &twice, "not idempotent: {:?}", src);
+    }
+}
+
+/// Paragraph-ish Markdown with the syntax of `flavor` (and text that looks like it)
+/// inside the flavor's containers, as [`wrappable`] is for GFM.
+fn flavored(flavor: &'static str) -> impl Strategy<Value = String> {
+    let syntax: Vec<&str> = if flavor == "obsidian" {
+        vec![
+            "[[a]]",
+            "[[a#b|c d]]",
+            "![[x.png]]",
+            "![[x|100]]",
+            "#tag",
+            "#1",
+            "#a/b",
+            "#",
+            "\\#t",
+            "%%c%%",
+            "%%c",
+            "d%%",
+            "%%",
+            "\\%%",
+            "50%",
+            "%",
+            "[!note]",
+            "[[",
+            "]]",
+            "==hi==",
+            "$x$",
+            "!",
+        ]
+    } else {
+        vec![
+            "!!!", "???", "???+", "!!! note", "\"t\"", ":", ":   x", "*[A]:", "*[", "]:",
+            "\\(x\\)", "\\[y\\]", "\\(", "\\)", "\\[", "\\]", "(", ")", "[", "]", "{#x}", "{", "}",
+            "$x$", "==hi==",
+        ]
+    };
+    let word = prop_oneof![
+        3 => "[a-z]{1,6}",
+        3 => prop::sample::select(syntax).prop_map(str::to_owned),
+        1 => prop::sample::select(vec![
+            "-", "+", "*", "1.", "#", ">", "===", "---", "`code`", "[link](/u)", "*em*",
+            "**b**", "\\", "&amp;", "<span>",
+        ])
+        .prop_map(str::to_owned),
+    ];
+    let gap = prop_oneof![6 => Just(" "), 2 => Just("\n"), 1 => Just("  \n")];
+    let line = prop::collection::vec((word, gap), 1..20).prop_map(|words| {
+        words
+            .into_iter()
+            .flat_map(|(word, gap)| [word, gap.to_owned()])
+            .collect::<String>()
+    });
+    let prefixes = if flavor == "obsidian" {
+        vec![
+            ("", ""),
+            ("> ", "> "),
+            ("- ", "  "),
+            ("> [!note] T\n> ", "> "),
+            ("# ", ""),
+        ]
+    } else {
+        vec![
+            ("", ""),
+            ("> ", "> "),
+            ("- ", "  "),
+            ("!!! note\n    ", "    "),
+            ("Term\n:   ", "    "),
+            ("## ", ""),
+        ]
+    };
+    (prop::sample::select(prefixes), line).prop_map(|((first, rest), text)| {
+        let mut out = String::new();
+        for (i, line) in text.trim_end().lines().enumerate() {
+            out.push_str(if i == 0 { first } else { rest });
+            out.push_str(line);
+            out.push('\n');
+        }
+        out
+    })
+}
+
+proptest! {
+    /// Flavor syntax keeps its structure under fmt, wrapped or not, and formats
+    /// idempotently.
+    #[test]
+    fn flavor_syntax_keeps_its_structure(
+        (flavor, src) in prop::sample::select(vec!["obsidian", "mkdocs"])
+            .prop_flat_map(|flavor| (Just(flavor), flavored(flavor))),
+        wrap in prop::sample::select(vec![Wrap::Preserve, Wrap::Never, Wrap::Width, Wrap::Sentence]),
+        width in 1u16..40,
+    ) {
+        let doc = parse(&src, flavor);
+        // Known limits: an admonition header in a definition term splits it into
+        // blocks, which no term can hold; in a tight list item, an admonition header
+        // right before a definition list, a table or an empty item becomes a term, a
+        // table header or a setext heading; a line of a `%%` comment or math (verbatim
+        // source) that continued a paragraph in a container lazily may start a block
+        // once it is indented.
+        let ast = doc.ast();
+        prop_assume!(ast.descendants(ast.root()).all(|id| match ast.kind(id) {
+            NodeKind::DefinitionTerm => ast.children(id).len() == 1,
+            NodeKind::Admonition(_) => !ast.next_sibling(id).is_some_and(|next| {
+                match ast.kind(next) {
+                    NodeKind::DefinitionList | NodeKind::Table(_) => true,
+                    NodeKind::List(_) => ast.children(ast.children(next)[0]).is_empty(),
+                    _ => false,
+                }
+            }),
+            NodeKind::Math(_) | NodeKind::Comment(_) => {
+                let span = ast.span(id);
+                let nested = ast.ancestors(id).filter(|&a| ast.kind(a).is_block()).count() > 2;
+                !nested || !src[span.start..span.end].contains('\n')
+            }
+            _ => true,
+        }));
+        let config = FmtConfig { wrap, width, ..FmtConfig::default() };
+        let once = format(&doc, &config);
+        let reparsed = parse(&once, flavor);
+        let (before, after) = (structure(&doc, wrap), structure(&reparsed, wrap));
+        prop_assert!(
+            before == after,
+            "{flavor} {src:?}\n--- formatted\n{once}--- before\n{}\n--- after\n{}",
+            serde_json::to_string(&before).unwrap(),
+            serde_json::to_string(&after).unwrap()
+        );
+        let twice = format(&reparsed, &config);
+        prop_assert_eq!(&once, &twice, "not idempotent: {} {:?}", flavor, src);
     }
 }

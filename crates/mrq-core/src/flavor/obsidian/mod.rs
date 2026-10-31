@@ -16,13 +16,17 @@
 //!    paragraph are cut out of its text; a paragraph that is nothing but one `%%` comment
 //!    becomes a block-level comment, like a lone HTML comment does.
 //!
+//! The printer hooks ([`printer`]) escape text that the `inlines` pass would read as a
+//! tag or a comment.
+//!
 //! The user-facing summary is on [`Obsidian`]; the pass modules have the exact rules.
 
 mod callouts;
 mod comments;
 mod inlines;
+mod printer;
 
-use super::{Flavor, ObsidianSlugger, Pass, Slugger};
+use super::{Flavor, ObsidianSlugger, Pass, PrinterHooks, Slugger};
 use crate::parse::ParseOptions;
 
 /// [Obsidian](https://obsidian.md) Markdown: GFM plus wikilinks, embeds, callouts, tags,
@@ -94,5 +98,9 @@ impl Flavor for Obsidian {
             &comments::BlockComments,
             &inlines::Inlines,
         ]
+    }
+
+    fn printer_hooks(&self) -> Option<&dyn PrinterHooks> {
+        Some(&printer::ObsidianPrinter)
     }
 }

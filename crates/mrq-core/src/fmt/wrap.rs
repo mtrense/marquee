@@ -6,7 +6,7 @@
 //! never inside a code span, a link destination or title, an autolink, raw HTML, math
 //! or a comment, and never right before raw HTML or a comment (which could start an
 //! HTML block). Hard breaks always end a line. Every line is escaped where it would
-//! start a block ([`line_start_marker`]), once the lines are known.
+//! start a block (`Printer::line_start_marker`), once the lines are known.
 
 use std::ops::Range;
 
@@ -16,7 +16,6 @@ use unicode_width::UnicodeWidthStr;
 
 use super::Printer;
 use super::block::split_lines;
-use super::inline::line_start_marker;
 use crate::ast::NodeId;
 use crate::config::Wrap;
 
@@ -128,7 +127,7 @@ impl Printer<'_> {
                     && words
                         .first()
                         .is_some_and(|word| !flow.raw.iter().any(|raw| raw.start == word.1));
-                if starts_line && let Some(at) = line_start_marker(&line, self.syntax) {
+                if starts_line && let Some(at) = self.line_start_marker(&line) {
                     line.insert(at, '\\');
                 }
                 lines.push(line);

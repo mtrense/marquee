@@ -3,6 +3,7 @@
 //! wrapping.
 
 use std::collections::HashSet;
+use std::fmt::Write as _;
 use std::ops::Range;
 use std::sync::OnceLock;
 
@@ -12,6 +13,7 @@ use super::Printer;
 use super::refs::collapse_whitespace;
 use super::wrap::Flow;
 use crate::ast::{CommentSyntax, Link, LinkForm, NodeId, NodeKind, ReferenceStyle, WikiLink};
+use crate::flavor::EscapeContext;
 use crate::parse::ParseOptions;
 
 impl Printer<'_> {
@@ -84,6 +86,10 @@ struct TextContext {
     after_bracket: bool,
     /// A `[` follows, so a trailing `!` would make an image.
     before_bracket: bool,
+    /// It is the first child of its parent.
+    starts_parent: bool,
+    /// It is the last child of a heading.
+    ends_heading: bool,
 }
 
 impl<'p, 'a> Inlines<'p, 'a> {
@@ -137,6 +143,13 @@ impl<'p, 'a> Inlines<'p, 'a> {
 
     fn node(&mut self, id: NodeId) {
         let ast = self.printer.ast;
+        if self.printer.is_verbatim(id) {
+            let span = ast.span(id);
+            let source = &self.printer.src[span.start..span.end];
+            let text = self.printer.unprefixed(source, self.block_start(id));
+            self.raw(&text);
+            return;
+        }
         match ast.kind(id) {
             NodeKind::Text(text) => {
                 let context = self.text_context(id);
@@ -206,22 +219,42 @@ impl<'p, 'a> Inlines<'p, 'a> {
                 self.out.push_str(&tag.name);
             }
             NodeKind::Math(math) => {
-                let fence = if math.display { "$$" } else { "$" };
-                self.out.push_str(fence);
-                self.out.push_str(&math.literal);
-                self.out.push_str(fence);
-            }
-            NodeKind::Comment(comment) => {
-                let (open, close) = if comment.syntax == CommentSyntax::Percent {
-                    ("%%", "%%")
-                } else {
-                    ("<!--", "-->")
+                // mkdocs' `\(…\)` and `\[…\]` keep their form: their literal is the
+                // source between the delimiters, which `$` may not delimit.
+                let span = ast.span(id);
+                let (open, close) = match self.printer.src.get(span.start..span.start + 2) {
+                    Some("\\(") => ("\\(", "\\)"),
+                    Some("\\[") => ("\\[", "\\]"),
+                    _ if math.display => ("$$", "$$"),
+                    _ => ("$", "$"),
                 };
-                self.raw(&format!("{open}{}{close}", comment.literal));
+                let literal = if open.starts_with('\\') {
+                    self.printer.unprefixed(&math.literal, self.block_start(id))
+                } else {
+                    math.literal.clone()
+                };
+                self.out.push_str(open);
+                self.out.push_str(&literal);
+                self.out.push_str(close);
             }
+            NodeKind::Comment(comment) if comment.syntax == CommentSyntax::Percent => {
+                // The literal is the source between the delimiters, prefixes included.
+                let literal = self.printer.unprefixed(&comment.literal, self.block_start(id));
+                self.raw(&format!("%%{literal}%%"));
+            }
+            NodeKind::Comment(comment) => self.raw(&format!("<!--{}-->", comment.literal)),
             // Blocks never appear among inlines.
             _ => {}
         }
+    }
+
+    /// The start of the block whose inlines `id` is among.
+    fn block_start(&self, id: NodeId) -> usize {
+        let ast = self.printer.ast;
+        let block = std::iter::successors(ast.parent(id), |&p| ast.parent(p))
+            .find(|&p| ast.kind(p).is_block())
+            .unwrap_or(id);
+        ast.span(block).start
     }
 
     /// `delimiter`, the children, `delimiter`.
@@ -386,6 +419,11 @@ impl<'p, 'a> Inlines<'p, 'a> {
                 NodeKind::FootnoteReference(_) | NodeKind::WikiLink(_) => true,
                 _ => false,
             }),
+            starts_parent: prev.is_none(),
+            ends_heading: next.is_none()
+                && ast
+                    .parent(id)
+                    .is_some_and(|p| matches!(ast.kind(p), NodeKind::Heading(_))),
         }
     }
 
@@ -395,7 +433,7 @@ impl<'p, 'a> Inlines<'p, 'a> {
         let chars: Vec<(usize, char)> = text.char_indices().collect();
         // A flow's lines are escaped once they are known.
         let marker_at = if context.line_start && self.flow.is_none() {
-            line_start_marker(text, syntax)
+            self.printer.line_start_marker(text)
         } else {
             None
         };
@@ -408,6 +446,17 @@ impl<'p, 'a> Inlines<'p, 'a> {
             Some('\\')
         } else {
             context.line_end.then_some('\n')
+        };
+        let hooks = self.printer.hooks;
+        let spot = EscapeContext {
+            literal: text,
+            before: if context.starts_parent && !context.line_start {
+                None
+            } else {
+                before
+            },
+            after,
+            ends_heading: context.ends_heading,
         };
         let mut out = String::with_capacity(text.len() + 8);
         for (i, &(at, c)) in chars.iter().enumerate() {
@@ -450,7 +499,12 @@ impl<'p, 'a> Inlines<'p, 'a> {
                 '!' => last && context.before_bracket,
                 '(' | ':' => first && context.after_bracket,
                 _ => false,
-            } || marker_at == Some(at);
+            } || marker_at == Some(at)
+                || hooks.is_some_and(|hooks| hooks.escapes(&spot, at));
+            if escape && hooks.is_some_and(|hooks| !hooks.backslash_escapes(c)) {
+                let _ = write!(out, "&#{};", u32::from(c));
+                continue;
+            }
             if escape {
                 out.push('\\');
             }
@@ -512,10 +566,12 @@ fn is_punctuation(c: char) -> bool {
 
 /// The byte offset of the character to escape when `text` starts a line (of a paragraph
 /// that has begun already): the first one of an ATX heading, block quote, bullet item,
-/// setext underline, thematic break, code fence, HTML block, table delimiter row,
-/// definition (with `syntax.description_lists`) or admonition header, the delimiter of
-/// an ordered item. `text` is a text node or a whole printed line, so markup it may
-/// start with (emphasis, a `==highlight==`, an autolink) is never escaped.
+/// setext underline, thematic break, code fence, HTML block, table delimiter row or
+/// definition (with `syntax.description_lists`), the delimiter of an ordered item.
+/// Flavor syntax is left to
+/// [`PrinterHooks::line_start_marker`](crate::flavor::PrinterHooks::line_start_marker).
+/// `text` is a text node or a whole printed line, so markup it may start with
+/// (emphasis, a `==highlight==`, an autolink) is never escaped.
 pub(super) fn line_start_marker(text: &str, syntax: ParseOptions) -> Option<usize> {
     let bytes = text.as_bytes();
     let blank_at = |i: usize| bytes.get(i).is_none_or(|b| matches!(b, b' ' | b'\t'));
@@ -534,7 +590,6 @@ pub(super) fn line_start_marker(text: &str, syntax: ParseOptions) -> Option<usiz
         b'~' => text.starts_with("~~~").then_some(0),
         b'<' => starts_html_block(text).then_some(0),
         b':' => (syntax.description_lists && blank_at(1)).then_some(0),
-        b'!' | b'?' => (text.starts_with("!!!") || text.starts_with("???")).then_some(0),
         b'0'..=b'9' => {
             let digits = bytes.iter().take_while(|b| b.is_ascii_digit()).count();
             (digits <= 9 && matches!(bytes.get(digits), Some(b'.' | b')')) && blank_at(digits + 1))

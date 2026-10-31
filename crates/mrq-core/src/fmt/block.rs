@@ -4,8 +4,8 @@
 use super::Printer;
 use super::wrap::Room;
 use crate::ast::{
-    Admonition, Callout, CodeBlock, CommentSyntax, Fold, FrontMatterFormat, Heading, List,
-    ListKind, NodeId, NodeKind, OrderedDelimiter, TaskState,
+    Admonition, Callout, CodeBlock, CommentSyntax, Fold, FrontMatterFormat, Heading, HeadingAttrs,
+    List, ListKind, NodeId, NodeKind, OrderedDelimiter, TaskState,
 };
 use crate::config::OrderedList;
 
@@ -79,7 +79,7 @@ impl Printer<'_> {
             if tight && after_quote && matches!(self.ast.kind(child), NodeKind::Paragraph) {
                 out.push(">".to_owned());
             }
-            push_block(&mut out, lines, tight);
+            push_block(&mut out, lines, self.joins_previous(child, tight));
         }
         // A list item ends with its last child; definitions after that, up to the next
         // item, are still inside it.
@@ -93,8 +93,55 @@ impl Printer<'_> {
         out
     }
 
+    /// Whether `id` follows its previous sibling without a blank line: in a tight
+    /// container, and where the source had none before definition details (which a
+    /// blank line makes loose) and between an abbreviation definition and the
+    /// paragraph or definition it was cut from.
+    fn joins_previous(&self, id: NodeId, tight: bool) -> bool {
+        let Some(prev) = self.ast.prev_sibling(id) else {
+            return tight;
+        };
+        match (self.ast.kind(prev), self.ast.kind(id)) {
+            (_, NodeKind::DefinitionDetails) => tight && !self.blank_line_between(prev, id),
+            // A `\` ending a definition would be a hard break before the next line.
+            (
+                NodeKind::AbbreviationDefinition(abbr),
+                NodeKind::AbbreviationDefinition(_) | NodeKind::Paragraph,
+            ) if abbr.expansion.ends_with('\\') => tight,
+            (
+                NodeKind::AbbreviationDefinition(_),
+                NodeKind::AbbreviationDefinition(_) | NodeKind::Paragraph,
+            )
+            | (NodeKind::Paragraph, NodeKind::AbbreviationDefinition(_)) => {
+                tight || !self.blank_line_between(prev, id)
+            }
+            _ => tight,
+        }
+    }
+
+    /// Whether the source has a blank line (or one of only quote markers) between the
+    /// end of `prev` and the start of `next`.
+    fn blank_line_between(&self, prev: NodeId, next: NodeId) -> bool {
+        let gap = self
+            .src
+            .get(self.ast.span(prev).end..self.ast.span(next).start)
+            .unwrap_or_default();
+        // The first piece ends `prev`'s line, the last one is the prefix of `next`'s.
+        let mut lines = gap.split('\n');
+        lines.next();
+        lines.rev().skip(1).any(|line| {
+            line.trim_matches(|c: char| c == '>' || c.is_whitespace())
+                .is_empty()
+        })
+    }
+
     /// One block at `place`. Lists also return the marker they used.
     fn block(&self, id: NodeId, place: Place) -> (Vec<String>, Option<Marker>) {
+        if self.is_verbatim(id) {
+            let span = self.ast.span(id);
+            let source = self.src.get(span.start..span.end).unwrap_or_default();
+            return (split_lines(&self.unprefixed(source, span.start)), None);
+        }
         let lines = match self.ast.kind(id) {
             NodeKind::Document => self.blocks(id, false, None, place.room),
             NodeKind::FrontMatter(front) => self.verbatim(id).unwrap_or_else(|| {
@@ -111,27 +158,11 @@ impl Printer<'_> {
             NodeKind::DefinitionTerm if self.is_inline_parent(id) => {
                 split_lines(&self.inlines(id, false))
             }
+            NodeKind::DefinitionTerm => self.definition_term(id, place),
             NodeKind::Heading(heading) => self.heading(id, heading),
-            NodeKind::ThematicBreak => {
-                let after_paragraph = place.tight
-                    && self
-                        .ast
-                        .prev_sibling(id)
-                        .is_some_and(|prev| matches!(self.ast.kind(prev), NodeKind::Paragraph));
-                // `- ---` is a thematic break, not an item; `foo\n---` a setext heading.
-                let rule = if after_paragraph || (place.index == 0 && place.bullet == Some('-')) {
-                    "***"
-                } else {
-                    "---"
-                };
-                vec![rule.to_owned()]
-            }
+            NodeKind::ThematicBreak => vec![self.thematic_break(id, place).to_owned()],
             NodeKind::BlockQuote => quote(self.blocks(id, false, None, place.room.inside(2, 2))),
-            NodeKind::Callout(callout) => {
-                let mut lines = vec![callout_marker(callout)];
-                lines.extend(self.blocks(id, false, None, place.room.inside(2, 2).rest()));
-                quote(lines)
-            }
+            NodeKind::Callout(callout) => self.callout(id, callout, place.room),
             NodeKind::List(list) => {
                 let (lines, marker) = self.list(id, list, place);
                 return (lines, Some(marker));
@@ -167,10 +198,7 @@ impl Printer<'_> {
                 }
                 lines
             }
-            NodeKind::DefinitionDetails => {
-                let room = place.room.inside(2, 4);
-                indent(":", "    ", self.blocks(id, false, None, room))
-            }
+            NodeKind::DefinitionDetails => self.definition_details(id, place.room),
             NodeKind::Admonition(admonition) => {
                 let header = admonition_header(admonition);
                 let body = self.blocks(id, false, None, place.room.inside(4, 4).rest());
@@ -179,13 +207,18 @@ impl Printer<'_> {
                 lines
             }
             NodeKind::AbbreviationDefinition(abbr) => {
-                vec![format!("*[{}]: {}", abbr.abbr, abbr.expansion)]
+                let line = format!("*[{}]: {}", abbr.abbr, abbr.expansion);
+                vec![line.trim_end().to_owned()]
             }
             NodeKind::IncludeDirective(_) | NodeKind::TocDirective(_) | NodeKind::DirectiveEnd => {
                 self.verbatim(id).unwrap_or_default()
             }
             NodeKind::Comment(comment) => split_lines(&match comment.syntax {
-                CommentSyntax::Percent => format!("%%{}%%", comment.literal),
+                // The literal is the source between the delimiters, prefixes included.
+                CommentSyntax::Percent => {
+                    let literal = self.unprefixed(&comment.literal, self.ast.span(id).start);
+                    format!("%%{literal}%%")
+                }
                 _ => format!("<!--{}-->", comment.literal),
             }),
             kind if kind.is_inline() => split_lines(&self.inline_block(id)),
@@ -194,6 +227,94 @@ impl Printer<'_> {
             _ => self.blocks(id, false, None, place.room),
         };
         (lines, None)
+    }
+
+    /// `---`, or `***` where that would be read as something else: `- ---` is a
+    /// thematic break, not an item; `foo\n---` a setext heading (an admonition header
+    /// is a paragraph line to `CommonMark`); `---` first in the document opens
+    /// frontmatter.
+    fn thematic_break(&self, id: NodeId, place: Place) -> &'static str {
+        let after_paragraph = place.tight
+            && self.ast.prev_sibling(id).is_some_and(|prev| {
+                matches!(
+                    self.ast.kind(prev),
+                    NodeKind::Paragraph | NodeKind::Admonition(_)
+                )
+            });
+        let first_in_document = place.index == 0 && self.ast.parent(id) == Some(self.ast.root());
+        if after_paragraph || first_in_document || (place.index == 0 && place.bullet == Some('-')) {
+            "***"
+        } else {
+            "---"
+        }
+    }
+
+    /// `> [!kind]± title` and the body. The marker line is the start of a paragraph:
+    /// what follows it must continue it or interrupt it, else an empty line comes first.
+    fn callout(&self, id: NodeId, callout: &Callout, room: Room) -> Vec<String> {
+        let mut lines = vec![callout_marker(callout)];
+        if !self
+            .ast
+            .children(id)
+            .first()
+            .is_none_or(|&first| self.interrupts_paragraph(first))
+        {
+            lines.push(String::new());
+        }
+        lines.extend(self.blocks(id, false, None, room.inside(2, 2).rest()));
+        quote(lines)
+    }
+
+    /// A definition term that holds blocks. Each line of a term is a term of its own
+    /// in Python-Markdown, so its paragraphs are never wrapped.
+    fn definition_term(&self, id: NodeId, place: Place) -> Vec<String> {
+        let mut lines = Vec::new();
+        for &child in self.ast.children(id) {
+            let block =
+                if self.ast.kind(child) == &NodeKind::Paragraph && self.is_inline_parent(child) {
+                    split_lines(&self.inlines(child, false))
+                } else {
+                    self.block(child, Place { index: 0, ..place }).0
+                };
+            push_block(&mut lines, block, false);
+        }
+        lines
+    }
+
+    /// `:` and three spaces, so that the content lines up with the 4-space indentation
+    /// of its continuation, as Python-Markdown wants it. Empty details keep one space:
+    /// a bare `:` is text.
+    fn definition_details(&self, id: NodeId, room: Room) -> Vec<String> {
+        let room = room.inside(4, 4);
+        let mut lines = indent(":  ", "    ", self.blocks(id, false, None, room));
+        if lines[0] == ":" {
+            lines[0].push(' ');
+        }
+        lines
+    }
+
+    /// Whether the block `id`, printed right below a paragraph line, continues the
+    /// paragraph (another paragraph) or interrupts it as itself.
+    fn interrupts_paragraph(&self, id: NodeId) -> bool {
+        match self.ast.kind(id) {
+            NodeKind::Paragraph
+            | NodeKind::BlockQuote
+            | NodeKind::Callout(_)
+            | NodeKind::Heading(_)
+            | NodeKind::CodeBlock(_) => true,
+            // Only lists starting at 1 whose first item is not empty.
+            NodeKind::List(list) => {
+                matches!(
+                    list.kind,
+                    ListKind::Bullet { .. } | ListKind::Ordered { start: 1, .. }
+                ) && self
+                    .ast
+                    .children(id)
+                    .first()
+                    .is_some_and(|&item| !self.ast.children(item).is_empty())
+            }
+            _ => false,
+        }
     }
 
     /// Whether the children of `id` are inlines (or it has none).
@@ -215,15 +336,20 @@ impl Printer<'_> {
     fn heading(&self, id: NodeId, heading: &Heading) -> Vec<String> {
         let level = heading.level;
         let mut text = self.inlines(id, false);
-        // mkdocs `{#id .class}` attributes, as written (M6.5 normalizes them).
-        if let Some(attrs) = &heading.attrs
-            && let Some(source) = self.src.get(attrs.span.start..attrs.span.end)
-            && !source.is_empty()
-        {
-            if !text.is_empty() {
-                text.push(' ');
+        // mkdocs `{#id .class}` attributes; as written if they cannot be normalized.
+        if let Some(attrs) = &heading.attrs {
+            let list = attribute_list(attrs).or_else(|| {
+                self.src
+                    .get(attrs.span.start..attrs.span.end)
+                    .filter(|source| !source.is_empty())
+                    .map(str::to_owned)
+            });
+            if let Some(list) = list {
+                if !text.is_empty() {
+                    text.push(' ');
+                }
+                text.push_str(&list);
             }
-            text.push_str(source);
         }
         if text.contains('\n') && level <= 2 {
             let mut lines = split_lines(&text);
@@ -492,7 +618,7 @@ fn indent(marker: &str, rest: &str, lines: Vec<String>) -> Vec<String> {
     let mut lines = lines.into_iter();
     let mut out = match lines.next() {
         Some(first) if !first.is_empty() => vec![format!("{marker} {first}")],
-        _ => vec![marker.to_owned()],
+        _ => vec![marker.trim_end().to_owned()],
     };
     out.extend(indent_all(rest, lines));
     out
@@ -543,6 +669,55 @@ fn admonition_header(admonition: &Admonition) -> String {
         header.push('"');
     }
     header
+}
+
+/// `{#id .class key=value}`, the attribute list of a heading: the id, the classes,
+/// then the other attributes, each in the shortest form that reads back the same (a bare
+/// word for `w=w`, values quoted only where needed). `None` if a value has both kinds of
+/// quotes, which no form can hold.
+fn attribute_list(attrs: &HeadingAttrs) -> Option<String> {
+    // A token that reads back as itself: no blanks, `=`, quotes or braces.
+    let plain = |s: &str| {
+        !s.is_empty()
+            && !s.contains(|c: char| c.is_whitespace() || matches!(c, '=' | '"' | '\'' | '{' | '}'))
+    };
+    let value = |v: &str| {
+        if plain(v) {
+            Some(v.to_owned())
+        } else if !v.contains('"') {
+            Some(format!("\"{v}\""))
+        } else if !v.contains('\'') {
+            Some(format!("'{v}'"))
+        } else {
+            None
+        }
+    };
+    let mut tokens = Vec::new();
+    if let Some(id) = &attrs.id {
+        tokens.push(if plain(id) {
+            format!("#{id}")
+        } else {
+            format!("id={}", value(id)?)
+        });
+    }
+    for class in &attrs.classes {
+        tokens.push(if plain(class) {
+            format!(".{class}")
+        } else {
+            format!("class={}", value(class)?)
+        });
+    }
+    for (key, v) in &attrs.attributes {
+        if key.is_empty() || key.contains(|c: char| c.is_whitespace() || c == '}') {
+            return None;
+        }
+        tokens.push(if key == v && plain(key) && !key.starts_with(['#', '.']) {
+            key.clone()
+        } else {
+            format!("{key}={}", value(v)?)
+        });
+    }
+    Some(format!("{{{}}}", tokens.join(" ")))
 }
 
 fn first_char(s: &str) -> char {

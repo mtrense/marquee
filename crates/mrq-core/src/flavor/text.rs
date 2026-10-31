@@ -1,6 +1,7 @@
 //! Helpers shared by flavor passes that cut text nodes apart: escape detection,
-//! aligning a text node's source with its literal ([`Pieces`]), and splicing new inline
-//! nodes into a parent's children ([`splice`]).
+//! container prefixes ([`repeated_prefix`], also used by the printer), aligning a text
+//! node's source with its literal ([`Pieces`]), and splicing new inline nodes into a
+//! parent's children ([`splice`]).
 
 use crate::ast::{Ast, NodeId, NodeKind, Span};
 
@@ -13,6 +14,19 @@ pub(super) fn escaped(bytes: &[u8], at: usize) -> bool {
         .count()
         % 2
         == 1
+}
+
+/// How many leading bytes of `line` repeat `prefix`: `>` and tabs as they are, a space
+/// for anything else.
+pub(crate) fn repeated_prefix(prefix: &str, line: &str) -> usize {
+    prefix
+        .bytes()
+        .zip(line.bytes())
+        .take_while(|&(p, l)| match p {
+            b'>' | b'\t' => l == p,
+            _ => l == b' ',
+        })
+        .count()
 }
 
 /// Cuts a text node into pieces with their own literals.

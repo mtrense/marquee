@@ -24,6 +24,9 @@
 //! imported; the later passes leave such nodes alone (they only match unconverted
 //! syntax), so running them again over the whole tree is harmless.
 //!
+//! The printer hooks ([`printer`]) escape text that the passes would read as an
+//! admonition header or heading attributes.
+//!
 //! The user-facing summary is on [`Mkdocs`]; the pass modules have the exact rules.
 
 mod abbreviations;
@@ -31,8 +34,9 @@ mod admonitions;
 mod attrs;
 mod deflists;
 mod math;
+mod printer;
 
-use super::{Flavor, MkdocsSlugger, Pass, Slugger};
+use super::{Flavor, MkdocsSlugger, Pass, PrinterHooks, Slugger};
 use crate::parse::ParseOptions;
 
 /// [mkdocs](https://www.mkdocs.org) Markdown as configured by most sites (Material for
@@ -106,5 +110,9 @@ impl Flavor for Mkdocs {
             &abbreviations::Abbreviations,
             &math::BackslashMath,
         ]
+    }
+
+    fn printer_hooks(&self) -> Option<&dyn PrinterHooks> {
+        Some(&printer::MkdocsPrinter)
     }
 }
