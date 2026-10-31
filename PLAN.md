@@ -330,7 +330,7 @@ flowchart LR
 - [x] **M8.7 md and json backends.** `-o md` reuses the M6 printer with an optional target flavor (down-conversion: wikilinks become links, admonitions become blockquotes with a bold title, and so on). `-o json` is the M1.8 projection. **AC:** converting obsidian to commonmark fixtures gives output that validates.
 - [x] **M8.8 man backend.** roff via `roff`: NAME/SYNOPSIS conventions from H1/H2, code blocks as `.nf`, lists, emphasis. **AC:** `man -l` renders the fixture (manual check), plus a snapshot.
 - [x] **M8.9 PDF backend.** Feature `pdf`: mrq AST to Typst markup (escaping, tables, code with highlight colors, images, SVG diagrams, math via Typst math where convertible, MathML fallback as an image), theme mapped to Typst set/show rules, an `overrides.pdf` template, embedded fonts. **AC:** the fixture document renders to a valid PDF, text extraction matches, and the build works offline.
-- [ ] **M8.10 `mrq render` command.** `-o`, `-s`, `--fragment`, `--flavor`, multiple inputs (concatenated, or `--out-dir` for one output per input), stdout vs file. **AC:** CLI snapshots for each format (PDF checked for size and validity only).
+- [x] **M8.10 `mrq render` command.** `-o`, `-s`, `--fragment`, `--flavor`, multiple inputs (concatenated, or `--out-dir` for one output per input), stdout vs file. **AC:** CLI snapshots for each format (PDF checked for size and validity only).
 
 ### M9: Diff
 

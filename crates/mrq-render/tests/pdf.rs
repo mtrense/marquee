@@ -303,6 +303,13 @@ fn highlighted_code_carries_the_theme_colors() {
 }
 
 #[test]
+fn code_on_a_code_theme_background_like_the_page_uses_the_code_background() {
+    // paper's InspiredGitHub code theme is white on a white page.
+    let out = body("```rust\nlet x = 1;\n```\n");
+    assert!(out.starts_with("#mrq-code(fill: rgb(\"#f7f7f7\")"), "{out}");
+}
+
+#[test]
 fn plain_code_keeps_leading_whitespace_in_the_pdf() {
     let doc = Document::parse("```\nplain\n    indented\n```\n");
     let typst = renderer(&paper()).typst(&doc);

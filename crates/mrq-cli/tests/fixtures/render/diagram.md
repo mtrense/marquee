@@ -1,0 +1,5 @@
+# Diagram
+
+```bob
+o--o
+```

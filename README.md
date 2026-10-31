@@ -53,6 +53,7 @@ Release binaries enable everything. A minimal build is available with `cargo ins
 | `remote-include` | `mrq:include` from http(s) URLs and `sha256` pins (default; nothing fetched without `include.allow_remote`) |
 | `tree-sitter`    | structural code includes (`function="…"`) and tree-sitter grammars |
 | `mermaid`        | built-in Mermaid rendering (no Node.js needed)                    |
+| `kroki`          | diagrams from a Kroki server in `render` (default; never contacted without `render.diagrams.kroki.enabled`) |
 | `tui`            | `mrq show`                                                        |
 | `lsp`            | `mrq lsp`                                                         |
 
@@ -97,7 +98,12 @@ mrq render -o pdf -s paper report.md > report.pdf
 mrq render -o md --flavor commonmark notes.md    # down-convert flavor-specific syntax
 mrq render -o json README.md                     # the full AST
 mrq render -o man mrq.1.md > mrq.1
+mrq render -o ansi --width 100 README.md         # lay out for 100 columns
+mrq render -o pdf --out book.pdf chapters/       # all chapters as one PDF
+mrq render -o html --out-dir site/ docs/         # one page per file: site/<name>.html
 ```
+
+Several inputs are concatenated into one document the way `mrq merge --no-wrap` does it: anchors are made unique, links between the files point into the combined document, and other relative links are rebased to the output (`--out`, else the current directory). `-o json` instead gives an array of `{file, ast}` objects. With `--out-dir DIR`, each input is rendered on its own to `DIR/<stem>.<ext>` (`html`, `ansi`, `pdf`, `md`, `json`, and for man pages the section extension of the name, `mrq.1.md` → `mrq.1`, else `man`). Files are written atomically and the directory is created. With `-o md`, `--flavor` names the flavor to convert to, and the input flavor comes from frontmatter or the configuration. `-o ansi` lays out for the width of the terminal, else `$COLUMNS`, else 80 columns, unless `--width` is given. A PDF is never written to a terminal: redirect stdout or use `--out`. Warnings, such as a diagram shown as code, go to stderr; an unreadable input, an unknown style or a PDF that does not compile exits with 2 and writes nothing.
 
 | Format | Notes                                                                              |
 | ------ | ---------------------------------------------------------------------------------- |

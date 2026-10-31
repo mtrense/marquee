@@ -1,0 +1,16 @@
+---
+source: crates/mrq-cli/tests/render.rs
+expression: md
+---
+---
+mrq:
+  flavor: commonmark
+---
+
+# Note
+
+See [the setup](guide.md#setup) and #tag.
+
+> **Remember**
+>
+> Callouts become alerts.

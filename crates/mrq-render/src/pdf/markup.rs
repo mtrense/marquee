@@ -411,9 +411,15 @@ impl<'a> Writer<'a> {
         } else {
             renderer.highlighter.highlight(&block.literal, "")
         };
+        // A code theme background like the page's (paper's white InspiredGitHub) would
+        // hide the block, so the portable code background is used instead.
+        let background = highlighted
+            .background
+            .filter(|&bg| bg != colors.background)
+            .unwrap_or(colors.code_background);
         self.code_lines(
             &highlighted,
-            highlighted.background.unwrap_or(colors.code_background),
+            background,
             highlighted.foreground.unwrap_or(colors.code_foreground),
         );
     }

@@ -392,6 +392,17 @@ impl Registry {
         self
     }
 
+    /// Puts `renderer` in the place of the renderer with the [id](DiagramRenderer::id)
+    /// `id`, e.g. a resvg-safe [`MermaidRenderer`] for the PDF backend; unchanged if
+    /// there is none.
+    #[must_use]
+    pub fn replacing(mut self, id: &str, renderer: impl DiagramRenderer + 'static) -> Self {
+        if let Some(slot) = self.renderers.iter_mut().find(|r| r.id() == id) {
+            *slot = Arc::new(renderer);
+        }
+        self
+    }
+
     /// Caches renders in `cache`.
     #[must_use]
     pub fn with_cache(mut self, cache: DiagramCache) -> Self {

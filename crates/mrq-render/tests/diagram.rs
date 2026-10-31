@@ -132,6 +132,18 @@ fn default_order_follows_the_readme() {
 }
 
 #[test]
+fn a_replaced_renderer_keeps_its_place() {
+    let svg = Ok(DiagramOutput::Svg("<svg/>".to_owned()));
+    let registry = Registry::from_config(&config(&[("mermaid", vec!["mine".to_owned()])]))
+        .replacing("command:mmdc", Fixed::new("fixed", "mermaid", svg.clone()))
+        .replacing("missing", Fixed::new("unused", "mermaid", svg));
+    assert_eq!(
+        registry.renderers_for("mermaid"),
+        built(&["command:mine", "builtin:mermaid", "fixed"])
+    );
+}
+
+#[test]
 fn configured_commands_come_first_and_kroki_last() {
     let mut config = config(&[
         ("bob", vec!["svgbob".to_owned()]),

@@ -1,0 +1,19 @@
+---
+source: crates/mrq-cli/tests/render.rs
+expression: "roff.replace(&version, \"\\\"mrq VERSION\\\"\")"
+---
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH TOOL 1 2026-10-31 "mrq VERSION"
+.SH NAME
+tool \- does one thing
+.SH SYNOPSIS
+\fBtool\fR [\fIoptions\fR] \fIfile\fR
+.SH DESCRIPTION
+\fBtool\fR does one thing well.
+.PP
+.RS 4
+.nf
+tool input.txt
+.fi
+.RE

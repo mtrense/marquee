@@ -79,7 +79,7 @@ Critical content demanding attention\.
 
 #heading(level: 2)[Code] #label("code")
 
-#mrq-code(fill: rgb("#ffffff"), color: rgb("#323232"), (
+#mrq-code(fill: rgb("#f7f7f7"), color: rgb("#323232"), (
   (("fn", rgb("#a71d5d"), true, false, false), (" ", none, false, false, false), ("main", rgb("#795da3"), true, false, false), ("() {", none, false, false, false),),
   (("    println!(", none, false, false, false), ("\"Hello, ", rgb("#183691"), false, false, false), ("{}", rgb("#0086b3"), false, false, false), ("!\"", rgb("#183691"), false, false, false), (", ", none, false, false, false), ("\"world\"", rgb("#183691"), false, false, false), (");", none, false, false, false),),
   (("}", none, false, false, false),),

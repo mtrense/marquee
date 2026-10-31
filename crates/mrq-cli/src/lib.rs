@@ -23,6 +23,7 @@ mod interpolate;
 mod lint;
 mod merge;
 mod query;
+mod render;
 mod split;
 mod stats;
 mod toc;
@@ -116,6 +117,7 @@ pub fn run(cli: Cli) -> ExitCode {
                 ExitCode::from(EXIT_USAGE)
             }
         },
+        Command::Render(args) => render::command(&args, &cli.global),
         Command::Merge(args) => {
             let Some((options, inputs)) = prepare(&cli.global, &args.inputs, false) else {
                 return ExitCode::from(EXIT_USAGE);
@@ -151,7 +153,17 @@ fn prepare_loaded(
     inputs: &Inputs,
     default_to_cwd: bool,
 ) -> Option<(LoadedConfig, DocumentOptions, Vec<Input>)> {
-    let loaded = match load_config(global) {
+    prepare_with(global, global.flavor, inputs, default_to_cwd)
+}
+
+/// [`prepare_loaded`] with `flavor` in place of `--flavor`.
+fn prepare_with(
+    global: &GlobalArgs,
+    flavor: Option<Flavor>,
+    inputs: &Inputs,
+    default_to_cwd: bool,
+) -> Option<(LoadedConfig, DocumentOptions, Vec<Input>)> {
+    let loaded = match load_config_with(global, flavor) {
         Ok(loaded) => loaded,
         Err(err) => {
             report_config_error(&err, global);
@@ -176,7 +188,7 @@ fn prepare_loaded(
         .resolve(paths);
     match resolved {
         Ok(resolved) => {
-            let options = document_options(global, &loaded);
+            let options = document_options_with(flavor, &loaded);
             Some((loaded, options, resolved))
         }
         Err(err) => {
@@ -189,8 +201,13 @@ fn prepare_loaded(
 /// Document options for `--flavor` and the configured flavor. A configured flavor that
 /// is only the built-in default is left unset, so documents report it as the default.
 fn document_options(global: &GlobalArgs, loaded: &LoadedConfig) -> DocumentOptions {
+    document_options_with(global.flavor, loaded)
+}
+
+/// [`document_options`] with `flavor` in place of `--flavor`.
+fn document_options_with(flavor: Option<Flavor>, loaded: &LoadedConfig) -> DocumentOptions {
     let options = DocumentOptions::new();
-    if let Some(flavor) = global.flavor {
+    if let Some(flavor) = flavor {
         options.flavor(flavor_name(flavor).as_str())
     } else if let Some(Origin::File { .. }) = loaded.origin(&["flavor"]) {
         options.config_flavor(loaded.config().flavor.as_str())
@@ -207,6 +224,14 @@ fn print(text: &str) {
 /// [`user_config_path`]; `MRQ_CONFIG_HOME` overrides its directory), then `--config` or
 /// the discovered `.mrq.yaml` files, then `--flavor`.
 fn load_config(global: &GlobalArgs) -> Result<LoadedConfig, ConfigError> {
+    load_config_with(global, global.flavor)
+}
+
+/// [`load_config`] with `flavor` in place of `--flavor`.
+fn load_config_with(
+    global: &GlobalArgs,
+    flavor: Option<Flavor>,
+) -> Result<LoadedConfig, ConfigError> {
     let start = env::current_dir().map_err(|source| ConfigError::Io {
         path: ".".into(),
         source,
@@ -214,7 +239,7 @@ fn load_config(global: &GlobalArgs) -> Result<LoadedConfig, ConfigError> {
     ConfigLoader::new(start)
         .user_config(user_config_path(|key| env::var(key).ok()))
         .explicit(global.config.clone())
-        .flavor(global.flavor.map(flavor_name))
+        .flavor(flavor.map(flavor_name))
         .load()
 }
 
@@ -295,9 +320,9 @@ fn unified_diff(name: &Path, old: &str, new: &str) -> String {
         .to_string()
 }
 
-/// Replaces the file at `path` with `text` atomically: writes a temp file in the same
+/// Replaces the file at `path` with `contents` atomically: writes a temp file in the same
 /// directory, gives it the original's permissions, then renames it over the original.
-fn write_atomic(path: &Path, text: &str) -> io::Result<()> {
+fn write_atomic(path: &Path, contents: impl AsRef<[u8]>) -> io::Result<()> {
     let dir = match path.parent() {
         Some(dir) if !dir.as_os_str().is_empty() => dir,
         _ => Path::new("."),
@@ -306,7 +331,7 @@ fn write_atomic(path: &Path, text: &str) -> io::Result<()> {
         .prefix(".mrq-")
         .suffix(".tmp")
         .tempfile_in(dir)?;
-    temp.write_all(text.as_bytes())?;
+    temp.write_all(contents.as_ref())?;
     temp.as_file().sync_all()?;
     if let Ok(metadata) = fs::metadata(path) {
         temp.as_file().set_permissions(metadata.permissions())?;

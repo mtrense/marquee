@@ -16,7 +16,7 @@ name = "mrq"
 path = "src/main.rs"
 
 [features]
-default = ["frontmatter-schema", "external-links", "remote-include", "tree-sitter"]
+default = ["frontmatter-schema", "external-links", "remote-include", "tree-sitter", "kroki"]
 # Frontmatter JSON Schema checks in `mrq validate` (`validate.frontmatter`); without it the
 # setting is ignored with a warning.
 frontmatter-schema = ["mrq-core/frontmatter-schema"]
@@ -32,6 +32,9 @@ tree-sitter = ["mrq-core/tree-sitter"]
 # The built-in Mermaid renderer (merman), so `mermaid` diagrams need no Node.js `mmdc`.
 # The built-in DOT renderer and PNG rasterization are always on (mrq-render's defaults).
 mermaid = ["mrq-render/mermaid"]
+# Diagrams from a Kroki server in `mrq render`. On by default; Kroki is never contacted
+# unless `render.diagrams.kroki.enabled` is set.
+kroki = ["mrq-render/kroki"]
 # `mrq render -o pdf`: embedded Typst with its bundled fonts. Off by default, it is heavy.
 pdf = ["mrq-render/pdf"]
 
@@ -45,6 +48,7 @@ clap_complete.workspace = true
 serde_json.workspace = true
 tempfile.workspace = true
 similar.workspace = true
+terminal_size.workspace = true
 
 [dev-dependencies]
 assert_cmd.workspace = true

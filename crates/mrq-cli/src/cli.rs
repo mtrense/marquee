@@ -200,16 +200,34 @@ pub enum RenderFormat {
 }
 
 #[derive(Debug, Args)]
+#[command(
+    after_long_help = "With `-o md`, `--flavor` is the flavor to convert to; the input \
+    flavor then comes from frontmatter `mrq.flavor`, then the config, then gfm.\n\n\
+    Several inputs are concatenated into one document, as `mrq merge --no-wrap` would \
+    (`-o json`: a list of {file, ast} objects), unless --out-dir is given. A PDF is never \
+    written to a terminal."
+)]
 pub struct RenderArgs {
     /// Output format.
     #[arg(short, long = "output", value_name = "FORMAT", default_value = "html")]
     pub output: RenderFormat,
-    /// Built-in theme (light, dark, github, paper) or a theme file.
+    /// Built-in theme (light, dark, github, paper) or a theme file [default: config
+    /// `render.style`, then light].
     #[arg(short, long, value_name = "STYLE")]
     pub style: Option<String>,
-    /// HTML body only, without the `<html>` wrapper.
+    /// HTML body only, without the `<html>` wrapper and the stylesheet.
     #[arg(long)]
     pub fragment: bool,
+    /// Terminal width for `-o ansi` [default: the terminal's, then $COLUMNS, then 80].
+    #[arg(long, value_name = "N", value_parser = clap::value_parser!(u16).range(1..))]
+    pub width: Option<u16>,
+    /// Write to this file instead of stdout.
+    #[arg(long, value_name = "FILE", conflicts_with = "out_dir")]
+    pub out: Option<PathBuf>,
+    /// Write one file per input into this directory, named after the input
+    /// (`guide.md` → `guide.html`).
+    #[arg(long, value_name = "DIR")]
+    pub out_dir: Option<PathBuf>,
     #[command(flatten)]
     pub inputs: Inputs,
 }

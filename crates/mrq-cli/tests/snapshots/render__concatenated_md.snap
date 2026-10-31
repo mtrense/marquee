@@ -1,0 +1,30 @@
+---
+source: crates/mrq-cli/tests/render.rs
+expression: md
+---
+# Guide
+
+Some *emphasis*, **strong** text and a [link](#setup-1).
+
+## Setup
+
+```rust
+fn main() {
+    println!("hi");
+}
+```
+
+| Tool | Use    |
+| ---- | ------ |
+| mrq  | render |
+
+- one
+- two
+
+See [the tool](tool.1.md).
+
+# Other
+
+## Setup
+
+Back to the [guide](#guide).

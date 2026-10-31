@@ -25,10 +25,19 @@ Options:
           [default: html]
 
   -s, --style <STYLE>
-          Built-in theme (light, dark, github, paper) or a theme file
+          Built-in theme (light, dark, github, paper) or a theme file [default: config `render.style`, then light]
 
       --fragment
-          HTML body only, without the `<html>` wrapper
+          HTML body only, without the `<html>` wrapper and the stylesheet
+
+      --width <N>
+          Terminal width for `-o ansi` [default: the terminal's, then $COLUMNS, then 80]
+
+      --out <FILE>
+          Write to this file instead of stdout
+
+      --out-dir <DIR>
+          Write one file per input into this directory, named after the input (`guide.md` → `guide.html`)
 
   -h, --help
           Print help (see a summary with '-h')
@@ -67,3 +76,7 @@ Global options:
 
   -v, --verbose...
           Print more output; repeat for even more
+
+With `-o md`, `--flavor` is the flavor to convert to; the input flavor then comes from frontmatter `mrq.flavor`, then the config, then gfm.
+
+Several inputs are concatenated into one document, as `mrq merge --no-wrap` would (`-o json`: a list of {file, ast} objects), unless --out-dir is given. A PDF is never written to a terminal.

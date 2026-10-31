@@ -75,12 +75,7 @@ fn no_subcommand_is_a_usage_error() {
 
 #[test]
 fn stubbed_subcommands_report_not_implemented_and_exit_2() {
-    let invocations: &[&[&str]] = &[
-        &["render", "-o", "html", "README.md"],
-        &["diff", "old.md", "new.md"],
-        &["show"],
-        &["lsp"],
-    ];
+    let invocations: &[&[&str]] = &[&["diff", "old.md", "new.md"], &["show"], &["lsp"]];
     for args in invocations {
         mrq()
             .args(*args)

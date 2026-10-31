@@ -1,0 +1,4 @@
+render:
+  diagrams:
+    commands:
+      bob: ["false"]
