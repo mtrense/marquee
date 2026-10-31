@@ -70,7 +70,8 @@
 //!   file on disk. Cycles are found by following the `mrq:include`s of Markdown files
 //!   (from the workspace, else loaded from disk), comparing canonicalized paths; each
 //!   file on a cycle reports it, a file that merely includes one does not. `http(s)://`
-//!   paths are skipped until remote includes exist (M7.7). The `section` and `select`
+//!   paths are skipped: validation stays offline, and the include resolver
+//!   ([`Includer`](crate::transform::Includer)) reports remote includes that fail. The `section` and `select`
 //!   attributes are not checked. Whether an include region's content matches its
 //!   expansion is not checked either: that needs the include resolver (M7.4), so
 //!   nothing is reported until then (see the TODO in `directives.rs`).

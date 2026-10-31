@@ -11,6 +11,8 @@ pub mod document;
 pub mod flavor;
 pub mod fmt;
 pub mod frontmatter;
+#[cfg(any(feature = "external-links", feature = "remote-include"))]
+mod http;
 pub mod input;
 pub mod lint;
 pub mod parse;

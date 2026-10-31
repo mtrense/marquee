@@ -109,6 +109,8 @@ pub struct LinkRewrite<'m> {
     to: PathBuf,
     root: PathBuf,
     map: Option<&'m LinkMap>,
+    /// The URL of remote content, which makes relative links absolute URLs instead.
+    url: Option<String>,
 }
 
 impl<'m> LinkRewrite<'m> {
@@ -122,6 +124,18 @@ impl<'m> LinkRewrite<'m> {
             to: absolute(to.as_ref()),
             root: absolute(Path::new("")),
             map: None,
+            url: None,
+        }
+    }
+
+    /// Rewrites links written in the document at the http(s) `url` (remote content) to
+    /// absolute URLs, so they work from anywhere: relative paths, `/…` included, are
+    /// resolved against `url` the way a browser does (RFC 3986). Same-document `#anchor`s
+    /// and wikilinks stay; there is no [root](Self::root) or [map](Self::map).
+    pub fn from_url(url: impl Into<String>) -> Self {
+        Self {
+            url: Some(url.into()),
+            ..Self::new("", "")
         }
     }
 
@@ -146,6 +160,10 @@ impl LinkRewrite<'_> {
     fn destination(&self, written: &str, syntax: Syntax) -> Option<String> {
         if written.is_empty() || scheme(written).is_some() || written.starts_with("//") {
             return None;
+        }
+        if let Some(url) = &self.url {
+            let keep = syntax == Syntax::Wiki || written.starts_with('#');
+            return (!keep).then(|| join_url(url, written));
         }
         if syntax == Syntax::Wiki {
             // Names are looked up in the whole vault; only `./` and `../` are paths.
@@ -458,6 +476,67 @@ fn encode(segment: &str, syntax: Syntax) -> String {
     out
 }
 
+/// The URL reference `reference` (as written: a relative path with an optional query
+/// and fragment, or a URL) resolved against the absolute URL `base`, as RFC 3986
+/// (section 5.2) says: `..` and `.` segments are removed, and the fragment of `base` is
+/// dropped. Nothing is decoded or encoded.
+pub(crate) fn join_url(base: &str, reference: &str) -> String {
+    if scheme(reference).is_some() {
+        return reference.to_owned();
+    }
+    let base = base.split_once('#').map_or(base, |(base, _)| base);
+    let (scheme, rest) = base.split_once(':').unwrap_or(("", base));
+    if reference.starts_with("//") {
+        return format!("{scheme}:{reference}");
+    }
+    // `//authority`, then the path, then `?query`.
+    let rest = rest.strip_prefix("//").unwrap_or(rest);
+    let authority_end = rest.find(['/', '?']).unwrap_or(rest.len());
+    let (authority, rest) = rest.split_at(authority_end);
+    let (path, query) = rest.split_at(rest.find('?').unwrap_or(rest.len()));
+    let origin = format!("{scheme}://{authority}");
+    if reference.is_empty() || reference.starts_with('#') {
+        return format!("{origin}{path}{query}{reference}");
+    }
+    if reference.starts_with('?') {
+        return format!("{origin}{path}{reference}");
+    }
+    let end = reference.find(['?', '#']).unwrap_or(reference.len());
+    let (target, tail) = reference.split_at(end);
+    let merged = if target.starts_with('/') {
+        target.to_owned()
+    } else {
+        // The base path up to its last `/` (just `/` if it has no path), then the target.
+        let dir = path.rfind('/').map_or("/", |slash| &path[..=slash]);
+        format!("{dir}{target}")
+    };
+    format!("{origin}{}{tail}", remove_dot_segments(&merged))
+}
+
+/// The absolute URL path `path` without `.` and `..` segments; `..` above the top stays
+/// at the top. A path ending in such a segment keeps a trailing `/`.
+fn remove_dot_segments(path: &str) -> String {
+    let segments: Vec<&str> = path.split('/').skip(1).collect();
+    let mut out: Vec<&str> = Vec::with_capacity(segments.len());
+    for (i, segment) in segments.iter().enumerate() {
+        let last = i + 1 == segments.len();
+        match *segment {
+            "." => {}
+            ".." => {
+                out.pop();
+            }
+            other => {
+                out.push(other);
+                continue;
+            }
+        }
+        if last {
+            out.push("");
+        }
+    }
+    format!("/{}", out.join("/"))
+}
+
 /// The path components leading from the directory `base` to `target` (both absolute
 /// and normalized): `..` for each of `base`'s that `target` does not share, then
 /// `target`'s own. `None` if they have different roots or a name is not UTF-8.
@@ -724,5 +803,60 @@ mod tests {
             Some(Location::output().with_anchor("y"))
         );
         assert_eq!(map.get("c.md", None), None);
+    }
+
+    #[test]
+    fn links_in_remote_content_become_absolute_urls() {
+        let src = "[a](a.md) [b](../b.md?x=1#y) [c](/c.md) [d](#d) [e](https://e.org/) \
+                   [f](//f.org/x) [g](mailto:g@h.org) <img src=\"img/i.png\">\n\n[r]: ./r.md\n";
+        let rewrite = LinkRewrite::from_url("https://example.com/docs/guide.md?raw=1");
+        assert_eq!(
+            rewrite_doc(&Document::parse(src), &rewrite),
+            "[a](https://example.com/docs/a.md) [b](https://example.com/b.md?x=1#y) \
+             [c](https://example.com/c.md) [d](#d) [e](https://e.org/) [f](//f.org/x) \
+             [g](mailto:g@h.org) <img src=\"https://example.com/docs/img/i.png\">\n\n\
+             [r]: https://example.com/docs/r.md\n"
+        );
+    }
+
+    #[test]
+    fn urls_join_as_rfc_3986_says() {
+        // The examples of RFC 3986, section 5.4.
+        let base = "http://a/b/c/d;p?q";
+        for (reference, joined) in [
+            ("g:h", "g:h"),
+            ("g", "http://a/b/c/g"),
+            ("./g", "http://a/b/c/g"),
+            ("g/", "http://a/b/c/g/"),
+            ("/g", "http://a/g"),
+            ("//g", "http://g"),
+            ("?y", "http://a/b/c/d;p?y"),
+            ("g?y", "http://a/b/c/g?y"),
+            ("#s", "http://a/b/c/d;p?q#s"),
+            ("g#s", "http://a/b/c/g#s"),
+            ("g?y#s", "http://a/b/c/g?y#s"),
+            (";x", "http://a/b/c/;x"),
+            ("", "http://a/b/c/d;p?q"),
+            (".", "http://a/b/c/"),
+            ("./", "http://a/b/c/"),
+            ("..", "http://a/b/"),
+            ("../g", "http://a/b/g"),
+            ("../..", "http://a/"),
+            ("../../g", "http://a/g"),
+            ("../../../g", "http://a/g"),
+            ("/./g", "http://a/g"),
+            ("/../g", "http://a/g"),
+            ("g.", "http://a/b/c/g."),
+            ("..g", "http://a/b/c/..g"),
+            ("./../g", "http://a/b/g"),
+            ("./g/.", "http://a/b/c/g/"),
+            ("g/./h", "http://a/b/c/g/h"),
+            ("g/../h", "http://a/b/c/h"),
+        ] {
+            assert_eq!(join_url(base, reference), joined, "{reference}");
+        }
+        assert_eq!(join_url("https://a", "g"), "https://a/g");
+        assert_eq!(join_url("https://a#f", "#g"), "https://a#g");
+        assert_eq!(join_url("https://a/b#f", ""), "https://a/b");
     }
 }

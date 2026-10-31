@@ -140,7 +140,7 @@ fn includes(workspace: &Workspace, document: &Document) -> Vec<Include> {
                 return Some(Include::NoPath(ast.span(region.start)));
             };
             if is_remote(&attr.value) {
-                // TODO(M7.7): remote includes are fetched, and checked, by the resolver.
+                // Validation stays offline; the include resolver reports failed fetches.
                 return None;
             }
             Some(Include::Local {

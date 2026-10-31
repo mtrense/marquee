@@ -50,7 +50,7 @@ Release binaries enable everything. A minimal build is available with `cargo ins
 | ---------------- | ----------------------------------------------------------------- |
 | `pdf`            | `render -o pdf` (embedded Typst)                                  |
 | `external-links` | checking http(s) links in `validate --external` (default; no request without `--external`) |
-| `remote-include` | `mrq:include` from http(s) URLs                                   |
+| `remote-include` | `mrq:include` from http(s) URLs and `sha256` pins (default; nothing fetched without `include.allow_remote`) |
 | `tree-sitter`    | structural code includes (`function="…"`) and tree-sitter grammars |
 | `mermaid`        | built-in Mermaid rendering (no Node.js needed)                    |
 | `tui`            | `mrq show`                                                        |
@@ -322,13 +322,14 @@ In-place mode is idempotent: content between `mrq:include` and `mrq:end` is rege
 | `function`, `struct`, `class`, `symbol` | structural selection from code files via tree-sitter (Rust, Python, JavaScript, TypeScript, Go); qualified names like `Type::method`; `lang` defaults to the file's language |
 | `with_docs`     | keep the doc comments, attributes and decorators of a selected symbol (default `false`) |
 | `dedent`        | strip common indentation (default `true` for code includes)                   |
+| `sha256`        | pin the content to this SHA-256 (64 hex digits); different content is an error |
 
 ```markdown
 <!-- mrq:include path="src/main.rs" function="main" -->
 <!-- mrq:end -->
 ```
 
-Includes are resolved recursively. Cycles are detected and reported with the full include chain. Links and assets in included content are rewritten relative to the including file. Remote includes are cached and can be pinned with `sha256="…"`.
+Includes are resolved recursively. Cycles are detected and reported with the full include chain. Links and assets in included content are rewritten relative to the including file. Remote includes are fetched only with `include.allow_remote: true`; relative links in remote content become absolute URLs, and its own includes resolve against its URL. Fetched content is cached for an hour in `remote-includes/` in the user cache directory. `sha256="…"` pins the content of an include: different content is an error, and pinned remote content is served from the cache whenever it is there.
 
 ### `mrq split`
 

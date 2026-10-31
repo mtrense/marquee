@@ -48,11 +48,24 @@
 //! symbol's first line, and `dedent` strips a method's indentation. Without a locator, an
 //! include selecting a symbol fails.
 //!
+//! A *remote include* has an `http(s)://` URL as its `path`. Remote includes are refused
+//! unless [allowed](Includer::allow_remote) (`include.allow_remote`); with the
+//! `remote-include` feature the default loader, `HttpLoader`, fetches them (and can
+//! cache them on disk), without it they fail. Remote content links and includes from its
+//! URL: its relative links and assets become absolute URLs
+//! ([`LinkRewrite::from_url`]), and the `path`s of its own includes are resolved
+//! against the URL, so they are remote too (a `file:` URL is an error).
+//!
+//! `sha256="…"` (64 hexadecimal digits; needs the `remote-include` feature) pins the
+//! content of any include, local or remote: the text read must have that SHA-256, or the
+//! include fails. A [`Loader`] with a cache may serve pinned content from it
+//! ([`Loader::load_pinned`]).
+//!
 //! An include that fails (a missing file, a cycle, a bad attribute, a section or
 //! selector that finds nothing, a `lines` range past the end, a missing or ambiguous
-//! symbol) is reported and left as it is, markers included. Unknown attributes get a
-//! warning. Remote includes and `sha256` are not supported yet; an include using them
-//! fails.
+//! symbol, a remote include that is not allowed or cannot be fetched, a `sha256`
+//! mismatch) is reported and left as it is, markers included. Unknown attributes get a
+//! warning.
 //!
 //! ```
 //! use std::collections::HashMap;
@@ -84,6 +97,8 @@
 
 mod attrs;
 mod code;
+#[cfg(feature = "remote-include")]
+mod http;
 mod loader;
 
 use std::fmt;
@@ -94,9 +109,14 @@ use std::sync::Arc;
 use serde_json::{Map, Value};
 
 use self::attrs::{FrontmatterMode, Spec};
+#[cfg(feature = "remote-include")]
+pub use self::http::{HttpLoader, HttpLoaderOptions, IncludeCache};
 pub use self::loader::{FileLoader, IncludeTarget, Loader};
+use super::links::join_url;
 use super::merge::{frontmatter_block, merge_into};
 use super::{LinkRewrite, ShiftOptions, rewrite_links, shift_headings};
+#[cfg(feature = "remote-include")]
+use crate::ast::DirectiveAttribute;
 use crate::ast::{FrontMatterFormat, Span};
 use crate::diag::{Diagnostic, Severity};
 use crate::directive::{DirectiveKind, DirectiveRegion};
@@ -117,16 +137,18 @@ pub const INCLUDE_CODE: &str = "include";
 
 /// Resolves `mrq:include` directives; see the [module docs](self).
 ///
-/// By default files are read from disk ([`FileLoader`]), parsed with the default
-/// [`DocumentOptions`], and `/…` paths start at the current directory. Symbols are found
-/// by a `symbol::TreeSitterLocator` with the `tree-sitter` feature, and not at all
-/// without it.
+/// By default files are read from disk, parsed with the default [`DocumentOptions`],
+/// and `/…` paths start at the current directory. Remote includes are not allowed; the
+/// loader is an `HttpLoader` without a cache with the `remote-include` feature, else a
+/// [`FileLoader`]. Symbols are found by a `symbol::TreeSitterLocator` with the
+/// `tree-sitter` feature, and not at all without it.
 #[derive(Clone)]
 pub struct Includer {
     loader: Arc<dyn Loader>,
     symbols: Option<Arc<dyn SymbolLocator>>,
     options: DocumentOptions,
     root: PathBuf,
+    allow_remote: bool,
 }
 
 impl fmt::Debug for Includer {
@@ -134,6 +156,7 @@ impl fmt::Debug for Includer {
         f.debug_struct("Includer")
             .field("options", &self.options)
             .field("root", &self.root)
+            .field("allow_remote", &self.allow_remote)
             .field("symbols", &self.symbols.is_some())
             .finish_non_exhaustive()
     }
@@ -146,11 +169,16 @@ impl Default for Includer {
         let symbols = Some(tree_sitter_locator());
         #[cfg(not(feature = "tree-sitter"))]
         let symbols = None;
+        #[cfg(feature = "remote-include")]
+        let loader: Arc<dyn Loader> = Arc::new(HttpLoader::default());
+        #[cfg(not(feature = "remote-include"))]
+        let loader: Arc<dyn Loader> = Arc::new(FileLoader);
         Self {
-            loader: Arc::new(FileLoader),
+            loader,
             symbols,
             options: DocumentOptions::new(),
             root: PathBuf::new(),
+            allow_remote: false,
         }
     }
 }
@@ -214,9 +242,20 @@ impl Includer {
         self
     }
 
-    /// What the include `path` written in `host` names.
+    /// Whether to include `http(s)://` URLs (`include.allow_remote`; default `false`).
+    /// Without, a remote include fails before the loader is asked.
+    #[must_use]
+    pub const fn allow_remote(mut self, allow: bool) -> Self {
+        self.allow_remote = allow;
+        self
+    }
+
+    /// What the include `path` written in `host` names. In remote content (a `host`
+    /// whose path is an http(s) URL), every `path` is a URL, resolved against the host's.
     pub fn target(&self, host: &Document, path: &str) -> IncludeTarget {
-        if is_remote(path) {
+        if let Some(url) = host.path().and_then(Path::to_str).filter(|p| is_remote(p)) {
+            IncludeTarget::Url(join_url(url, path))
+        } else if is_remote(path) {
             IncludeTarget::Url(path.to_owned())
         } else {
             IncludeTarget::File(resolve(&self.root, host.path(), Path::new(path)))
@@ -287,7 +326,7 @@ impl<'i> Run<'i> {
             includer,
             stack: host
                 .path()
-                .map(|path| IncludeTarget::File(path.to_owned()).identity())
+                .map(|path| target_of(path).identity())
                 .into_iter()
                 .collect(),
             diagnostics: Vec::new(),
@@ -359,27 +398,15 @@ impl<'i> Run<'i> {
             );
             return None;
         }
-        let text = match self.includer.loader.load(&target) {
-            Ok(text) => text,
-            Err(err) => {
-                let diagnostic = if err.kind() == io::ErrorKind::NotFound {
-                    report(
-                        codes::MISSING_INCLUDE,
-                        format!("included file `{written}` does not exist"),
-                    )
-                    .with_help(format!("resolved to `{target}`"))
-                } else {
-                    report(INCLUDE_CODE, format!("cannot include `{written}`: {err}"))
-                };
-                self.diagnostics.push(diagnostic);
-                return None;
-            }
-        };
+        let text = self.load(host, &spec, &target)?;
         if let Some(code) = &spec.code {
             return self.code(host, &spec, code, &text);
         }
-        // TODO(M7.7): content of a URL has no path; its links resolve against the URL.
-        let path = target.file().map(Path::to_path_buf);
+        // Remote content's path is its URL, so its links and includes resolve against it.
+        let path = Some(match &target {
+            IncludeTarget::File(path) => path.clone(),
+            IncludeTarget::Url(url) => PathBuf::from(url),
+        });
         let included = match self
             .includer
             .options
@@ -434,6 +461,67 @@ impl<'i> Run<'i> {
                     .cloned(),
             },
         })
+    }
+
+    /// The text of `target`, the include `spec` of `host` names, checked against its
+    /// `sha256`; `None` after reporting why there is none.
+    fn load(&mut self, host: &Document, spec: &Spec<'_>, target: &IncludeTarget) -> Option<String> {
+        let written = spec.path.value.as_str();
+        let report = |code: &str, message: String| {
+            Diagnostic::new(code, Severity::Error, host.name(), spec.path.span, message)
+        };
+        if let IncludeTarget::Url(url) = target {
+            if !is_remote(url) {
+                self.diagnostics.push(report(
+                    INCLUDE_CODE,
+                    format!("cannot include `{written}` in remote content: only http(s) URLs can be included there"),
+                ));
+                return None;
+            }
+            if !self.includer.allow_remote {
+                self.diagnostics.push(
+                    report(
+                        INCLUDE_CODE,
+                        format!("remote include `{url}` is not allowed"),
+                    )
+                    .with_help(
+                        "set `include.allow_remote: true` in `.mrq.yaml` to fetch http(s) includes",
+                    ),
+                );
+                return None;
+            }
+        }
+        let loaded = match &spec.sha256 {
+            Some((sha256, _)) => self.includer.loader.load_pinned(target, sha256),
+            None => self.includer.loader.load(target),
+        };
+        let text = match loaded {
+            Ok(text) => text,
+            Err(err) => {
+                let diagnostic = if err.kind() == io::ErrorKind::NotFound {
+                    let what = if target.file().is_some() {
+                        "file"
+                    } else {
+                        "URL"
+                    };
+                    report(
+                        codes::MISSING_INCLUDE,
+                        format!("included {what} `{written}` does not exist"),
+                    )
+                    .with_help(format!("resolved to `{target}`"))
+                } else {
+                    report(INCLUDE_CODE, format!("cannot include `{written}`: {err}"))
+                };
+                self.diagnostics.push(diagnostic);
+                return None;
+            }
+        };
+        // Without the feature, `sha256` is rejected with the attributes.
+        #[cfg(feature = "remote-include")]
+        if let Some((pinned, attr)) = &spec.sha256 {
+            self.check_pin(host, written, &text, pinned, attr)?;
+        }
+        Some(text)
     }
 
     /// The part of `included` that `spec`'s `section` and `select` keep, else its body.
@@ -529,12 +617,50 @@ impl<'i> Run<'i> {
         let Some(from) = included.path() else {
             return doc.text().to_owned();
         };
+        if let Some(url) = from.to_str().filter(|from| is_remote(from)) {
+            let edits = rewrite_links(
+                &doc,
+                ByteRange::new(0, doc.text().len()),
+                &LinkRewrite::from_url(url),
+            );
+            return apply_edits(doc.text(), &edits).expect("link edits do not overlap");
+        }
         let to = host
             .path()
             .map_or_else(|| self.includer.root.join("-"), Path::to_path_buf);
         let rewrite = LinkRewrite::new(from, to).root(&self.includer.root);
         let edits = rewrite_links(&doc, ByteRange::new(0, doc.text().len()), &rewrite);
         apply_edits(doc.text(), &edits).expect("link edits do not overlap")
+    }
+
+    /// `Some` if `text`, the content of the include `written` in `host`, has the SHA-256
+    /// `pinned` its `attr` gives; `None` after reporting that it does not.
+    #[cfg(feature = "remote-include")]
+    fn check_pin(
+        &mut self,
+        host: &Document,
+        written: &str,
+        text: &str,
+        pinned: &str,
+        attr: &DirectiveAttribute,
+    ) -> Option<()> {
+        let actual = http::sha256(text);
+        if actual == pinned {
+            return Some(());
+        }
+        self.diagnostics.push(
+            Diagnostic::new(
+                INCLUDE_CODE,
+                Severity::Error,
+                host.name(),
+                attr.span,
+                format!("the content of `{written}` does not match its `sha256`: it is `{actual}`"),
+            )
+            .with_help(format!(
+                "if the change is expected, pin the new content with `sha256={actual}`"
+            )),
+        );
+        None
     }
 
     /// The edit merging `merges` into `doc`'s frontmatter, if it changes anything.
@@ -577,6 +703,14 @@ impl<'i> Run<'i> {
             block.strip_suffix('\n').unwrap_or(&block).to_owned()
         };
         Some(TextEdit { range, replacement })
+    }
+}
+
+/// What the path of a document names: an http(s) URL for remote content, else a file.
+fn target_of(path: &Path) -> IncludeTarget {
+    match path.to_str() {
+        Some(url) if is_remote(url) => IncludeTarget::Url(url.to_owned()),
+        _ => IncludeTarget::File(path.to_owned()),
     }
 }
 
@@ -738,16 +872,17 @@ mod tests {
     use crate::symbol::{Symbol, SymbolKind};
     use crate::transform::HEADING_CLAMP_CODE;
 
-    /// Files in memory, by path as resolved; URLs as [`FileLoader`] has them.
+    /// Files in memory, by path as resolved, and URLs.
     struct Files(HashMap<PathBuf, String>);
 
     impl Loader for Files {
         fn load(&self, target: &IncludeTarget) -> io::Result<String> {
-            let Some(path) = target.file() else {
-                return FileLoader.load(target);
+            let key = match target {
+                IncludeTarget::File(path) => path.clone(),
+                IncludeTarget::Url(url) => PathBuf::from(url),
             };
             self.0
-                .get(path)
+                .get(&key)
                 .cloned()
                 .ok_or_else(|| io::ErrorKind::NotFound.into())
         }
@@ -912,23 +1047,165 @@ mod tests {
     }
 
     #[test]
-    fn later_kinds_of_include_are_not_supported_yet() {
+    fn remote_includes_need_allow_remote() {
+        let host = "<!-- mrq:include path=https://example.com/a.md -->\n";
+        let files = [("https://example.com/a.md", "A\n")];
+        let expanded = includer(&files).expand(&doc("host.md", host));
+        assert_eq!(expanded.text, host);
+        assert_eq!(
+            codes_and_messages(&expanded),
+            [(
+                INCLUDE_CODE,
+                "remote include `https://example.com/a.md` is not allowed"
+            )]
+        );
+        assert_eq!(
+            expanded.diagnostics[0].help.as_deref(),
+            Some("set `include.allow_remote: true` in `.mrq.yaml` to fetch http(s) includes")
+        );
+        let expanded = includer(&files)
+            .allow_remote(true)
+            .expand(&doc("host.md", host));
+        assert_eq!(expanded.diagnostics, []);
+        assert_eq!(expanded.text, "A\n");
+    }
+
+    #[cfg(not(feature = "remote-include"))]
+    #[test]
+    fn remote_includes_need_the_feature() {
         let host = "<!-- mrq:include path=https://example.com/a.md -->\n\n\
                     <!-- mrq:include path=a.md sha256=00 -->\n";
-        let expanded = includer(&[("a.md", "A\n")]).expand(&doc("host.md", host));
+        let expanded = Includer::new()
+            .allow_remote(true)
+            .expand(&doc("host.md", host));
         assert_eq!(expanded.text, host);
         assert_eq!(
             codes_and_messages(&expanded),
             [
                 (
                     INCLUDE_CODE,
-                    "cannot include `https://example.com/a.md`: remote includes are not supported"
+                    "cannot include `https://example.com/a.md`: remote includes need mrq built with the `remote-include` feature"
                 ),
                 (
                     INCLUDE_CODE,
-                    "`sha256` is not supported yet; the include is skipped"
+                    "`sha256` needs mrq built with the `remote-include` feature; the include is skipped"
                 ),
             ]
+        );
+    }
+
+    #[test]
+    fn remote_content_links_to_and_includes_from_its_url() {
+        let files = [
+            (
+                "https://example.com/docs/guide.md",
+                "# Guide\n\n[next](next.md#a) ![logo](../img/logo.png) [top](#guide) [abs](/x.md)\n\n\
+                 <!-- mrq:include path=part.md -->\n",
+            ),
+            ("https://example.com/docs/part.md", "[p](sub/p.md)\n"),
+        ];
+        let host = "<!-- mrq:include path=\"https://example.com/docs/guide.md\" shift=1 -->\n";
+        let expanded = includer(&files)
+            .allow_remote(true)
+            .expand(&doc("site/host.md", host));
+        assert_eq!(expanded.diagnostics, []);
+        assert_eq!(
+            expanded.text,
+            "## Guide\n\n[next](https://example.com/docs/next.md#a) \
+             ![logo](https://example.com/img/logo.png) [top](#guide) [abs](https://example.com/x.md)\n\n\
+             [p](https://example.com/docs/sub/p.md)\n"
+        );
+    }
+
+    #[test]
+    fn remote_content_includes_only_urls_and_its_cycles_fail() {
+        let files = [
+            (
+                "https://example.com/a.md",
+                "<!-- mrq:include path=/etc/passwd -->\n\n\
+                 <!-- mrq:include path=file:///etc/passwd -->\n\n\
+                 <!-- mrq:include path=./a.md -->\n",
+            ),
+            ("/etc/passwd", "secret\n"),
+        ];
+        let host = "<!-- mrq:include path=https://example.com/a.md -->\n";
+        let expanded = includer(&files)
+            .allow_remote(true)
+            .expand(&doc("host.md", host));
+        assert_eq!(
+            codes_and_messages(&expanded),
+            [
+                (
+                    codes::MISSING_INCLUDE,
+                    "included URL `/etc/passwd` does not exist"
+                ),
+                (
+                    INCLUDE_CODE,
+                    "cannot include `file:///etc/passwd` in remote content: only http(s) URLs can be included there"
+                ),
+                (
+                    codes::INCLUDE_CYCLE,
+                    "`mrq:include` cycle: https://example.com/a.md includes itself"
+                ),
+            ]
+        );
+        assert_eq!(
+            expanded.diagnostics[0].help.as_deref(),
+            Some("resolved to `https://example.com/etc/passwd`")
+        );
+        assert_eq!(
+            expanded.diagnostics[0].file,
+            Path::new("https://example.com/a.md")
+        );
+    }
+
+    #[cfg(feature = "remote-include")]
+    #[test]
+    fn sha256_pins_the_content() {
+        let good = "06f961b802bc46ee168555f066d28f4f0e9afdf3f88174c1ee6f9de004fc30a0";
+        let bad = "1e2315908e1fe3cc0b0bb744cb45f26b5601d0804642191f95128d20c4206d73";
+        let files = [("a.md", "A\n"), ("https://example.com/a.md", "A\n")];
+        let host = format!(
+            "<!-- mrq:include path=a.md sha256={good} -->\n\n\
+             <!-- mrq:include path=https://example.com/a.md sha256={} -->\n\n\
+             <!-- mrq:include path=a.md lang=text sha256={good} -->\n",
+            good.to_uppercase()
+        );
+        let expanded = includer(&files)
+            .allow_remote(true)
+            .expand(&doc("host.md", &host));
+        assert_eq!(expanded.diagnostics, []);
+        assert_eq!(expanded.text, "A\n\nA\n\n```text\nA\n```\n");
+
+        let host = format!(
+            "<!-- mrq:include path=a.md sha256={bad} -->\n\n\
+             <!-- mrq:include path=a.md sha256=xyz -->\n"
+        );
+        let expanded = includer(&files).expand(&doc("host.md", &host));
+        assert_eq!(expanded.text, host);
+        assert_eq!(
+            codes_and_messages(&expanded),
+            [
+                (
+                    INCLUDE_CODE,
+                    &*format!("the content of `a.md` does not match its `sha256`: it is `{good}`")
+                ),
+                (
+                    INCLUDE_CODE,
+                    "`sha256` must be 64 hexadecimal digits, not `xyz`"
+                ),
+            ]
+        );
+        let mismatch = &expanded.diagnostics[0];
+        assert_eq!(
+            &host[mismatch.range.start..mismatch.range.end],
+            format!("sha256={bad}")
+        );
+        assert_eq!(
+            mismatch.help.as_deref(),
+            Some(&*format!(
+                "if the change is expected, pin the new content with `sha256={good}`"
+            ))
         );
     }
 

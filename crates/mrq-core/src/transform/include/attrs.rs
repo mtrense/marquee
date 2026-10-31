@@ -8,10 +8,6 @@ use crate::document::Document;
 use crate::query::{Query, QueryError};
 use crate::validate::codes;
 
-/// Attributes of later kinds of include (remote includes), rejected until they are
-/// supported.
-const RESERVED: &[&str] = &["sha256"];
-
 /// Attributes of Markdown includes, ignored (with a warning) by code includes.
 const MARKDOWN_ONLY: &[&str] = &["shift", "section", "select", "frontmatter"];
 
@@ -40,6 +36,9 @@ pub(super) struct Spec<'d> {
     pub dedent: Option<bool>,
     /// With `lang` or a symbol, how the file is included as code instead of Markdown.
     pub code: Option<CodeSpec<'d>>,
+    /// The SHA-256 the content must have (lowercase hexadecimal digits), and the
+    /// attribute.
+    pub sha256: Option<(String, &'d DirectiveAttribute)>,
 }
 
 impl Spec<'_> {
@@ -73,6 +72,7 @@ pub(super) fn parse<'d>(
         frontmatter: FrontmatterMode::default(),
         dedent: None,
         code: None,
+        sha256: None,
     };
     let is_code = directive.get("lang").is_some()
         || SYMBOL_KINDS
@@ -131,11 +131,10 @@ pub(super) fn parse<'d>(
             },
             "lang" | "lines" | "with_docs" => code.push(attr),
             name if SYMBOL_KINDS.iter().any(|(kind, _)| *kind == name) => code.push(attr),
-            name if RESERVED.contains(&name) => out.push(report(
-                Severity::Error,
-                attr,
-                format!("`{name}` is not supported yet; the include is skipped"),
-            )),
+            "sha256" => match sha256(value) {
+                Ok(hash) => spec.sha256 = Some((hash, attr)),
+                Err(message) => out.push(report(Severity::Error, attr, message)),
+            },
             name => out.push(report(
                 Severity::Warning,
                 attr,
@@ -148,6 +147,24 @@ pub(super) fn parse<'d>(
         .iter()
         .any(|diagnostic| diagnostic.severity == Severity::Error);
     (!failed).then_some(spec)
+}
+
+/// The `sha256` attribute's `value` in lowercase, or why it is not one: not 64
+/// hexadecimal digits, or no way to check it without the `remote-include` feature.
+fn sha256(value: &str) -> Result<String, String> {
+    if !cfg!(feature = "remote-include") {
+        return Err(
+            "`sha256` needs mrq built with the `remote-include` feature; the include is skipped"
+                .to_owned(),
+        );
+    }
+    if value.len() == 64 && value.bytes().all(|b| b.is_ascii_hexdigit()) {
+        Ok(value.to_ascii_lowercase())
+    } else {
+        Err(format!(
+            "`sha256` must be 64 hexadecimal digits, not `{value}`"
+        ))
+    }
 }
 
 /// The error for an include without a `path`, at its start marker.

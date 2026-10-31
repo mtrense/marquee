@@ -14,7 +14,8 @@ pub enum IncludeTarget {
     /// A local file: the `path` resolved from the including file's directory (or the
     /// root, for `/…`), lexically normalized.
     File(PathBuf),
-    /// An `http(s)://` URL, as written.
+    /// An `http(s)://` URL: as written, or (for an include in remote content) resolved
+    /// against the URL of that content.
     Url(String),
 }
 
@@ -59,6 +60,9 @@ pub(super) fn identity(path: &Path) -> PathBuf {
 /// or fetch URLs. A target that does not exist is an error of kind
 /// [`io::ErrorKind::NotFound`] (reported as a missing include), and one the loader cannot
 /// handle is [`io::ErrorKind::Unsupported`].
+///
+/// The includer only asks for URLs when remote includes are
+/// [allowed](super::Includer::allow_remote), and checks `sha256` pins itself.
 pub trait Loader: Send + Sync {
     /// The text of `target`.
     ///
@@ -66,6 +70,18 @@ pub trait Loader: Send + Sync {
     ///
     /// The target cannot be read, or is not valid UTF-8.
     fn load(&self, target: &IncludeTarget) -> io::Result<String>;
+
+    /// The text of `target`, whose SHA-256 the include pins to `sha256` (64 lowercase
+    /// hexadecimal digits). A loader with a cache may serve a copy with that hash without
+    /// reading the target; by default, [`load`](Self::load).
+    ///
+    /// # Errors
+    ///
+    /// As for [`load`](Self::load).
+    fn load_pinned(&self, target: &IncludeTarget, sha256: &str) -> io::Result<String> {
+        let _ = sha256;
+        self.load(target)
+    }
 }
 
 /// Reads local files; URLs are [`Unsupported`](io::ErrorKind::Unsupported).
@@ -78,7 +94,11 @@ impl Loader for FileLoader {
             IncludeTarget::File(path) => fs::read_to_string(path),
             IncludeTarget::Url(_) => Err(io::Error::new(
                 io::ErrorKind::Unsupported,
-                "remote includes are not supported",
+                if cfg!(feature = "remote-include") {
+                    "`FileLoader` reads only local files; `HttpLoader` fetches URLs"
+                } else {
+                    "remote includes need mrq built with the `remote-include` feature"
+                },
             )),
         }
     }

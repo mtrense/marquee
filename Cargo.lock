@@ -1448,6 +1448,7 @@ dependencies = [
  "proptest",
  "regex",
  "reqwest",
+ "ring",
  "rustls",
  "schemars",
  "serde",

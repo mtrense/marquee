@@ -12,7 +12,8 @@
 //!   (`mrq merge`).
 //! - [`Includer`]: resolve `mrq:include` directives, recursively, with `section`,
 //!   `select`, `shift`, `dedent` and `frontmatter`, and code includes of whole files,
-//!   line ranges or symbols ([`symbol`](crate::symbol)) (`mrq interpolate`).
+//!   line ranges or symbols ([`symbol`](crate::symbol)), and remote includes of http(s)
+//!   URLs (`mrq interpolate`).
 //!
 //! ```
 //! use mrq_core::Document;
@@ -52,6 +53,8 @@ mod merge;
 mod shift;
 
 pub use include::{Expanded, FileLoader, INCLUDE_CODE, IncludeTarget, Includer, Inclusion, Loader};
+#[cfg(feature = "remote-include")]
+pub use include::{HttpLoader, HttpLoaderOptions, IncludeCache};
 pub use links::{LinkMap, LinkRewrite, Location, rewrite_links};
 pub use merge::{FrontmatterMerge, MERGE_ANCHORS_CODE, MergeOptions, Merged, merge};
 pub use shift::{HEADING_CLAMP_CODE, Overflow, ShiftOptions, Shifted, shift_headings};

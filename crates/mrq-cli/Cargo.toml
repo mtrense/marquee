@@ -16,13 +16,16 @@ name = "mrq"
 path = "src/main.rs"
 
 [features]
-default = ["frontmatter-schema", "external-links", "tree-sitter"]
+default = ["frontmatter-schema", "external-links", "remote-include", "tree-sitter"]
 # Frontmatter JSON Schema checks in `mrq validate` (`validate.frontmatter`); without it the
 # setting is ignored with a warning.
 frontmatter-schema = ["mrq-core/frontmatter-schema"]
 # Checking external http(s) links with `mrq validate --external` (or `validate.external`).
 # On by default, so release binaries can do it; nothing is requested unless asked for.
 external-links = ["mrq-core/external-links"]
+# `mrq:include` from http(s) URLs, and `sha256` pins. On by default; nothing is fetched
+# unless `include.allow_remote` is set.
+remote-include = ["mrq-core/remote-include"]
 # Symbol code includes (`function="main"`) via tree-sitter grammars. On by default; without
 # it, an include selecting a symbol fails with a diagnostic.
 tree-sitter = ["mrq-core/tree-sitter"]

@@ -2,19 +2,19 @@
 //! (feature `external-links`), with its on-disk cache.
 
 use std::collections::{BTreeMap, HashMap};
-use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, PoisonError};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 use futures_util::stream::{self, StreamExt};
-use reqwest::{Client, StatusCode, Url, redirect};
+use reqwest::{Client, StatusCode, Url};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Semaphore, SemaphorePermit};
 
 use super::{ExternalChecker, ExternalStatus};
 use crate::config::user_cache_dir;
+use crate::http::{describe, write_atomic};
 
 /// How an [`HttpChecker`] checks: retries, timeouts, rate and concurrency limits, and the
 /// cache.
@@ -109,17 +109,8 @@ impl CacheFile {
     fn save(mut self, options: &CacheOptions, now: u64) {
         self.ok
             .retain(|_, checked| now.saturating_sub(*checked) < options.ttl.as_secs());
-        let Ok(json) = serde_json::to_vec(&self) else {
-            return;
-        };
-        if let Some(dir) = options.path.parent() {
-            let _ = fs::create_dir_all(dir);
-        }
-        // Write a sibling and rename it, so a concurrent run never reads half a file.
-        let mut temp = options.path.clone().into_os_string();
-        temp.push(format!(".{}.tmp", std::process::id()));
-        if fs::write(&temp, json).is_ok() && fs::rename(&temp, &options.path).is_err() {
-            let _ = fs::remove_file(&temp);
+        if let Ok(json) = serde_json::to_vec(&self) {
+            write_atomic(&options.path, &json);
         }
     }
 }
@@ -130,9 +121,6 @@ impl CacheFile {
 pub struct HttpError {
     message: String,
 }
-
-/// The most redirects followed for one URL.
-const MAX_REDIRECTS: usize = 10;
 
 /// Checks external URLs over HTTP(S) with reqwest (TLS through rustls with the ring
 /// provider, certificates verified by the operating system), on a tokio runtime of its
@@ -181,19 +169,8 @@ impl Host {
 impl HttpChecker {
     /// A checker with `options`.
     pub fn new(options: HttpOptions) -> Result<Self, HttpError> {
-        let error = |message: String| HttpError { message };
-        // reqwest takes the process-wide rustls provider; ring, unless one is installed.
-        let _ = rustls::crypto::ring::default_provider().install_default();
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .map_err(|err| error(err.to_string()))?;
-        let client = Client::builder()
-            .user_agent(&options.user_agent)
-            .timeout(options.timeout)
-            .redirect(redirect::Policy::limited(MAX_REDIRECTS))
-            .build()
-            .map_err(|err| error(describe(&err)))?;
+        let (runtime, client) = crate::http::client(&options.user_agent, options.timeout)
+            .map_err(|message| HttpError { message })?;
         Ok(Self {
             client,
             runtime,
@@ -264,9 +241,7 @@ impl ExternalChecker for HttpChecker {
         let Some(options) = &self.options.cache else {
             return self.request(urls);
         };
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |since| since.as_secs());
+        let now = crate::http::now();
         let mut cache = CacheFile::load(options);
         let stale: Vec<&str> = urls
             .iter()
@@ -293,25 +268,6 @@ fn retryable(status: StatusCode) -> bool {
     status.is_server_error()
         || status == StatusCode::TOO_MANY_REQUESTS
         || status == StatusCode::REQUEST_TIMEOUT
-}
-
-/// A short reason for `err`, without the URL (the diagnostic names it).
-fn describe(err: &reqwest::Error) -> String {
-    if err.is_timeout() {
-        return "timed out".to_owned();
-    }
-    if err.is_redirect() {
-        return format!("more than {MAX_REDIRECTS} redirects");
-    }
-    let mut cause: &dyn Error = err;
-    while let Some(source) = cause.source() {
-        cause = source;
-    }
-    if err.is_connect() {
-        format!("connection failed: {cause}")
-    } else {
-        cause.to_string()
-    }
 }
 
 #[cfg(test)]
