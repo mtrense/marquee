@@ -1,0 +1,221 @@
+---
+source: crates/mrq-cli/tests/diff.rs
+expression: out
+---
+{
+  "mrq_diff": 1,
+  "old": "old.md",
+  "new": "new.md",
+  "sections": [
+    {
+      "status": "matched",
+      "moved": false,
+      "renamed": true,
+      "modified": false,
+      "old": {
+        "path": [
+          "Guide",
+          "Setup"
+        ],
+        "title": "Setup",
+        "level": 2,
+        "line": 9
+      },
+      "new": {
+        "path": [
+          "Guide",
+          "Install"
+        ],
+        "title": "Install",
+        "level": 2,
+        "line": 10
+      },
+      "blocks": [
+        {
+          "op": "modify",
+          "kind": "heading",
+          "old": {
+            "text": "## Setup",
+            "lines": [
+              9,
+              9
+            ]
+          },
+          "new": {
+            "text": "## Install",
+            "lines": [
+              10,
+              10
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "status": "matched",
+      "moved": false,
+      "renamed": false,
+      "modified": true,
+      "old": {
+        "path": [
+          "Reference"
+        ],
+        "title": "Reference",
+        "level": 1,
+        "line": 26
+      },
+      "new": {
+        "path": [
+          "Reference"
+        ],
+        "title": "Reference",
+        "level": 1,
+        "line": 16
+      },
+      "blocks": [
+        {
+          "op": "modify",
+          "kind": "paragraph",
+          "old": {
+            "text": "Every option.",
+            "lines": [
+              28,
+              28
+            ]
+          },
+          "new": {
+            "text": "Every option, in order.",
+            "lines": [
+              18,
+              18
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "status": "matched",
+      "moved": true,
+      "renamed": false,
+      "modified": true,
+      "old": {
+        "path": [
+          "Guide",
+          "Usage"
+        ],
+        "title": "Usage",
+        "level": 2,
+        "line": 15
+      },
+      "new": {
+        "path": [
+          "Reference",
+          "Usage"
+        ],
+        "title": "Usage",
+        "level": 2,
+        "line": 20
+      },
+      "blocks": [
+        {
+          "op": "modify",
+          "kind": "paragraph",
+          "old": {
+            "text": "Call `mrq` with a file.",
+            "lines": [
+              17,
+              17
+            ]
+          },
+          "new": {
+            "text": "Call `mrq` with one or more files.",
+            "lines": [
+              22,
+              22
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "status": "removed",
+      "moved": false,
+      "renamed": false,
+      "modified": true,
+      "old": {
+        "path": [
+          "Guide",
+          "Legacy"
+        ],
+        "title": "Legacy",
+        "level": 2,
+        "line": 22
+      },
+      "new": null,
+      "blocks": [
+        {
+          "op": "delete",
+          "kind": "heading",
+          "old": {
+            "text": "## Legacy",
+            "lines": [
+              22,
+              22
+            ]
+          }
+        },
+        {
+          "op": "delete",
+          "kind": "paragraph",
+          "old": {
+            "text": "This is going away.",
+            "lines": [
+              24,
+              24
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "status": "added",
+      "moved": false,
+      "renamed": false,
+      "modified": true,
+      "old": null,
+      "new": {
+        "path": [
+          "Reference",
+          "FAQ"
+        ],
+        "title": "FAQ",
+        "level": 2,
+        "line": 27
+      },
+      "blocks": [
+        {
+          "op": "insert",
+          "kind": "heading",
+          "new": {
+            "text": "## FAQ",
+            "lines": [
+              27,
+              27
+            ]
+          }
+        },
+        {
+          "op": "insert",
+          "kind": "paragraph",
+          "new": {
+            "text": "Ask away.",
+            "lines": [
+              29,
+              29
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

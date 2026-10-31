@@ -1,0 +1,5 @@
+---
+source: crates/mrq-cli/tests/diff.rs
+expression: "run.stderr.replace('\\\\', \"/\")"
+---
+mrq: missing.md: no such file or directory

@@ -45,6 +45,7 @@ mrq-tui.workspace = true
 mrq-lsp.workspace = true
 clap.workspace = true
 clap_complete.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 tempfile.workspace = true
 similar.workspace = true

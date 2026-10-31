@@ -29,7 +29,7 @@
 //!
 //! # Canonical form
 //!
-//! Every top-level block is printed by the [`fmt`](crate::fmt) printer on its own, with
+//! Every top-level block is printed by the [`fmt`] printer on its own, with
 //! the default markers (`-` bullets, `*` emphasis, `**` strong, backtick fences,
 //! ordered lists counting up from their start number), `wrap: never` (each paragraph
 //! on one line, whitespace runs as one space) and normalized frontmatter, without the

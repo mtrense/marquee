@@ -18,6 +18,7 @@ use mrq_core::input::{Input, InputResolver};
 use mrq_core::source::SourceFile;
 
 pub mod cli;
+mod diff;
 mod fmt;
 mod interpolate;
 mod lint;
@@ -118,6 +119,7 @@ pub fn run(cli: Cli) -> ExitCode {
             }
         },
         Command::Render(args) => render::command(&args, &cli.global),
+        Command::Diff(args) => diff::command(&args, &cli.global),
         Command::Merge(args) => {
             let Some((options, inputs)) = prepare(&cli.global, &args.inputs, false) else {
                 return ExitCode::from(EXIT_USAGE);

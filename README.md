@@ -377,6 +377,18 @@ mrq diff --word old.md new.md     # word-level changes inside modified paragraph
 git difftool -x 'mrq diff' -- README.md
 ```
 
+`OLD` or `NEW` (not both) can be `-` for stdin, and `/dev/null` or an empty file stands for a missing side, as `git difftool` passes for added and deleted files. The exit code is 0 if the documents differ only in formatting, 1 if they differ, and 2 if an input cannot be read. The flavor comes from `--flavor`, the frontmatter or the config, as for every command.
+
+The output starts with `--- OLD` and `+++ NEW` (nothing at all if there is no change), then lists each changed section in the new document's order: a header with its heading level and breadcrumb (`## Guide › Install`, `(preamble)` for what precedes the first heading), the tags `added`, `removed`, `moved from <old path>` or `renamed from <old title>`, and its line in each document (`old:9 new:10`), followed by its changed blocks in their canonical form. Deleted blocks are prefixed with `-`, inserted ones with `+`, and a modified block is shown as both; with `--word`, a modified block is one `~` line per line with `[-deleted-]` and `{+inserted+}` runs. Colors follow `--color` (by default only on a terminal, and not if `NO_COLOR` is set): headers in bold cyan, deletions in red and insertions in green, without the `[-…-]`/`{+…+}` markers.
+
+```text
+## Reference › Usage  [moved from Guide › Usage]  old:15 new:20
+- Call `mrq` with a file.
++ Call `mrq` with one or more files.
+```
+
+`--json` prints `{"mrq_diff": 1, "old", "new", "sections"}` with the changed sections only. Each has `status` (`added`, `removed` or `matched`), `moved`, `renamed`, `modified`, `old` and `new` (`{path, title, level, line}` or `null`) and `blocks`: the ops `insert`, `delete` and `modify`, each with the block `kind` and `old`/`new` as `{text, lines: [first, last]}`, and with `--word` the modified block's `words` (`{op: equal|insert|delete, text}`). Lines are 1-based.
+
 ### `mrq show`
 
 An interactive viewer for one or more files, or a directory, with colors, syntax highlighting, rendered tables, inline images and diagrams (on kitty, iTerm2, WezTerm or sixel terminals), and an outline sidebar.

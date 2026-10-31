@@ -2711,6 +2711,7 @@ dependencies = [
  "mrq-render",
  "mrq-tui",
  "predicates",
+ "serde",
  "serde_json",
  "similar 3.2.1",
  "tempfile",

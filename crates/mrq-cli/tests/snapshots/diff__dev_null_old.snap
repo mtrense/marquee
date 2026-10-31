@@ -1,0 +1,34 @@
+---
+source: crates/mrq-cli/tests/diff.rs
+expression: out
+---
+--- /dev/null
++++ new.md
+
+(preamble)  old:1 new:1
++ ---
++ title: Guide
++ ---
+
+# Guide  [added]  new:5
++ # Guide
++ Read this first.
+
+## Guide › Install  [added]  new:10
++ ## Install
++ Run the installer now.
++ Restart the shell.
+
+# Reference  [added]  new:16
++ # Reference
++ Every option, in order.
+
+## Reference › Usage  [added]  new:20
++ ## Usage
++ Call `mrq` with one or more files.
++ - `--json` prints JSON
++ - `--word` diffs words
+
+## Reference › FAQ  [added]  new:27
++ ## FAQ
++ Ask away.

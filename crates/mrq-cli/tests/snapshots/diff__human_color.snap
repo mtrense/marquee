@@ -1,0 +1,26 @@
+---
+source: crates/mrq-cli/tests/diff.rs
+expression: out
+---
+[1m--- old.md[0m
+[1m+++ new.md[0m
+
+[1m[36m## Guide › Install  [renamed from Setup]  old:9 new:10[0m
+[31m- ## Setup[0m
+[32m+ ## Install[0m
+
+[1m[36m# Reference  old:26 new:16[0m
+[31m- Every option.[0m
+[32m+ Every option, in order.[0m
+
+[1m[36m## Reference › Usage  [moved from Guide › Usage]  old:15 new:20[0m
+[31m- Call `mrq` with a file.[0m
+[32m+ Call `mrq` with one or more files.[0m
+
+[1m[36m## Guide › Legacy  [removed]  old:22[0m
+[31m- ## Legacy[0m
+[31m- This is going away.[0m
+
+[1m[36m## Reference › FAQ  [added]  new:27[0m
+[32m+ ## FAQ[0m
+[32m+ Ask away.[0m

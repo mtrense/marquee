@@ -1,0 +1,26 @@
+---
+source: crates/mrq-cli/tests/diff.rs
+expression: out
+---
+--- old.md
++++ new.md
+
+## Guide › Install  [renamed from Setup]  old:9 new:10
+- ## Setup
++ ## Install
+
+# Reference  old:26 new:16
+- Every option.
++ Every option, in order.
+
+## Reference › Usage  [moved from Guide › Usage]  old:15 new:20
+- Call `mrq` with a file.
++ Call `mrq` with one or more files.
+
+## Guide › Legacy  [removed]  old:22
+- ## Legacy
+- This is going away.
+
+## Reference › FAQ  [added]  new:27
++ ## FAQ
++ Ask away.

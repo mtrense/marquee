@@ -1,0 +1,10 @@
+---
+source: crates/mrq-cli/tests/diff.rs
+expression: run.stdout
+---
+{
+  "mrq_diff": 1,
+  "old": "old.md",
+  "new": "reformatted.md",
+  "sections": []
+}

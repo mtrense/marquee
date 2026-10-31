@@ -75,7 +75,7 @@ fn no_subcommand_is_a_usage_error() {
 
 #[test]
 fn stubbed_subcommands_report_not_implemented_and_exit_2() {
-    let invocations: &[&[&str]] = &[&["diff", "old.md", "new.md"], &["show"], &["lsp"]];
+    let invocations: &[&[&str]] = &[&["show"], &["lsp"]];
     for args in invocations {
         mrq()
             .args(*args)
@@ -91,7 +91,7 @@ fn global_flags_are_accepted_anywhere() {
     mrq()
         .args([
             "--config", "x.yaml", "--flavor", "obsidian", "--color", "never", "--format", "json",
-            "-vv", "diff", "old.md", "new.md",
+            "-vv", "show", "a.md",
         ])
         .assert()
         .code(2)

@@ -1,0 +1,5 @@
+---
+source: crates/mrq-cli/tests/diff.rs
+expression: run.stderr
+---
+mrq: only one of OLD and NEW can be `-` (stdin)
