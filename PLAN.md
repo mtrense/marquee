@@ -367,7 +367,7 @@ flowchart LR
 
 ### M10: TUI (`mrq show`)
 
-- [ ] **M10.1 App skeleton.** ratatui + crossterm event loop, panels (file list when there are several inputs, outline, document), focus switching with `Tab`, `o` toggle, help overlay `?`, resize handling, and a clean terminal restore on panic. **AC:** TestBackend snapshot tests of layouts.
+- [x] **M10.1 App skeleton.** ratatui + crossterm event loop, panels (file list when there are several inputs, outline, document), focus switching with `Tab`, `o` toggle, help overlay `?`, resize handling, and a clean terminal restore on panic. **AC:** TestBackend snapshot tests of layouts.
 - [ ] **M10.2 Document view.** Uses M8.6 styled lines, virtual scrolling, a selection model over block elements (arrow keys move between headings/blocks), and outline sync with the scroll position. **AC:** snapshot tests and smooth scrolling on a 10k-line document (benchmark).
 - [ ] **M10.3 Navigation.** `Enter` follows a link (anchor, other file, external via the OS opener), `Backspace` goes back through a history stack, outline jump. **AC:** tests on navigation state.
 - [ ] **M10.4 Search and query.** `/` search (incremental highlighting, `n`/`N`), `>` query prompt (DSL with `css:` and `jq:` prefixes), result list navigation. **AC:** state tests.

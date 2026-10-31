@@ -16,7 +16,7 @@ name = "mrq"
 path = "src/main.rs"
 
 [features]
-default = ["frontmatter-schema", "external-links", "remote-include", "tree-sitter", "kroki"]
+default = ["frontmatter-schema", "external-links", "remote-include", "tree-sitter", "kroki", "tui"]
 # Frontmatter JSON Schema checks in `mrq validate` (`validate.frontmatter`); without it the
 # setting is ignored with a warning.
 frontmatter-schema = ["mrq-core/frontmatter-schema"]
@@ -35,13 +35,15 @@ mermaid = ["mrq-render/mermaid"]
 # Diagrams from a Kroki server in `mrq render`. On by default; Kroki is never contacted
 # unless `render.diagrams.kroki.enabled` is set.
 kroki = ["mrq-render/kroki"]
+# `mrq show`, the terminal viewer (ratatui + crossterm). On by default.
+tui = ["dep:mrq-tui"]
 # `mrq render -o pdf`: embedded Typst with its bundled fonts. Off by default, it is heavy.
 pdf = ["mrq-render/pdf"]
 
 [dependencies]
 mrq-core.workspace = true
 mrq-render.workspace = true
-mrq-tui.workspace = true
+mrq-tui = { workspace = true, optional = true }
 mrq-lsp.workspace = true
 clap.workspace = true
 clap_complete.workspace = true

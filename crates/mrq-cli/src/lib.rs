@@ -25,6 +25,7 @@ mod lint;
 mod merge;
 mod query;
 mod render;
+mod show;
 mod split;
 mod stats;
 mod toc;
@@ -120,6 +121,7 @@ pub fn run(cli: Cli) -> ExitCode {
         },
         Command::Render(args) => render::command(&args, &cli.global),
         Command::Diff(args) => diff::command(&args, &cli.global),
+        Command::Show(args) => show::command(&args, &cli.global),
         Command::Merge(args) => {
             let Some((options, inputs)) = prepare(&cli.global, &args.inputs, false) else {
                 return ExitCode::from(EXIT_USAGE);

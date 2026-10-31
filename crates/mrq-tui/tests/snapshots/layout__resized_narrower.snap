@@ -1,0 +1,18 @@
+---
+source: crates/mrq-tui/tests/layout.rs
+expression: draw(&app)
+---
+"┌Outline───────┐┏guide.md━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓"
+"│› Guide       │┃# Guide                               ┃"
+"│    Install   │┃──────────────────────────────────────┃"
+"│    Usage     │┃                                      ┃"
+"│      Options │┃An introduction that is long enough to┃"
+"│              │┃wrap when the document panel gets     ┃"
+"│              │┃narrow.                               ┃"
+"│              │┃                                      ┃"
+"│              │┃## Install                            ┃"
+"│              │┃──────────────────────────────────────┃"
+"│              │┃                                      ┃"
+"│              │┃Run the installer.                    ┃"
+"└──────────────┘┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛"
+" guide.md                                ? help  q quit "

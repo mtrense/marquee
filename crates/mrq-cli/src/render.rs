@@ -385,8 +385,17 @@ impl Backend {
 /// The theme of `-s`, else of `render.style` (relative to its config file), else
 /// `light`.
 fn theme(args: &RenderArgs, loaded: &LoadedConfig) -> Result<Theme, String> {
-    let (style, dir) = if let Some(style) = &args.style {
-        (style.as_str(), PathBuf::from("."))
+    configured_theme(args.style.as_deref(), loaded)
+}
+
+/// The theme `style` (relative to the current directory), else of `render.style`
+/// (relative to its config file), else `light`.
+pub(crate) fn configured_theme(
+    style: Option<&str>,
+    loaded: &LoadedConfig,
+) -> Result<Theme, String> {
+    let (style, dir) = if let Some(style) = style {
+        (style, PathBuf::from("."))
     } else if let Some(style) = &loaded.config().render.style {
         let dir = match loaded.origin(&["render", "style"]) {
             Some(Origin::File { path, .. }) => {
@@ -403,7 +412,7 @@ fn theme(args: &RenderArgs, loaded: &LoadedConfig) -> Result<Theme, String> {
 
 /// The diagram renderers of `render.diagrams`, cached in the user cache directory when
 /// there is one.
-fn diagrams(loaded: &LoadedConfig) -> Registry {
+pub(crate) fn diagrams(loaded: &LoadedConfig) -> Registry {
     let registry = Registry::from_loaded(loaded);
     match DiagramCache::in_user_cache(|key| env::var(key).ok()) {
         Some(cache) => registry.with_cache(cache),

@@ -75,7 +75,7 @@ fn no_subcommand_is_a_usage_error() {
 
 #[test]
 fn stubbed_subcommands_report_not_implemented_and_exit_2() {
-    let invocations: &[&[&str]] = &[&["show"], &["lsp"]];
+    let invocations: &[&[&str]] = &[&["lsp"]];
     for args in invocations {
         mrq()
             .args(*args)
@@ -91,13 +91,13 @@ fn global_flags_are_accepted_anywhere() {
     mrq()
         .args([
             "--config", "x.yaml", "--flavor", "obsidian", "--color", "never", "--format", "json",
-            "-vv", "show", "a.md",
+            "-vv", "lsp",
         ])
         .assert()
         .code(2)
         .stderr(predicate::str::contains("not implemented"));
     mrq()
-        .args(["show", "-q", "--format", "sarif", "--flavor", "mkdocs"])
+        .args(["lsp", "-q", "--format", "sarif", "--flavor", "mkdocs"])
         .assert()
         .code(2)
         .stderr(predicate::str::contains("not implemented"));

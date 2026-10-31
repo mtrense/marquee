@@ -220,6 +220,13 @@ impl AnsiRenderer {
         self
     }
 
+    /// Lays out for `width` columns (at least 1) instead, e.g. after a terminal resize.
+    #[must_use]
+    pub fn with_width(mut self, width: usize) -> Self {
+        self.options.width = width.max(1);
+        self
+    }
+
     /// The options.
     pub const fn options(&self) -> &AnsiOptions {
         &self.options

@@ -54,7 +54,7 @@ Release binaries enable everything. A minimal build is available with `cargo ins
 | `tree-sitter`    | structural code includes (`function="…"`) and tree-sitter grammars |
 | `mermaid`        | built-in Mermaid rendering (no Node.js needed)                    |
 | `kroki`          | diagrams from a Kroki server in `render` (default; never contacted without `render.diagrams.kroki.enabled`) |
-| `tui`            | `mrq show`                                                        |
+| `tui`            | `mrq show` (default)                                              |
 | `lsp`            | `mrq lsp`                                                         |
 
 ## Input

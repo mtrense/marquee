@@ -418,6 +418,20 @@ fn paragraphs_wrap_at_the_width() {
 }
 
 #[test]
+fn a_renderer_can_change_its_width() {
+    let doc = Document::parse("aaa bbb ccc ddd eee fff\n");
+    let renderer = AnsiRenderer::new(&Theme::default(), options(80)).unwrap();
+    let narrow = renderer.clone().with_width(11);
+    assert_eq!(narrow.options().width, 11);
+    assert_eq!(
+        narrow.render(&doc).plain_text(),
+        "aaa bbb ccc\nddd eee fff\n"
+    );
+    // At least one column.
+    assert_eq!(renderer.with_width(0).options().width, 1);
+}
+
+#[test]
 fn tables_shrink_to_fit_the_width() {
     let src = "| a | b |\n| --- | --- |\n| one two three four five six | seven eight nine ten eleven twelve |\n";
     for width in [20, 30, 40] {
