@@ -1,0 +1,9 @@
+---
+source: crates/mrq-render/tests/pdf.rs
+expression: out
+---
+#heading(level: 1)[Intro] #label("intro")
+
+#heading(level: 2)[Hello World] #label("hello-world")
+
+See #link(label("hello-world"))[it], gone and #link("https://x.org/a?b")[web]\.

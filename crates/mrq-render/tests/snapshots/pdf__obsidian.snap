@@ -1,0 +1,9 @@
+---
+source: crates/mrq-render/tests/pdf.rs
+expression: "source.split_once(\"// --- body\\n\").unwrap().1"
+---
+#mrq-alert(rgb("#c01c28"), [Title #emph[md]])[
+Body\.
+]
+
+alias #mrq-tag[\#tag] #highlight[mark]

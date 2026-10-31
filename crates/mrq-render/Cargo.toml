@@ -23,6 +23,10 @@ png = ["dep:resvg"]
 # never OpenSSL) on a tokio runtime of its own. Off by default; even when built, Kroki is
 # never contacted unless `render.diagrams.kroki.enabled` is set.
 kroki = ["dep:reqwest", "dep:rustls", "dep:tokio"]
+# The PDF backend (`PdfRenderer`): the mrq AST as Typst markup, compiled in-process by
+# Typst with its bundled fonts (Libertinus Serif, New Computer Modern, DejaVu Sans Mono)
+# embedded in the binary. Off by default, it is heavy.
+pdf = ["dep:typst", "dep:typst-layout", "dep:typst-pdf", "dep:typst-assets"]
 
 [dependencies]
 mrq-core.workspace = true
@@ -43,12 +47,17 @@ tokio = { workspace = true, optional = true, features = ["rt", "time"] }
 merman = { workspace = true, optional = true, features = ["all-diagrams", "svg", "layout-cytoscape", "ascii"] }
 layout-rs = { workspace = true, optional = true }
 resvg = { workspace = true, optional = true, features = ["text", "system-fonts", "memmap-fonts"] }
+typst = { workspace = true, optional = true }
+typst-layout = { workspace = true, optional = true }
+typst-pdf = { workspace = true, optional = true }
+typst-assets = { workspace = true, optional = true, features = ["fonts"] }
 
 [dev-dependencies]
 jsonschema.workspace = true
 tempfile.workspace = true
 insta.workspace = true
 regex.workspace = true
+pdf-extract.workspace = true
 
 [lints]
 workspace = true

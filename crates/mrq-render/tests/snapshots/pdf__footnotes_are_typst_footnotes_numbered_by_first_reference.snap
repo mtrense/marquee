@@ -1,0 +1,5 @@
+---
+source: crates/mrq-render/tests/pdf.rs
+expression: out
+---
+A#footnote[Note b\.]#label("mrq-footnote:b") B#footnote[Note a\.]#label("mrq-footnote:a") C#footnote(label("mrq-footnote:b")) D\[^missing\]\.

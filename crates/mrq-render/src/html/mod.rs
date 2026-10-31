@@ -268,7 +268,7 @@ impl HtmlRenderer {
 }
 
 /// The page title: frontmatter `title`, the first H1, the file stem or `Document`.
-fn title(doc: &Document) -> String {
+pub(crate) fn title(doc: &Document) -> String {
     if let Some(title) = doc.frontmatter().and_then(|fm| fm.get_str(&["title"])) {
         return title.to_owned();
     }

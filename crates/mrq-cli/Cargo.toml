@@ -32,6 +32,8 @@ tree-sitter = ["mrq-core/tree-sitter"]
 # The built-in Mermaid renderer (merman), so `mermaid` diagrams need no Node.js `mmdc`.
 # The built-in DOT renderer and PNG rasterization are always on (mrq-render's defaults).
 mermaid = ["mrq-render/mermaid"]
+# `mrq render -o pdf`: embedded Typst with its bundled fonts. Off by default, it is heavy.
+pdf = ["mrq-render/pdf"]
 
 [dependencies]
 mrq-core.workspace = true

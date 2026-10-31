@@ -1,0 +1,7 @@
+---
+source: crates/mrq-render/tests/pdf.rs
+expression: gfm
+---
+#mrq-alert(rgb("#26a269"), [Tip])[
+Body\.
+]

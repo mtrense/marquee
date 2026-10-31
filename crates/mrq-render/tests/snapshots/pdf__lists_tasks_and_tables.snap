@@ -1,0 +1,27 @@
+---
+source: crates/mrq-render/tests/pdf.rs
+expression: out
+---
+#list(tight: false,
+  [a],
+  [b
+
+more],
+)
+
+#enum(tight: true, numbering: "1)",
+  [x],
+  [y],
+)
+
+#list(tight: true, marker: [],
+  [#mrq-task(false) open],
+  [#mrq-task(true) done],
+)
+
+#table(
+  columns: 2,
+  align: (left, right,),
+  table.header([#strong[h1]], [#strong[h2]]),
+  [1], [2],
+)

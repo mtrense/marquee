@@ -17,6 +17,16 @@ ignore = [
   # bincode 1.x is unmaintained (no vulnerability); syntect needs it to load its
   # syntax and theme dumps (mrq_render::highlight), and has no release without it.
   { id = "RUSTSEC-2025-0141", reason = "unmaintained, no fix; required by syntect" },
+  # The PDF backend (feature `pdf`): Typst 0.15 has no release without these.
+  { id = "RUSTSEC-2026-0206", reason = "rustybuzz unmaintained, no fix; Typst's text shaping" },
+  { id = "RUSTSEC-2026-0192", reason = "ttf-parser unmaintained, no fix; Typst's font parsing" },
+  { id = "RUSTSEC-2024-0436", reason = "paste unmaintained (proc macro), no fix; via Typst's hayagriva" },
+  { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml unmaintained, no fix; via Typst's serde_yaml" },
+  { id = "RUSTSEC-2024-0320", reason = "yaml-rust unmaintained, no fix; via the syntect features Typst enables" },
+  # quick-xml 0.38 in citationberg (Typst's CSL styles): only bibliography and CSL files
+  # are parsed with it, and the markup mrq generates never loads one.
+  { id = "RUSTSEC-2026-0194", reason = "quick-xml 0.38 pinned by citationberg; only CSL/bibliography XML" },
+  { id = "RUSTSEC-2026-0195", reason = "quick-xml 0.38 pinned by citationberg; only CSL/bibliography XML" },
 ]
 
 [licenses]
@@ -59,6 +69,16 @@ exceptions = [
   { allow = ["BSD-2-Clause"], crate = "arrayref" },
   # fontdb's face storage; pulled in by resvg (feature `png`).
   { allow = ["Zlib"], crate = "slotmap" },
+  # The PDF backend (feature `pdf`, Typst). psm (stack switching for typst-eval's
+  # stacker) builds its assembly with this archive writer at build time only.
+  { allow = ["Apache-2.0 WITH LLVM-exception"], crate = "ar_archive_writer" },
+  # EXIF orientation of raster images in typst-library, and its helper.
+  { allow = ["BSD-2-Clause"], crate = "kamadak-exif" },
+  { allow = ["BSD-2-Clause"], crate = "mutate_once" },
+  # Roman page and list numbering; pulled in by typst-library via hayagriva/biblatex.
+  { allow = ["0BSD"], crate = "roman-numerals-rs" },
+  # flate2's pure-Rust zlib backend; compresses typst-pdf's streams.
+  { allow = ["Zlib"], crate = "zlib-rs" },
 ]
 
 [licenses.private]
