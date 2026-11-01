@@ -13,6 +13,10 @@
 //!   `workspace/didChangeWorkspaceFolders`, and reloaded with the configuration when a
 //!   config file changes.
 //!
+//! After every change it publishes the [`diagnostics`] of the open documents (`validate`'s
+//! internal checks and `lint`), once [`ServerOptions::diagnostics_delay`] has passed
+//! without another change.
+//!
 //! The custom request [`INDEX_METHOD`] returns an [`IndexReport`] of what is indexed,
 //! for tests and debugging.
 
@@ -20,12 +24,14 @@ use std::io;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
 
 use mrq_core::config::FlavorName;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tower_lsp_server::{LspService, Server};
 
 pub mod convert;
+pub mod diagnostics;
 pub mod index;
 mod server;
 pub mod store;
@@ -39,7 +45,7 @@ pub const INDEX_METHOD: &str = "mrq/index";
 
 /// What the server is started with, besides what the client sends: the configuration
 /// layers that do not come from the root folders (`mrq lsp` passes the global flags).
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ServerOptions {
     /// The user config file, the lowest layer (e.g.
     /// [`user_config_path`](mrq_core::config::user_config_path)); ignored if missing.
@@ -49,6 +55,23 @@ pub struct ServerOptions {
     pub config: Option<PathBuf>,
     /// The flavor of every document (`--flavor`), over the configuration.
     pub flavor: Option<FlavorName>,
+    /// How long the documents must stay unchanged before their diagnostics are
+    /// published ([`DIAGNOSTICS_DELAY`] by default).
+    pub diagnostics_delay: Duration,
+}
+
+/// The default [`ServerOptions::diagnostics_delay`].
+pub const DIAGNOSTICS_DELAY: Duration = Duration::from_millis(200);
+
+impl Default for ServerOptions {
+    fn default() -> Self {
+        Self {
+            user_config: None,
+            config: None,
+            flavor: None,
+            diagnostics_delay: DIAGNOSTICS_DELAY,
+        }
+    }
 }
 
 /// Serves one client on `input` and `output` until it sends `exit` (or closes `input`).

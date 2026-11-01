@@ -12,12 +12,14 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use mrq_core::config::{
-    CONFIG_FILE_NAMES, ConfigError, ConfigLoader, LoadedConfig, MARKDOWNLINT_FILE_NAMES, Origin,
+    CONFIG_FILE_NAMES, Config, ConfigError, ConfigLoader, LoadedConfig, MARKDOWNLINT_FILE_NAMES,
+    Origin,
 };
 use mrq_core::document::{Document, DocumentOptions, Workspace};
 use mrq_core::input::{InputResolver, has_markdown_extension};
+use mrq_core::lint::{Linter, Registry};
 use mrq_core::source::SourceFile;
-use mrq_core::validate::{self, DocumentLink, Target};
+use mrq_core::validate::{self, DocumentLink, FrontmatterSchemas, Target};
 use serde::{Deserialize, Serialize};
 use tower_lsp_server::ls_types::{FileChangeType, Uri};
 
@@ -31,6 +33,10 @@ pub struct Root {
     path: PathBuf,
     /// `None` if the configuration could not be loaded: the defaults are used.
     config: Option<LoadedConfig>,
+    /// The configured lint rules; `None` if the `lint` settings are invalid.
+    linter: Option<Linter>,
+    /// The configured frontmatter schemas, without those that fail to load.
+    schemas: FrontmatterSchemas,
     workspace: Workspace,
     /// The files of the last walk; empty for a loose root, which is never walked.
     walked: HashSet<PathBuf>,
@@ -50,6 +56,16 @@ impl Root {
         self.config.as_ref()
     }
 
+    /// The lint rules of the configuration, `None` if its `lint` settings are invalid.
+    pub const fn linter(&self) -> Option<&Linter> {
+        self.linter.as_ref()
+    }
+
+    /// The frontmatter schemas of the configuration (`validate.frontmatter`).
+    pub const fn schemas(&self) -> &FrontmatterSchemas {
+        &self.schemas
+    }
+
     /// The documents under the root.
     pub const fn workspace(&self) -> &Workspace {
         &self.workspace
@@ -63,20 +79,46 @@ impl Root {
             .map_or(&[], |(_, links)| links)
     }
 
-    fn new(path: PathBuf, options: &ServerOptions) -> (Self, Option<ConfigError>) {
-        let (config, error) = match load_config(&path, options) {
-            Ok(config) => (Some(config), None),
-            Err(err) => (None, Some(err)),
+    /// A root with its configuration loaded, and the problems with it.
+    fn new(path: PathBuf, options: &ServerOptions) -> (Self, Vec<String>) {
+        let (config, mut errors) = match load_config(&path, options) {
+            Ok(config) => (Some(config), Vec::new()),
+            Err(err) => (None, vec![err.to_string()]),
         };
-        let workspace = Workspace::with_options(&path, document_options(config.as_ref(), options));
-        let root = Self {
+        let mut root = Self {
+            workspace: Workspace::new(&path),
             path,
-            config,
-            workspace,
+            config: None,
+            linter: None,
+            schemas: FrontmatterSchemas::default(),
             walked: HashSet::new(),
             links: Vec::new(),
         };
-        (root, error)
+        errors.extend(root.configure(config, options));
+        (root, errors)
+    }
+
+    /// Applies `config` (the defaults if `None`): how documents are parsed and checked.
+    /// The workspace starts empty; [`rebuild`](Self::rebuild) reads the files again.
+    /// Returns the settings that fail to load, which are left out.
+    fn configure(&mut self, config: Option<LoadedConfig>, options: &ServerOptions) -> Vec<String> {
+        let mut errors = Vec::new();
+        let defaults = Config::default();
+        let lint = config.as_ref().map_or(&defaults.lint, |c| &c.config().lint);
+        self.linter = Linter::new(&Registry::builtin(), lint)
+            .inspect_err(|err| errors.push(err.to_string()))
+            .ok();
+        self.schemas = match &config {
+            Some(config) => FrontmatterSchemas::from_config(config).unwrap_or_else(|err| {
+                errors.push(err.to_string());
+                FrontmatterSchemas::default()
+            }),
+            None => FrontmatterSchemas::default(),
+        };
+        let document_options = document_options(config.as_ref(), options);
+        self.workspace = Workspace::with_options(&self.path, document_options);
+        self.config = config;
+        errors
     }
 
     /// The Markdown files under the root, by the configured ignore rules.
@@ -200,9 +242,8 @@ impl WorkspaceIndex {
         if self.roots.iter().any(|root| root.path == path) {
             return Vec::new();
         }
-        let (root, error) = Root::new(path, &self.options);
+        let (root, mut errors) = Root::new(path, &self.options);
         self.roots.push(root);
-        let mut errors: Vec<String> = error.iter().map(ToString::to_string).collect();
         errors.extend(self.rebuild(self.roots.len() - 1, store));
         self.relocate_loose(store);
         errors
@@ -335,11 +376,7 @@ impl WorkspaceIndex {
         for i in 0..self.roots.len() {
             let root = &mut self.roots[i];
             match load_config(&root.path, &self.options) {
-                Ok(config) => {
-                    let options = document_options(Some(&config), &self.options);
-                    root.config = Some(config);
-                    root.workspace = Workspace::with_options(&root.path, options);
-                }
+                Ok(config) => errors.extend(root.configure(Some(config), &self.options)),
                 Err(err) => {
                     errors.push(err.to_string());
                     continue;

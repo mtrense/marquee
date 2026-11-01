@@ -18,6 +18,7 @@ use tower_lsp_server::{Client, LanguageServer};
 
 use crate::ServerOptions;
 use crate::convert::{self, uri_to_path};
+use crate::diagnostics::{Change, Publisher};
 use crate::index::{IndexReport, WorkspaceIndex, is_config_file, is_indexed_kind};
 use crate::store::DocumentStore;
 
@@ -48,22 +49,28 @@ pub struct State {
 pub struct Backend {
     client: Client,
     state: Arc<Mutex<State>>,
+    /// Told about every change, to publish the diagnostics again.
+    publisher: Publisher,
     /// Set by `shutdown`, so that `exit` can tell a clean stop.
     shut_down: Arc<AtomicBool>,
 }
 
 impl Backend {
+    /// Must be called on a tokio runtime: it starts the diagnostics [`Publisher`].
     pub(crate) fn new(client: Client, options: ServerOptions, shut_down: Arc<AtomicBool>) -> Self {
-        let state = State {
+        let delay = options.diagnostics_delay;
+        let state = Arc::new(Mutex::new(State {
             encoding: PositionEncoding::Utf16,
             store: DocumentStore::new(),
             index: WorkspaceIndex::new(options),
             pending_roots: Vec::new(),
             watch_files: false,
-        };
+        }));
+        let publisher = Publisher::spawn(client.clone(), Arc::clone(&state), delay);
         Self {
             client,
-            state: Arc::new(Mutex::new(state)),
+            state,
+            publisher,
             shut_down,
         }
     }
@@ -219,6 +226,7 @@ impl LanguageServer for Backend {
         if let Some(open) = state.store.get(&document.uri) {
             state.index.update(open.source.clone());
         }
+        self.publisher.changed(Change::Updated);
     }
 
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
@@ -233,16 +241,19 @@ impl LanguageServer for Backend {
         );
         if let Some(open) = changed {
             state.index.update(open.source.clone());
+            self.publisher.changed(Change::Updated);
         }
     }
 
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
+        let uri = params.text_document.uri;
         let mut state = self.state();
         let state = &mut *state;
-        let closed = state.store.close(&params.text_document.uri);
+        let closed = state.store.close(&uri);
         if let Some(path) = closed.as_ref().and_then(|doc| doc.source.path()) {
             state.index.close(path, &state.store);
         }
+        self.publisher.changed(Change::Closed(uri));
     }
 
     async fn did_change_watched_files(&self, params: DidChangeWatchedFilesParams) {
@@ -263,6 +274,7 @@ impl LanguageServer for Backend {
             errors
         })
         .await;
+        self.publisher.changed(Change::Updated);
     }
 
     async fn did_change_workspace_folders(&self, params: DidChangeWorkspaceFoldersParams) {
@@ -282,5 +294,6 @@ impl LanguageServer for Backend {
             errors
         })
         .await;
+        self.publisher.changed(Change::Updated);
     }
 }

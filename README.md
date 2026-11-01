@@ -441,6 +441,8 @@ A Language Server Protocol server on stdio, built on the same engine as `validat
 
 The server indexes every Markdown file under the workspace folders (honouring `.gitignore`, hidden files and `ignore`), each folder with its configuration loaded as the other commands load it from that directory (the global `--config` and `--flavor` apply to all). Open documents are followed as you type, and files and the configuration are read again when the client reports a change: the server asks it to watch Markdown files, `.mrq.yaml` and `.markdownlint*`. `--stdio` is accepted for clients that pass it; stdio is the only transport.
 
+Diagnostics are those of `mrq validate` (without external links) and `mrq lint` with the folder's configuration, including the `.markdownlint*` fallback and inline `mrq-disable` / `markdownlint-disable` comments. They are published for open documents only, 200 ms after the last change, and cleared when a document is closed. Since a document's links, wikilinks and includes depend on other files, every open document is checked again whenever a document, a watched file or the configuration changes. Lint findings link to the rule's documentation and carry their fix for code actions; when a lint rule reports exactly what a `validate` check does (MRQ004 and `stale-include`), only the lint finding is shown.
+
 Neovim:
 
 ```lua

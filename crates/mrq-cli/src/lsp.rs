@@ -23,6 +23,7 @@ pub fn command(_args: &LspArgs, global: &GlobalArgs) -> ExitCode {
         user_config: user_config_path(|key| env::var(key).ok()),
         config,
         flavor: global.flavor.map(crate::flavor_name),
+        ..ServerOptions::default()
     };
     match mrq_lsp::run_stdio(options) {
         Ok(true) => ExitCode::SUCCESS,

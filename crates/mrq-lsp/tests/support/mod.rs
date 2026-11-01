@@ -28,10 +28,10 @@ use mrq_lsp::ls_types::request::{self, Request};
 use mrq_lsp::ls_types::{
     ClientCapabilities, DidChangeTextDocumentParams, DidChangeWatchedFilesClientCapabilities,
     DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    FileChangeType, FileEvent, InitializeParams, InitializeResult, InitializedParams, Position,
-    PublishDiagnosticsParams, Range, TextDocumentContentChangeEvent, TextDocumentIdentifier,
-    TextDocumentItem, Uri, VersionedTextDocumentIdentifier, WorkspaceClientCapabilities,
-    WorkspaceFolder,
+    FileChangeType, FileEvent, InitializeParams, InitializeResult, InitializedParams,
+    NumberOrString, Position, PublishDiagnosticsParams, Range, TextDocumentContentChangeEvent,
+    TextDocumentIdentifier, TextDocumentItem, Uri, VersionedTextDocumentIdentifier,
+    WorkspaceClientCapabilities, WorkspaceFolder,
 };
 use mrq_lsp::{INDEX_METHOD, IndexReport, ServerOptions};
 use serde_json::{Value, json};
@@ -61,9 +61,13 @@ pub struct TestClient {
 }
 
 impl TestClient {
-    /// Starts a server with options that read no user configuration.
+    /// Starts a server with options that read no user configuration and publish
+    /// diagnostics without delay.
     pub fn start() -> Self {
-        Self::start_with(ServerOptions::default())
+        Self::start_with(ServerOptions {
+            diagnostics_delay: Duration::ZERO,
+            ..ServerOptions::default()
+        })
     }
 
     /// Starts a server with `options`, on the current tokio runtime.
@@ -206,6 +210,37 @@ impl TestClient {
             .await
     }
 
+    /// Waits for a `textDocument/publishDiagnostics` for `uri` that satisfies `accept`,
+    /// dropping the earlier ones for `uri`: publications may be coalesced, so a test
+    /// waits for the state it expects rather than for a number of them.
+    pub async fn diagnostics_until(
+        &mut self,
+        uri: &Uri,
+        accept: impl Fn(&PublishDiagnosticsParams) -> bool,
+    ) -> PublishDiagnosticsParams {
+        let wait = async {
+            loop {
+                let params = self.diagnostics(uri).await;
+                if accept(&params) {
+                    return params;
+                }
+            }
+        };
+        tokio::time::timeout(TIMEOUT, wait)
+            .await
+            .unwrap_or_else(|_| panic!("no matching diagnostics for {}", uri.as_str()))
+    }
+
+    /// Waits for diagnostics for `uri` whose codes are `codes`, in order.
+    pub async fn diagnostics_with_codes(
+        &mut self,
+        uri: &Uri,
+        codes: &[&str],
+    ) -> PublishDiagnosticsParams {
+        self.diagnostics_until(uri, |params| diagnostic_codes(params) == codes)
+            .await
+    }
+
     /// The requests the server sent so far with `method`, as JSON-RPC messages.
     pub fn server_requests(&self, method: &str) -> Vec<Value> {
         let requests = self.server_requests.lock().unwrap();
@@ -320,6 +355,19 @@ pub fn initialize_params(roots: &[&Path]) -> InitializeParams {
 /// The `file:` URI of the absolute `path`.
 pub fn uri(path: &Path) -> Uri {
     Uri::from_file_path(path).unwrap_or_else(|| panic!("no URI for {}", path.display()))
+}
+
+/// The codes of published diagnostics, in order.
+pub fn diagnostic_codes(params: &PublishDiagnosticsParams) -> Vec<String> {
+    params
+        .diagnostics
+        .iter()
+        .map(|diagnostic| match &diagnostic.code {
+            Some(NumberOrString::String(code)) => code.clone(),
+            Some(NumberOrString::Number(code)) => code.to_string(),
+            None => String::new(),
+        })
+        .collect()
 }
 
 /// A change replacing the whole text.

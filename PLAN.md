@@ -394,7 +394,7 @@ flowchart LR
 ### M11: LSP (`mrq lsp`)
 
 - [x] **M11.1 Server skeleton.** tower-lsp-server on stdio, document store with incremental sync, a workspace index (all Markdown files under the root folders, anchors, links) updated on change and on file watch, and config reload. **AC:** an integration test harness that speaks LSP over in-memory pipes.
-- [ ] **M11.2 Diagnostics.** validate (internal checks only) and lint, published per file (debounced). Cross-file anchor diagnostics are re-evaluated when the target changes. **AC:** harness tests.
+- [x] **M11.2 Diagnostics.** validate (internal checks only) and lint, published per file (debounced). Cross-file anchor diagnostics are re-evaluated when the target changes. **AC:** harness tests.
 - [ ] **M11.3 Navigation.** definition (links, anchors, footnotes, refdefs, wikilinks), references (to headings and files), document symbols, workspace symbols, hover (link target preview, footnote text). **AC:** harness tests.
 - [ ] **M11.4 Completion.** File paths after `](`, anchors after `#` (including `file.md#`), footnote labels, refdef labels, wikilink targets. **AC:** harness tests.
 - [ ] **M11.5 Rename.** prepareRename and rename on headings that update every link to the anchor across the workspace (a WorkspaceEdit). File rename (`workspace/willRenameFiles`) rewrites links. **AC:** harness tests with multiple files.
