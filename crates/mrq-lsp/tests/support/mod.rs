@@ -27,15 +27,17 @@ use mrq_core::source::{PositionEncoding, SourceFile, TextEdit as SourceEdit, app
 use mrq_lsp::ls_types::notification::{self, Notification};
 use mrq_lsp::ls_types::request::{self, Request};
 use mrq_lsp::ls_types::{
-    ClientCapabilities, CompletionItem, CompletionParams, CompletionResponse,
+    ClientCapabilities, CodeAction, CodeActionContext, CodeActionKind, CodeActionOrCommand,
+    CodeActionParams, CompletionItem, CompletionParams, CompletionResponse,
     DidChangeTextDocumentParams, DidChangeWatchedFilesClientCapabilities,
     DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentChanges, DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, FileChangeType,
-    FileEvent, FileRename, GotoDefinitionParams, GotoDefinitionResponse, HoverContents,
-    HoverParams, InitializeParams, InitializeResult, InitializedParams, Location, MarkupKind,
-    NumberOrString, OneOf, PartialResultParams, Position, PrepareRenameResponse,
-    PublishDiagnosticsParams, Range, ReferenceContext, ReferenceParams, RenameFilesParams,
-    RenameParams, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
+    DocumentChanges, DocumentFormattingParams, DocumentSymbol, DocumentSymbolParams,
+    DocumentSymbolResponse, FileChangeType, FileEvent, FileRename, FormattingOptions,
+    GotoDefinitionParams, GotoDefinitionResponse, HoverContents, HoverParams, InitializeParams,
+    InitializeResult, InitializedParams, Location, MarkupKind, NumberOrString, OneOf,
+    PartialResultParams, Position, PrepareRenameResponse, PublishDiagnosticsParams, Range,
+    ReferenceContext, ReferenceParams, RenameFilesParams, RenameParams,
+    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
     TextDocumentPositionParams, TextEdit, Uri, VersionedTextDocumentIdentifier,
     WorkDoneProgressParams, WorkspaceClientCapabilities, WorkspaceEdit,
     WorkspaceEditClientCapabilities, WorkspaceFolder, WorkspaceSymbol, WorkspaceSymbolParams,
@@ -440,6 +442,62 @@ impl TestClient {
     pub async fn did_rename_files(&mut self, renames: &[(&Path, &Path)]) {
         self.notify::<notification::DidRenameFiles>(rename_files_params(renames))
             .await;
+    }
+
+    /// `textDocument/formatting` of `uri` (tab size 4, spaces), the edits or `None` for
+    /// `null`.
+    pub async fn formatting(&mut self, uri: &Uri) -> Option<Vec<TextEdit>> {
+        let params = DocumentFormattingParams {
+            text_document: TextDocumentIdentifier::new(uri.clone()),
+            options: FormattingOptions {
+                tab_size: 4,
+                insert_spaces: true,
+                ..FormattingOptions::default()
+            },
+            work_done_progress_params: WorkDoneProgressParams::default(),
+        };
+        self.request::<request::Formatting>(params).await
+    }
+
+    /// `textDocument/codeAction` for `range` of `uri`, with no diagnostics in the context
+    /// and the kinds `only`; the code actions, empty for `null` (commands fail the test).
+    pub async fn code_actions(
+        &mut self,
+        uri: &Uri,
+        range: Range,
+        only: Option<&[CodeActionKind]>,
+    ) -> Vec<CodeAction> {
+        let context = CodeActionContext {
+            only: only.map(<[_]>::to_vec),
+            ..CodeActionContext::default()
+        };
+        self.code_actions_in(uri, range, context).await
+    }
+
+    /// `textDocument/codeAction` for `range` of `uri` in `context`, as
+    /// [`code_actions`](Self::code_actions).
+    pub async fn code_actions_in(
+        &mut self,
+        uri: &Uri,
+        range: Range,
+        context: CodeActionContext,
+    ) -> Vec<CodeAction> {
+        let params = CodeActionParams {
+            text_document: TextDocumentIdentifier::new(uri.clone()),
+            range,
+            context,
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+        };
+        self.request::<request::CodeActionRequest>(params)
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|action| match action {
+                CodeActionOrCommand::CodeAction(action) => action,
+                CodeActionOrCommand::Command(command) => panic!("a command: {command:?}"),
+            })
+            .collect()
     }
 
     /// The server's view of the workspace ([`INDEX_METHOD`]).

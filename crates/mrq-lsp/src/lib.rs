@@ -22,7 +22,9 @@
 //! `textDocument/documentSymbol` and `workspace/symbol`, [`complete`]
 //! `textDocument/completion`, [`rename`] `textDocument/prepareRename`,
 //! `textDocument/rename` (headings) and `workspace/willRenameFiles`; the index follows
-//! `workspace/didRenameFiles`.
+//! `workspace/didRenameFiles`. [`format`] answers `textDocument/formatting` with `mrq
+//! fmt`'s printer, and [`actions`] `textDocument/codeAction`: lint quick fixes, "fix
+//! all" and refreshing `mrq:include` regions.
 //!
 //! The custom request [`INDEX_METHOD`] returns an [`IndexReport`] of what is indexed,
 //! for tests and debugging.
@@ -37,9 +39,11 @@ use mrq_core::config::FlavorName;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tower_lsp_server::{LspService, Server};
 
+pub mod actions;
 pub mod complete;
 pub mod convert;
 pub mod diagnostics;
+pub mod format;
 pub mod index;
 pub mod navigate;
 pub mod rename;

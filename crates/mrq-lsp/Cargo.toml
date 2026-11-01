@@ -15,6 +15,7 @@ tower-lsp-server.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "io-std", "io-util", "macros", "sync"] }
 serde.workspace = true
 serde_json.workspace = true
+similar.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

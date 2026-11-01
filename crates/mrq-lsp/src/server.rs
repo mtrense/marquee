@@ -7,15 +7,17 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use mrq_core::source::PositionEncoding;
 use tower_lsp_server::jsonrpc::{Error, Result};
 use tower_lsp_server::ls_types::{
-    CompletionOptions, CompletionParams, CompletionResponse, DidChangeTextDocumentParams,
-    DidChangeWatchedFilesParams, DidChangeWatchedFilesRegistrationOptions,
-    DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    CodeAction, CodeActionOptions, CodeActionOrCommand, CodeActionParams,
+    CodeActionProviderCapability, CodeActionResponse, CompletionOptions, CompletionParams,
+    CompletionResponse, DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
+    DidChangeWatchedFilesRegistrationOptions, DidChangeWorkspaceFoldersParams,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentFormattingParams,
     DocumentSymbolParams, DocumentSymbolResponse, FileChangeType, FileSystemWatcher, GlobPattern,
     GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability,
     InitializeParams, InitializeResult, InitializedParams, Location, MessageType, OneOf, Position,
     PrepareRenameResponse, ReferenceParams, Registration, RenameFilesParams, RenameOptions,
     RenameParams, ServerCapabilities, ServerInfo, TextDocumentPositionParams,
-    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, TextEdit, Uri,
     WorkDoneProgressOptions, WorkspaceEdit, WorkspaceFileOperationsServerCapabilities,
     WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities, WorkspaceSymbolParams,
     WorkspaceSymbolResponse,
@@ -27,7 +29,7 @@ use crate::convert::{self, uri_to_path};
 use crate::diagnostics::{Change, Publisher};
 use crate::index::{IndexReport, WorkspaceIndex, is_config_file, is_indexed_kind};
 use crate::store::DocumentStore;
-use crate::{complete, navigate, rename, symbols};
+use crate::{actions, complete, format, navigate, rename, symbols};
 
 /// The globs of the files the server asks the client to watch: Markdown files and the
 /// config files (`.mrq.yaml`, markdownlint's).
@@ -256,6 +258,11 @@ impl LanguageServer for Backend {
                 trigger_characters: Some(complete::TRIGGER_CHARACTERS.map(String::from).to_vec()),
                 ..CompletionOptions::default()
             }),
+            document_formatting_provider: Some(OneOf::Left(true)),
+            code_action_provider: Some(CodeActionProviderCapability::Options(CodeActionOptions {
+                code_action_kinds: Some(actions::KINDS.to_vec()),
+                ..CodeActionOptions::default()
+            })),
             ..ServerCapabilities::default()
         };
         Ok(InitializeResult {
@@ -534,5 +541,58 @@ impl LanguageServer for Backend {
         let state = self.state();
         let symbols = symbols::workspace_symbols(&state.index, &params.query, state.encoding);
         Ok(Some(WorkspaceSymbolResponse::Nested(symbols)))
+    }
+
+    async fn formatting(&self, params: DocumentFormattingParams) -> Result<Option<Vec<TextEdit>>> {
+        let Some(path) = uri_to_path(&params.text_document.uri) else {
+            return Ok(None);
+        };
+        // Code formatters are programs that may take a while: off the async threads.
+        self.read_blocking(move |state| {
+            let root = state.index.root_of(&path)?;
+            let document = root.workspace().get(&path)?;
+            let edits = format::formatting(root, document)
+                .into_iter()
+                .map(|edit| {
+                    let range = convert::range(document.source(), edit.range, state.encoding);
+                    TextEdit::new(range, edit.replacement)
+                })
+                .collect();
+            Some(edits)
+        })
+        .await
+    }
+
+    async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+        let uri = params.text_document.uri;
+        let Some(path) = uri_to_path(&uri) else {
+            return Ok(None);
+        };
+        let (range, context) = (params.range, params.context);
+        self.read_blocking(move |state| {
+            let source = state.index.document(&path)?.source();
+            let request = actions::Request {
+                range: convert::byte_range(source, range, state.encoding),
+                diagnostics: &context.diagnostics,
+                only: context.only.as_deref(),
+            };
+            let found = actions::code_actions(&state.index, &path, &uri, request, state.encoding);
+            let response = found
+                .into_iter()
+                .map(|action| {
+                    let edits = rename::Edits::from([(path.clone(), action.edits)]);
+                    CodeActionOrCommand::CodeAction(CodeAction {
+                        title: action.title,
+                        kind: Some(action.kind),
+                        diagnostics: (!action.diagnostics.is_empty()).then_some(action.diagnostics),
+                        edit: state.workspace_edit(edits),
+                        is_preferred: action.preferred.then_some(true),
+                        ..CodeAction::default()
+                    })
+                })
+                .collect();
+            Some(response)
+        })
+        .await
     }
 }

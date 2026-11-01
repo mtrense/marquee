@@ -36,7 +36,9 @@ const MARKDOWNLINT_DOCS: &str = "https://github.com/DavidAnson/markdownlint/blob
 /// The codes of findings about something unused, which editors may fade out.
 const UNNECESSARY: [&str; 3] = [codes::UNUSED_FOOTNOTE, codes::UNUSED_REFERENCE, "MD053"];
 
-/// The `data` of a published diagnostic whose finding has a fix, for code actions.
+/// The `data` of a published diagnostic whose finding has a fix, for clients that want
+/// it; the server's own [code actions](crate::actions) find the fix again in the current
+/// text instead.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DiagnosticData {
     pub fix: FixData,

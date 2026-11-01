@@ -95,3 +95,23 @@ Paths in the log are relative to the current directory (`docs/broken.md`), which
 3. In WezTerm, repeat 2: ratatui-image uses iTerm2's protocol there (its kitty support has no placeholders); check the same, in particular that partly scrolled images are cut at the panel.
 4. Check the fallbacks: `MRQ_GRAPHICS=halfblocks mrq show doc.md` shows colored `▀` blocks in place of the images; `MRQ_GRAPHICS=none` and `--color never` show the alt texts and the DOT block as code; `NO_COLOR=1` keeps the pictures in kitty. Inside tmux, the images are half blocks. In Terminal.app (no protocol) they are half blocks, without a noticeable pause at start. `mrq show - < doc.md` does not query the terminal (its answer would come on stdin): it starts at once, shows the relative images' alt texts (stdin has no directory) and the DOT diagram as half blocks or, with `MRQ_GRAPHICS=kitty`, as a picture.
 5. If at hand, check sixel in foot or `xterm -ti vt340`, with `MRQ_GRAPHICS=sixel` where the terminal is not detected, scrolling through `big.png` as in 2.
+
+### `mrq lsp` works in Neovim and Helix as docs/editors.md sets it up
+
+The tests in `crates/mrq-lsp/tests/` drive the server over in-memory pipes with a scripted client (`tests/support/mod.rs`). Whether real clients accept its answers, and whether the setup in [editors.md](editors.md) is right, can only be checked by hand:
+
+1. Install the binary (`just install`) and make a scratch workspace: a `.mrq.yaml` with `fmt:\n  list_marker: "*"`, a `part.md` (`Part.`), and an `a.md` with a heading, a line with one trailing space, three blank lines, a `- one` / `- two` list, a link `[b](b.md#setup)`, an outdated region `<!-- mrq:include path="part.md" -->` / `old` / `<!-- mrq:end -->`, and a `b.md` with `## Setup`.
+2. In Neovim 0.11+, with only the `vim.lsp.config` / `vim.lsp.enable` block and the optional autocommand and key from editors.md in an otherwise empty config (`nvim -u mini.lua a.md`), check that:
+   - `:checkhealth vim.lsp` lists `mrq` attached to the buffer, with the workspace as its root;
+   - diagnostics appear for the trailing space (MD009) and the blank lines (MD012), and the include region (MRQ004 if enabled);
+   - `gra` on the trailing-space line (cursor anywhere on it) offers "Delete the trailing spaces" first, and applying it removes only the space; in the include region it offers "Refresh include region", which writes `Part.` between the markers; `<leader>mf` fixes everything at once, and `u` undoes each in one step;
+   - typing a few characters and invoking `gra` at once still gives fixes that land where they should (no edits against an older version);
+   - `:w` formats the buffer (`*` bullets, from `.mrq.yaml`) without moving the cursor off its line, and `:lua vim.lsp.buf.format()` on a formatted buffer changes nothing (`:undolist` shows no new entry);
+   - `<C-]>` on the link jumps to `b.md`'s `## Setup`, `K` shows its preview, and `grn` on `## Setup` renames it and the link.
+3. Repeat with the Neovim 0.10 `FileType` snippet, if a 0.10 is at hand.
+4. In Helix, with the `languages.toml` from editors.md, check that:
+   - `hx --health markdown` lists `mrq` as found;
+   - the same diagnostics show in the gutter, and `space a` on the trailing space, in the include region and elsewhere offers the same actions as in Neovim, which apply as there;
+   - `:w` with `auto-format = true` formats the document with `*` bullets, and `:format` does the same;
+   - `gd`, `space k` and `space r` work as `<C-]>`, `K` and `grn` do in Neovim.
+5. Check that formatting and the actions also work on a file outside the workspace (opened by its absolute path), with the default settings (`-` bullets).
