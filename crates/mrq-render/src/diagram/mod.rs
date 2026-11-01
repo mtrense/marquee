@@ -9,7 +9,7 @@
 //! | Language | Renderers |
 //! | --- | --- |
 //! | any with a `render.diagrams.commands` entry | that command first |
-//! | `mermaid` | built in ([`MermaidRenderer`], feature `mermaid`) → `mmdc` → Kroki |
+//! | `mermaid` | built in (`MermaidRenderer`, feature `mermaid`) → `mmdc` → Kroki |
 //! | `dot`, `graphviz` | `dot` → built in ([`DotRenderer`], feature `dot`) → Kroki |
 //! | `d2` | `d2` → Kroki |
 //! | `plantuml` | `plantuml` → Kroki |
@@ -393,7 +393,7 @@ impl Registry {
     }
 
     /// Puts `renderer` in the place of the renderer with the [id](DiagramRenderer::id)
-    /// `id`, e.g. a resvg-safe [`MermaidRenderer`] for the PDF backend; unchanged if
+    /// `id`, e.g. a resvg-safe `MermaidRenderer` for the PDF backend; unchanged if
     /// there is none.
     #[must_use]
     pub fn replacing(mut self, id: &str, renderer: impl DiagramRenderer + 'static) -> Self {

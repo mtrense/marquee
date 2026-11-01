@@ -22,7 +22,7 @@
 //! `textDocument/documentSymbol` and `workspace/symbol`, [`complete`]
 //! `textDocument/completion`, [`rename`] `textDocument/prepareRename`,
 //! `textDocument/rename` (headings) and `workspace/willRenameFiles`; the index follows
-//! `workspace/didRenameFiles`. [`format`] answers `textDocument/formatting` with `mrq
+//! `workspace/didRenameFiles`. [`format`](mod@format) answers `textDocument/formatting` with `mrq
 //! fmt`'s printer, and [`actions`] `textDocument/codeAction`: lint quick fixes, "fix
 //! all" and refreshing `mrq:include` regions.
 //!

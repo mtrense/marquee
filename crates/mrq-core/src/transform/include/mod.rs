@@ -1,107 +1,4 @@
-//! Include resolution: [`Includer`].
-//!
-//! An `<!-- mrq:include path="…" -->` region (see [`directive`](crate::directive)) stands
-//! for the content of another file. [`Includer::expand`] replaces every include region of
-//! a document, markers and old content alike, by that content (`mrq interpolate`);
-//! [`Includer::refresh`] regenerates the content between the markers instead
-//! (`--in-place`), and [`Includer::include`] gives the content of one region.
-//!
-//! The content of an include is made in this order:
-//!
-//! 1. The `path` is resolved like a link ([`Workspace::resolve`](crate::Workspace::resolve):
-//!    relative to the including file, `/…` from the [root](Includer::root)) to an
-//!    [`IncludeTarget`], read by the [`Loader`] and parsed.
-//! 2. Its own includes are expanded, recursively. An include of a file that is already
-//!    being included (the including file itself, or one that includes it) is a cycle,
-//!    reported with the chain of canonical paths.
-//! 3. `section="Heading"` keeps the section of the first heading whose text is
-//!    `Heading` (ignoring case) or whose anchor is `Heading` (`section=install`), from
-//!    the heading through its subsections. `select="…"` keeps what the
-//!    [selector](crate::query::Query::selector) selects (within the section, if both are
-//!    given), the results separated by blank lines. Without either, everything after the
-//!    frontmatter is kept.
-//! 4. `dedent` (`dedent=true`; off by default for Markdown) strips the indentation all
-//!    non-blank lines share.
-//! 5. `shift=N` shifts the headings by N levels ([`shift_headings`]).
-//! 6. Relative links and assets are rebased to work from the including file
-//!    ([`rewrite_links`]). On [expansion](Includer::expand), links to anchors of a file
-//!    included whole or by `section` go to the headings they became in the expanded
-//!    document (`chapter.md#setup` to `#setup-1` when an earlier include also has a
-//!    Setup), in the included content and in the including file itself, whose own
-//!    `#anchor`s follow its headings the same way. Headings are matched in order, and a
-//!    file's links are left as they are if the numbers differ (after a `dedent` that
-//!    makes headings of code, say); a link to a file without an anchor, and the links of
-//!    `select` and remote includes, are not redirected.
-//! 7. Leading blank lines and trailing whitespace are dropped. `frontmatter=keep` puts
-//!    the frontmatter (as written) before the content; `frontmatter=merge` adds its keys
-//!    to the including file's frontmatter, where the including file and earlier includes
-//!    win; `frontmatter=strip` (the default) drops it.
-//!
-//! An include with `lang="rust"` is a *code include*: the file's text, not parsed or
-//! expanded (so a file may include itself), in a fenced code block with `lang` as the
-//! info string. `lines` keeps a range of lines (`10-20`, `10-`, `-20` or `10`, counted
-//! from 1; an end past the last line stops there), `dedent` is on by default, and the
-//! fence is longer than any run of its character in the code (tildes if `lang` has a
-//! backtick). `shift`, `section`, `select` and `frontmatter` do not apply and get a
-//! warning; `lines` without `lang` is an error.
-//!
-//! A *symbol include* is a code include of one symbol's definition: `function="main"`,
-//! `struct="Point"`, `class="Greeter"`, or `symbol="Point::new"` for any kind. The name
-//! may be qualified (`Point::new` or `Point.new`) and selects the symbols whose qualified
-//! names end with it; none or several is an error listing the candidates. The
-//! [`SymbolLocator`] (with the `tree-sitter` feature, by default) knows the language from
-//! the first word of `lang` or else the file's extension, and `lang` defaults to the
-//! language's name (`rust`). Doc comments, attributes and decorators before the
-//! definition are left out unless `with_docs=true`. `lines` then counts from the
-//! symbol's first line, and `dedent` strips a method's indentation. Without a locator, an
-//! include selecting a symbol fails.
-//!
-//! A *remote include* has an `http(s)://` URL as its `path`. Remote includes are refused
-//! unless [allowed](Includer::allow_remote) (`include.allow_remote`); with the
-//! `remote-include` feature the default loader, `HttpLoader`, fetches them (and can
-//! cache them on disk), without it they fail. Remote content links and includes from its
-//! URL: its relative links and assets become absolute URLs
-//! ([`LinkRewrite::from_url`]), and the `path`s of its own includes are resolved
-//! against the URL, so they are remote too (a `file:` URL is an error).
-//!
-//! `sha256="…"` (64 hexadecimal digits; needs the `remote-include` feature) pins the
-//! content of any include, local or remote: the text read must have that SHA-256, or the
-//! include fails. A [`Loader`] with a cache may serve pinned content from it
-//! ([`Loader::load_pinned`]).
-//!
-//! An include that fails (a missing file, a cycle, a bad attribute, a section or
-//! selector that finds nothing, a `lines` range past the end, a missing or ambiguous
-//! symbol, a remote include that is not allowed or cannot be fetched, a `sha256`
-//! mismatch) is reported and left as it is, markers included. Unknown attributes get a
-//! warning.
-//!
-//! ```
-//! use std::collections::HashMap;
-//! use std::io;
-//! use mrq_core::document::DocumentOptions;
-//! use mrq_core::source::SourceFile;
-//! use mrq_core::transform::{IncludeTarget, Includer, Loader};
-//!
-//! struct Files(HashMap<&'static str, &'static str>);
-//!
-//! impl Loader for Files {
-//!     fn load(&self, target: &IncludeTarget) -> io::Result<String> {
-//!         let path = target.file().and_then(|path| path.to_str()).unwrap_or_default();
-//!         self.0.get(path).map(|text| text.to_string()).ok_or(io::ErrorKind::NotFound.into())
-//!     }
-//! }
-//!
-//! let files = Files(HashMap::from([(
-//!     "docs/install.md",
-//!     "---\ntitle: Install\n---\n# Install\n\n![shot](img/shot.png)\n",
-//! )]));
-//! let src = "# Guide\n\n<!-- mrq:include path=\"install.md\" shift=1 -->\n<!-- mrq:end -->\n";
-//! let doc = DocumentOptions::new().parse_source(SourceFile::new(Some("docs/guide.md".into()), src))?;
-//! let expanded = Includer::new().loader(files).expand(&doc);
-//! assert_eq!(expanded.diagnostics, []);
-//! assert_eq!(expanded.text, "# Guide\n\n## Install\n\n![shot](img/shot.png)\n");
-//! # Ok::<(), mrq_core::flavor::FlavorError>(())
-//! ```
+//! Include resolution: [`Includer`], whose docs describe the directive.
 
 mod attrs;
 mod code;
@@ -143,13 +40,116 @@ use crate::validate::{codes, is_remote};
 /// that cannot be merged.
 pub const INCLUDE_CODE: &str = "include";
 
-/// Resolves `mrq:include` directives; see the [module docs](self).
+/// Resolves `mrq:include` directives.
+///
+/// An `<!-- mrq:include path="…" -->` region (see [`directive`](crate::directive)) stands
+/// for the content of another file. [`Includer::expand`] replaces every include region of
+/// a document, markers and old content alike, by that content (`mrq interpolate`);
+/// [`Includer::refresh`] regenerates the content between the markers instead
+/// (`--in-place`), and [`Includer::include`] gives the content of one region.
+///
+/// The content of an include is made in this order:
+///
+/// 1. The `path` is resolved like a link ([`Workspace::resolve`](crate::Workspace::resolve):
+///    relative to the including file, `/…` from the [root](Includer::root)) to an
+///    [`IncludeTarget`], read by the [`Loader`] and parsed.
+/// 2. Its own includes are expanded, recursively. An include of a file that is already
+///    being included (the including file itself, or one that includes it) is a cycle,
+///    reported with the chain of canonical paths.
+/// 3. `section="Heading"` keeps the section of the first heading whose text is
+///    `Heading` (ignoring case) or whose anchor is `Heading` (`section=install`), from
+///    the heading through its subsections. `select="…"` keeps what the
+///    [selector](crate::query::Query::selector) selects (within the section, if both are
+///    given), the results separated by blank lines. Without either, everything after the
+///    frontmatter is kept.
+/// 4. `dedent` (`dedent=true`; off by default for Markdown) strips the indentation all
+///    non-blank lines share.
+/// 5. `shift=N` shifts the headings by N levels ([`shift_headings`]).
+/// 6. Relative links and assets are rebased to work from the including file
+///    ([`rewrite_links`]). On [expansion](Includer::expand), links to anchors of a file
+///    included whole or by `section` go to the headings they became in the expanded
+///    document (`chapter.md#setup` to `#setup-1` when an earlier include also has a
+///    Setup), in the included content and in the including file itself, whose own
+///    `#anchor`s follow its headings the same way. Headings are matched in order, and a
+///    file's links are left as they are if the numbers differ (after a `dedent` that
+///    makes headings of code, say); a link to a file without an anchor, and the links of
+///    `select` and remote includes, are not redirected.
+/// 7. Leading blank lines and trailing whitespace are dropped. `frontmatter=keep` puts
+///    the frontmatter (as written) before the content; `frontmatter=merge` adds its keys
+///    to the including file's frontmatter, where the including file and earlier includes
+///    win; `frontmatter=strip` (the default) drops it.
+///
+/// An include with `lang="rust"` is a *code include*: the file's text, not parsed or
+/// expanded (so a file may include itself), in a fenced code block with `lang` as the
+/// info string. `lines` keeps a range of lines (`10-20`, `10-`, `-20` or `10`, counted
+/// from 1; an end past the last line stops there), `dedent` is on by default, and the
+/// fence is longer than any run of its character in the code (tildes if `lang` has a
+/// backtick). `shift`, `section`, `select` and `frontmatter` do not apply and get a
+/// warning; `lines` without `lang` is an error.
+///
+/// A *symbol include* is a code include of one symbol's definition: `function="main"`,
+/// `struct="Point"`, `class="Greeter"`, or `symbol="Point::new"` for any kind. The name
+/// may be qualified (`Point::new` or `Point.new`) and selects the symbols whose qualified
+/// names end with it; none or several is an error listing the candidates. The
+/// [`SymbolLocator`] (with the `tree-sitter` feature, by default) knows the language from
+/// the first word of `lang` or else the file's extension, and `lang` defaults to the
+/// language's name (`rust`). Doc comments, attributes and decorators before the
+/// definition are left out unless `with_docs=true`. `lines` then counts from the
+/// symbol's first line, and `dedent` strips a method's indentation. Without a locator, an
+/// include selecting a symbol fails.
+///
+/// A *remote include* has an `http(s)://` URL as its `path`. Remote includes are refused
+/// unless [allowed](Includer::allow_remote) (`include.allow_remote`); with the
+/// `remote-include` feature the default loader, `HttpLoader`, fetches them (and can
+/// cache them on disk), without it they fail. Remote content links and includes from its
+/// URL: its relative links and assets become absolute URLs
+/// ([`LinkRewrite::from_url`]), and the `path`s of its own includes are resolved
+/// against the URL, so they are remote too (a `file:` URL is an error).
+///
+/// `sha256="…"` (64 hexadecimal digits; needs the `remote-include` feature) pins the
+/// content of any include, local or remote: the text read must have that SHA-256, or the
+/// include fails. A [`Loader`] with a cache may serve pinned content from it
+/// ([`Loader::load_pinned`]).
+///
+/// An include that fails (a missing file, a cycle, a bad attribute, a section or
+/// selector that finds nothing, a `lines` range past the end, a missing or ambiguous
+/// symbol, a remote include that is not allowed or cannot be fetched, a `sha256`
+/// mismatch) is reported and left as it is, markers included. Unknown attributes get a
+/// warning.
 ///
 /// By default files are read from disk, parsed with the default [`DocumentOptions`],
 /// and `/…` paths start at the current directory. Remote includes are not allowed; the
 /// loader is an `HttpLoader` without a cache with the `remote-include` feature, else a
 /// [`FileLoader`]. Symbols are found by a `symbol::TreeSitterLocator` with the
 /// `tree-sitter` feature, and not at all without it.
+///
+/// ```
+/// use std::collections::HashMap;
+/// use std::io;
+/// use mrq_core::document::DocumentOptions;
+/// use mrq_core::source::SourceFile;
+/// use mrq_core::transform::{IncludeTarget, Includer, Loader};
+///
+/// struct Files(HashMap<&'static str, &'static str>);
+///
+/// impl Loader for Files {
+///     fn load(&self, target: &IncludeTarget) -> io::Result<String> {
+///         let path = target.file().and_then(|path| path.to_str()).unwrap_or_default();
+///         self.0.get(path).map(|text| text.to_string()).ok_or(io::ErrorKind::NotFound.into())
+///     }
+/// }
+///
+/// let files = Files(HashMap::from([(
+///     "docs/install.md",
+///     "---\ntitle: Install\n---\n# Install\n\n![shot](img/shot.png)\n",
+/// )]));
+/// let src = "# Guide\n\n<!-- mrq:include path=\"install.md\" shift=1 -->\n<!-- mrq:end -->\n";
+/// let doc = DocumentOptions::new().parse_source(SourceFile::new(Some("docs/guide.md".into()), src))?;
+/// let expanded = Includer::new().loader(files).expand(&doc);
+/// assert_eq!(expanded.diagnostics, []);
+/// assert_eq!(expanded.text, "# Guide\n\n## Install\n\n![shot](img/shot.png)\n");
+/// # Ok::<(), mrq_core::flavor::FlavorError>(())
+/// ```
 #[derive(Clone)]
 pub struct Includer {
     loader: Arc<dyn Loader>,
@@ -304,7 +304,7 @@ impl Includer {
     /// list indentation); an empty content removes the markers' lines. A region whose
     /// start marker is inside the old content of another region goes with that content.
     /// Links to the included files' anchors, and `doc`'s own `#anchor`s, are redirected to
-    /// the headings in the expansion (see the [module docs](self)).
+    /// the headings in the expansion (see [`Includer`]).
     pub fn expand(&self, doc: &Document) -> Expanded {
         let mut run = Run::new(self, doc);
         let text = run.expand(doc);

@@ -37,7 +37,7 @@ impl DocumentStore {
 
     /// Applies `changes` in order to the open document `uri` and sets its version:
     /// a change without a range replaces the whole text, one with a range (in `encoding`
-    /// units, clamped as [`convert::offset`](crate::convert::offset) does) the text in
+    /// units, clamped as [`crate::convert::offset`] does) the text in
     /// it. `None` if `uri` is not open.
     pub fn change(
         &mut self,
@@ -75,7 +75,7 @@ impl DocumentStore {
     }
 
     /// The open document of the file `path` (normalized, as
-    /// [`convert::uri_to_path`](crate::convert::uri_to_path) gives it).
+    /// [`crate::convert::uri_to_path`] gives it).
     pub fn get_path(&self, path: &Path) -> Option<&OpenDocument> {
         self.documents
             .values()
