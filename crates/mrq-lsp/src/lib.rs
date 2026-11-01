@@ -19,7 +19,8 @@
 //!
 //! Requests read the index: [`navigate`] answers `textDocument/definition`,
 //! `textDocument/references` and `textDocument/hover`, [`symbols`]
-//! `textDocument/documentSymbol` and `workspace/symbol`.
+//! `textDocument/documentSymbol` and `workspace/symbol`, [`complete`]
+//! `textDocument/completion`.
 //!
 //! The custom request [`INDEX_METHOD`] returns an [`IndexReport`] of what is indexed,
 //! for tests and debugging.
@@ -34,6 +35,7 @@ use mrq_core::config::FlavorName;
 use tokio::io::{AsyncRead, AsyncWrite};
 use tower_lsp_server::{LspService, Server};
 
+pub mod complete;
 pub mod convert;
 pub mod diagnostics;
 pub mod index;

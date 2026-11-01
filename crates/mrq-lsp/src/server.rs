@@ -7,15 +7,15 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use mrq_core::source::PositionEncoding;
 use tower_lsp_server::jsonrpc::{Error, Result};
 use tower_lsp_server::ls_types::{
-    DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
-    DidChangeWatchedFilesRegistrationOptions, DidChangeWorkspaceFoldersParams,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
-    DocumentSymbolResponse, FileSystemWatcher, GlobPattern, GotoDefinitionParams,
-    GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability, InitializeParams,
-    InitializeResult, InitializedParams, Location, MessageType, OneOf, Position, ReferenceParams,
-    Registration, ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, Uri, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
-    WorkspaceSymbolParams, WorkspaceSymbolResponse,
+    CompletionOptions, CompletionParams, CompletionResponse, DidChangeTextDocumentParams,
+    DidChangeWatchedFilesParams, DidChangeWatchedFilesRegistrationOptions,
+    DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
+    DocumentSymbolParams, DocumentSymbolResponse, FileSystemWatcher, GlobPattern,
+    GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability,
+    InitializeParams, InitializeResult, InitializedParams, Location, MessageType, OneOf, Position,
+    ReferenceParams, Registration, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
+    TextDocumentSyncKind, TextDocumentSyncOptions, Uri, WorkspaceFoldersServerCapabilities,
+    WorkspaceServerCapabilities, WorkspaceSymbolParams, WorkspaceSymbolResponse,
 };
 use tower_lsp_server::{Client, LanguageServer};
 
@@ -24,7 +24,7 @@ use crate::convert::{self, uri_to_path};
 use crate::diagnostics::{Change, Publisher};
 use crate::index::{IndexReport, WorkspaceIndex, is_config_file, is_indexed_kind};
 use crate::store::DocumentStore;
-use crate::{navigate, symbols};
+use crate::{complete, navigate, symbols};
 
 /// The globs of the files the server asks the client to watch: Markdown files and the
 /// config files (`.mrq.yaml`, markdownlint's).
@@ -212,6 +212,10 @@ impl LanguageServer for Backend {
             document_symbol_provider: Some(OneOf::Left(true)),
             workspace_symbol_provider: Some(OneOf::Left(true)),
             hover_provider: Some(HoverProviderCapability::Simple(true)),
+            completion_provider: Some(CompletionOptions {
+                trigger_characters: Some(complete::TRIGGER_CHARACTERS.map(String::from).to_vec()),
+                ..CompletionOptions::default()
+            }),
             ..ServerCapabilities::default()
         };
         Ok(InitializeResult {
@@ -386,6 +390,16 @@ impl LanguageServer for Backend {
             navigate::hover(&state.index, path, offset, state.encoding)
         })
         .await
+    }
+
+    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+        let at = params.text_document_position;
+        let found = self
+            .read_at(&at.text_document.uri, at.position, |state, path, offset| {
+                complete::completions(&state.index, path, offset, state.encoding)
+            })
+            .await?;
+        Ok(found.map(CompletionResponse::Array))
     }
 
     async fn document_symbol(

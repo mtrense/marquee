@@ -26,7 +26,8 @@ use std::time::Duration;
 use mrq_lsp::ls_types::notification::{self, Notification};
 use mrq_lsp::ls_types::request::{self, Request};
 use mrq_lsp::ls_types::{
-    ClientCapabilities, DidChangeTextDocumentParams, DidChangeWatchedFilesClientCapabilities,
+    ClientCapabilities, CompletionItem, CompletionParams, CompletionResponse,
+    DidChangeTextDocumentParams, DidChangeWatchedFilesClientCapabilities,
     DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
     DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, FileChangeType, FileEvent,
     GotoDefinitionParams, GotoDefinitionResponse, HoverContents, HoverParams, InitializeParams,
@@ -348,6 +349,21 @@ impl TestClient {
                 Some((markup.value, hover.range))
             }
             other => panic!("not Markdown: {other:?}"),
+        }
+    }
+
+    /// `textDocument/completion` at `at` of `uri`, as invoked (no trigger character);
+    /// `None` for `null`.
+    pub async fn completion(&mut self, uri: &Uri, at: (u32, u32)) -> Option<Vec<CompletionItem>> {
+        let params = CompletionParams {
+            text_document_position: position_params(uri, at),
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: None,
+        };
+        match self.request::<request::Completion>(params).await? {
+            CompletionResponse::Array(items) => Some(items),
+            CompletionResponse::List(list) => Some(list.items),
         }
     }
 

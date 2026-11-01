@@ -414,7 +414,10 @@ fn written_destination(document: &Document, link: &DocumentLink) -> String {
 }
 
 /// The root and the indexed document at `path`.
-fn indexed<'i>(index: &'i WorkspaceIndex, path: &Path) -> Option<(&'i Root, &'i Document)> {
+pub(crate) fn indexed<'i>(
+    index: &'i WorkspaceIndex,
+    path: &Path,
+) -> Option<(&'i Root, &'i Document)> {
     let root = index.root_of(path)?;
     Some((root, root.workspace().get(path)?))
 }
@@ -450,7 +453,7 @@ pub fn footnote_definition(document: &Document, label: &str) -> Option<Span> {
 }
 
 /// The text of the footnote definition at `span` of `document`, without its label.
-fn footnote_text(document: &Document, span: Span) -> Option<String> {
+pub(crate) fn footnote_text(document: &Document, span: Span) -> Option<String> {
     let ast = document.ast();
     let node = ast.descendants(ast.root()).find(|&node| {
         ast.span(node) == span && matches!(ast.kind(node), NodeKind::FootnoteDefinition(_))

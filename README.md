@@ -433,7 +433,7 @@ A Language Server Protocol server on stdio, built on the same engine as `validat
 - diagnostics from `validate` and `lint` as you type
 - go to definition for links, anchors, wikilinks, footnotes and link references
 - find references to a heading or a file from every file in the workspace
-- completion of file paths, heading anchors (including in other files) and footnote labels
+- completion of file paths, heading anchors (including in other files), footnote and link reference labels, and wikilink targets
 - rename a heading, and every link to its anchor is updated across the workspace
 - document symbols (outline) and workspace symbols
 - formatting (`mrq fmt`) and code actions (`lint --fix` per diagnostic)
@@ -444,6 +444,8 @@ The server indexes every Markdown file under the workspace folders (honouring `.
 Diagnostics are those of `mrq validate` (without external links) and `mrq lint` with the folder's configuration, including the `.markdownlint*` fallback and inline `mrq-disable` / `markdownlint-disable` comments. They are published for open documents only, 200 ms after the last change, and cleared when a document is closed. Since a document's links, wikilinks and includes depend on other files, every open document is checked again whenever a document, a watched file or the configuration changes. Lint findings link to the rule's documentation and carry their fix for code actions; when a lint rule reports exactly what a `validate` check does (MRQ004 and `stale-include`), only the lint finding is shown.
 
 Navigation resolves links as `mrq validate` does. Go to definition on a link or wikilink jumps to the heading (or `^block` line) its anchor names, else to the top of the file; on a reference link to its `[label]: …` definition, on that definition to its destination, and on a footnote reference to the footnote. Find references on a heading lists every link, wikilink and reference definition in the workspace that points at its anchor; on a link, those pointing where it points; anywhere else, the links to the file from other files. Document symbols are the headings, nested as in `mrq toc`, each spanning its section; workspace symbols are the headings of every indexed file whose text contains the query's characters in order. Hover on a link shows its destination as written and the first lines of the target's section (or of the file), and on a footnote reference the footnote's text.
+
+Completion works on the text as you type it, triggered by `(`, `#`, `/`, `^` and `[`: after `](` the entries of the directory typed so far, relative to the file (`/` for the workspace folder), without hidden ones (Markdown files with their first heading, then directories, then other files); after `](#` or `](file.md#` the anchors that `mrq validate` accepts, including `{#id}` attributes, with the heading text; after `[^` the footnote labels with their text; after `][` the link reference labels with their destination; after `[[` the other Markdown files by the shortest name that finds them, and after `[[note#` that note's headings. Nothing completes inside code.
 
 Neovim:
 

@@ -69,7 +69,7 @@ pub fn link_list(entries: &[TocEntry]) -> String {
         format!(
             "- [{}](#{})",
             escape_link_text(&entry.text),
-            encode_anchor(&entry.slug)
+            encode_destination(&entry.slug)
         )
     })
 }
@@ -115,10 +115,15 @@ fn escape_link_text(text: &str) -> String {
 }
 
 /// Percent-encodes the characters that cannot appear verbatim in an inline link
-/// destination (whitespace, controls, parentheses, angle brackets, backslash) plus `%`.
-fn encode_anchor(slug: &str) -> String {
-    let mut out = String::with_capacity(slug.len());
-    for c in slug.chars() {
+/// destination (whitespace, controls, parentheses, angle brackets, backslash) plus `%`:
+/// for an anchor or a path written into a link.
+///
+/// ```
+/// assert_eq!(mrq_core::toc::encode_destination("my notes/a (1).md"), "my%20notes/a%20%281%29.md");
+/// ```
+pub fn encode_destination(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for c in text.chars() {
         if c.is_whitespace() || c.is_control() || matches!(c, '(' | ')' | '<' | '>' | '\\' | '%') {
             let mut buf = [0; 4];
             for byte in c.encode_utf8(&mut buf).bytes() {
