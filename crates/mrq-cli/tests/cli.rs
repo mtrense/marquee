@@ -1,5 +1,5 @@
-//! Behaviour of the `mrq` command-line shell: help output, stubbed
-//! subcommands, global flags and shell completions.
+//! Behaviour of the `mrq` command-line shell: help output, subcommands, global flags
+//! and shell completions.
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -74,33 +74,20 @@ fn no_subcommand_is_a_usage_error() {
 }
 
 #[test]
-fn stubbed_subcommands_report_not_implemented_and_exit_2() {
-    let invocations: &[&[&str]] = &[&["lsp"]];
-    for args in invocations {
-        mrq()
-            .args(*args)
-            .assert()
-            .code(2)
-            .stdout(predicate::str::is_empty())
-            .stderr(predicate::str::contains("not implemented"));
-    }
-}
-
-#[test]
 fn global_flags_are_accepted_anywhere() {
     mrq()
         .args([
             "--config", "x.yaml", "--flavor", "obsidian", "--color", "never", "--format", "json",
-            "-vv", "lsp",
+            "-vv", "config", "schema",
         ])
         .assert()
-        .code(2)
-        .stderr(predicate::str::contains("not implemented"));
+        .success();
     mrq()
-        .args(["lsp", "-q", "--format", "sarif", "--flavor", "mkdocs"])
+        .args([
+            "config", "schema", "-q", "--format", "sarif", "--flavor", "mkdocs",
+        ])
         .assert()
-        .code(2)
-        .stderr(predicate::str::contains("not implemented"));
+        .success();
 }
 
 #[test]

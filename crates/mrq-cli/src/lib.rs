@@ -22,6 +22,7 @@ mod diff;
 mod fmt;
 mod interpolate;
 mod lint;
+mod lsp;
 mod merge;
 mod query;
 mod render;
@@ -33,7 +34,7 @@ mod validate;
 
 use cli::{Cli, ColorChoice, Command, ConfigCommand, DiagnosticFormat, Flavor, GlobalArgs, Inputs};
 
-/// Exit code for usage, configuration and I/O errors, and for commands not implemented yet.
+/// Exit code for usage, configuration and I/O errors.
 const EXIT_USAGE: u8 = 2;
 
 /// Executes a parsed command line and returns the process exit code.
@@ -128,14 +129,7 @@ pub fn run(cli: Cli) -> ExitCode {
             };
             merge::run(&args, &inputs, &options, &cli.global)
         }
-        other => {
-            let _ = writeln!(
-                io::stderr().lock(),
-                "mrq: `{}` is not implemented yet",
-                other.name()
-            );
-            ExitCode::from(EXIT_USAGE)
-        }
+        Command::Lsp(args) => lsp::command(&args, &cli.global),
     }
 }
 

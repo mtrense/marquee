@@ -1,8 +1,7 @@
 //! The clap command tree of `mrq`.
 //!
-//! Every subcommand documented in the README is declared here with its flags.
-//! Commands that are not implemented yet are dispatched to a stub that
-//! reports "not implemented" and exits with code 2 (see [`crate::run`]).
+//! Every subcommand documented in the README is declared here with its flags, and
+//! dispatched in [`crate::run`].
 
 use std::path::PathBuf;
 
@@ -117,7 +116,7 @@ pub enum Command {
     /// Browse files in an interactive viewer.
     Show(ShowArgs),
     /// Run the language server on stdio.
-    Lsp,
+    Lsp(LspArgs),
     /// Inspect the configuration.
     #[command(subcommand)]
     Config(ConfigCommand),
@@ -144,7 +143,7 @@ impl Command {
             Self::Stats(_) => "stats",
             Self::Diff(_) => "diff",
             Self::Show(_) => "show",
-            Self::Lsp => "lsp",
+            Self::Lsp(_) => "lsp",
             Self::Config(ConfigCommand::Show { .. }) => "config show",
             Self::Config(ConfigCommand::Schema) => "config schema",
             Self::Completions { .. } => "completions",
@@ -403,6 +402,13 @@ pub struct DiffArgs {
 pub struct ShowArgs {
     #[command(flatten)]
     pub inputs: Inputs,
+}
+
+#[derive(Debug, Args)]
+pub struct LspArgs {
+    /// Talk over stdin and stdout, the only transport; for clients that pass it.
+    #[arg(long)]
+    pub stdio: bool,
 }
 
 /// `mrq config` subcommands.

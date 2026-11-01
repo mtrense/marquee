@@ -7,6 +7,9 @@ Run the language server on stdio
 Usage: mrq lsp [OPTIONS]
 
 Options:
+      --stdio
+          Talk over stdin and stdout, the only transport; for clients that pass it
+
   -h, --help
           Print help (see a summary with '-h')
 

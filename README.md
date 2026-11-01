@@ -439,6 +439,8 @@ A Language Server Protocol server on stdio, built on the same engine as `validat
 - formatting (`mrq fmt`) and code actions (`lint --fix` per diagnostic)
 - hover previews for links and footnotes
 
+The server indexes every Markdown file under the workspace folders (honouring `.gitignore`, hidden files and `ignore`), each folder with its configuration loaded as the other commands load it from that directory (the global `--config` and `--flavor` apply to all). Open documents are followed as you type, and files and the configuration are read again when the client reports a change: the server asks it to watch Markdown files, `.mrq.yaml` and `.markdownlint*`. `--stdio` is accepted for clients that pass it; stdio is the only transport.
+
 Neovim:
 
 ```lua
