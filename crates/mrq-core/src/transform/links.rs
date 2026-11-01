@@ -328,6 +328,19 @@ pub fn rewrite_links(doc: &Document, range: ByteRange, rewrite: &LinkRewrite<'_>
         .collect()
 }
 
+/// The source ranges of the destinations of `doc`'s inline links and images and of its
+/// link reference definitions, as written (inside the `<…>` of a bracketed one), in
+/// source order: those of [`rewrite_links`] without HTML attributes and wikilinks.
+pub fn markdown_destinations(doc: &Document) -> Vec<ByteRange> {
+    let mut found: Vec<ByteRange> = destinations(doc)
+        .into_iter()
+        .filter(|&(_, syntax)| syntax == Syntax::Markdown)
+        .map(|(at, _)| at)
+        .collect();
+    found.sort_by_key(|at| at.start);
+    found
+}
+
 /// Every destination of `doc` as written, with its syntax.
 fn destinations(doc: &Document) -> Vec<(ByteRange, Syntax)> {
     let ast = doc.ast();
@@ -631,6 +644,17 @@ mod tests {
             moved(src, "docs/x.md", "other/x.md"),
             "[a](../docs/img/a.png) [b](../b.md) [c](../docs/c.md) ![d](../docs/d.png)\n"
         );
+    }
+
+    #[test]
+    fn markdown_destinations_are_found_as_written() {
+        let src = "[![i](i.png)](<a b.md#x>) [r][l] [[w]] <a href=\"h.md\">\n\n[l]: <r.md>\n";
+        let doc = Document::parse(src);
+        let found: Vec<&str> = markdown_destinations(&doc)
+            .into_iter()
+            .map(|at| &src[at.start..at.end])
+            .collect();
+        assert_eq!(found, ["i.png", "a b.md#x", "r.md"]);
     }
 
     #[test]

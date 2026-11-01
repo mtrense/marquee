@@ -397,7 +397,7 @@ flowchart LR
 - [x] **M11.2 Diagnostics.** validate (internal checks only) and lint, published per file (debounced). Cross-file anchor diagnostics are re-evaluated when the target changes. **AC:** harness tests.
 - [x] **M11.3 Navigation.** definition (links, anchors, footnotes, refdefs, wikilinks), references (to headings and files), document symbols, workspace symbols, hover (link target preview, footnote text). **AC:** harness tests.
 - [x] **M11.4 Completion.** File paths after `](`, anchors after `#` (including `file.md#`), footnote labels, refdef labels, wikilink targets. **AC:** harness tests.
-- [ ] **M11.5 Rename.** prepareRename and rename on headings that update every link to the anchor across the workspace (a WorkspaceEdit). File rename (`workspace/willRenameFiles`) rewrites links. **AC:** harness tests with multiple files.
+- [x] **M11.5 Rename.** prepareRename and rename on headings that update every link to the anchor across the workspace (a WorkspaceEdit). File rename (`workspace/willRenameFiles`) rewrites links. **AC:** harness tests with multiple files.
 - [ ] **M11.6 Formatting and code actions.** `textDocument/formatting` via M6, plus code actions from lint fixes, "fix all" and "refresh include region". **AC:** harness tests, and editor setup docs verified in Neovim and Helix (manual).
 
 ### M12: Release

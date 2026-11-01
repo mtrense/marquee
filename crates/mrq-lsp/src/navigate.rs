@@ -190,19 +190,12 @@ pub fn references(
             found.extend(location(path, Some(source), line, encoding));
         }
     }
-    let mut resolvers: Vec<(&Root, Resolver<'_>)> = Vec::new();
+    let mut resolvers = Vec::new();
     for (root, document) in index.documents() {
         let Some(from) = document.path() else {
             continue;
         };
-        let i = resolvers
-            .iter()
-            .position(|(r, _)| std::ptr::eq(*r, root))
-            .unwrap_or_else(|| {
-                resolvers.push((root, Resolver::new(root.workspace())));
-                resolvers.len() - 1
-            });
-        let resolver = &mut resolvers[i].1;
+        let resolver = resolver_for(&mut resolvers, root);
         let source = Some(document.source());
         for link in root.links(from) {
             if resolver
@@ -430,8 +423,24 @@ pub fn reference_definition(document: &Document, label: &str) -> Option<Referenc
         .find(|definition| normalize_label(&definition.label) == label)
 }
 
+/// The resolver of `root` among `resolvers`, added on first use: one per root, to share
+/// its caches across the documents of a workspace-wide search.
+pub(crate) fn resolver_for<'r, 'i>(
+    resolvers: &'r mut Vec<(&'i Root, Resolver<'i>)>,
+    root: &'i Root,
+) -> &'r mut Resolver<'i> {
+    let i = resolvers
+        .iter()
+        .position(|(r, _)| std::ptr::eq(*r, root))
+        .unwrap_or_else(|| {
+            resolvers.push((root, Resolver::new(root.workspace())));
+            resolvers.len() - 1
+        });
+    &mut resolvers[i].1
+}
+
 /// The target of a reference definition of `document`, resolved.
-fn reference_target(
+pub(crate) fn reference_target(
     resolver: &Resolver<'_>,
     document: &Document,
     definition: &ReferenceDefinition,

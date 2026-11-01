@@ -20,7 +20,9 @@
 //! Requests read the index: [`navigate`] answers `textDocument/definition`,
 //! `textDocument/references` and `textDocument/hover`, [`symbols`]
 //! `textDocument/documentSymbol` and `workspace/symbol`, [`complete`]
-//! `textDocument/completion`.
+//! `textDocument/completion`, [`rename`] `textDocument/prepareRename`,
+//! `textDocument/rename` (headings) and `workspace/willRenameFiles`; the index follows
+//! `workspace/didRenameFiles`.
 //!
 //! The custom request [`INDEX_METHOD`] returns an [`IndexReport`] of what is indexed,
 //! for tests and debugging.
@@ -40,6 +42,7 @@ pub mod convert;
 pub mod diagnostics;
 pub mod index;
 pub mod navigate;
+pub mod rename;
 mod server;
 pub mod store;
 pub mod symbols;

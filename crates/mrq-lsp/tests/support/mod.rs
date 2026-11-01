@@ -18,24 +18,27 @@
 
 #![allow(dead_code, reason = "each test file uses part of the harness")]
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use mrq_core::source::{PositionEncoding, SourceFile, TextEdit as SourceEdit, apply_edits};
 use mrq_lsp::ls_types::notification::{self, Notification};
 use mrq_lsp::ls_types::request::{self, Request};
 use mrq_lsp::ls_types::{
     ClientCapabilities, CompletionItem, CompletionParams, CompletionResponse,
     DidChangeTextDocumentParams, DidChangeWatchedFilesClientCapabilities,
     DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, FileChangeType, FileEvent,
-    GotoDefinitionParams, GotoDefinitionResponse, HoverContents, HoverParams, InitializeParams,
-    InitializeResult, InitializedParams, Location, MarkupKind, NumberOrString, PartialResultParams,
-    Position, PublishDiagnosticsParams, Range, ReferenceContext, ReferenceParams,
-    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
-    TextDocumentPositionParams, Uri, VersionedTextDocumentIdentifier, WorkDoneProgressParams,
-    WorkspaceClientCapabilities, WorkspaceFolder, WorkspaceSymbol, WorkspaceSymbolParams,
+    DocumentChanges, DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, FileChangeType,
+    FileEvent, FileRename, GotoDefinitionParams, GotoDefinitionResponse, HoverContents,
+    HoverParams, InitializeParams, InitializeResult, InitializedParams, Location, MarkupKind,
+    NumberOrString, OneOf, PartialResultParams, Position, PrepareRenameResponse,
+    PublishDiagnosticsParams, Range, ReferenceContext, ReferenceParams, RenameFilesParams,
+    RenameParams, TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
+    TextDocumentPositionParams, TextEdit, Uri, VersionedTextDocumentIdentifier,
+    WorkDoneProgressParams, WorkspaceClientCapabilities, WorkspaceEdit,
+    WorkspaceEditClientCapabilities, WorkspaceFolder, WorkspaceSymbol, WorkspaceSymbolParams,
 };
 use mrq_lsp::{INDEX_METHOD, IndexReport, ServerOptions};
 use serde_json::{Value, json};
@@ -397,6 +400,48 @@ impl TestClient {
             .unwrap_or_default()
     }
 
+    /// `textDocument/prepareRename` at `at` of `uri`.
+    pub async fn prepare_rename(
+        &mut self,
+        uri: &Uri,
+        at: (u32, u32),
+    ) -> Option<PrepareRenameResponse> {
+        self.request::<request::PrepareRenameRequest>(position_params(uri, at))
+            .await
+    }
+
+    /// `textDocument/rename` at `at` of `uri` to `new_name`: the edit, or the error
+    /// object.
+    pub async fn rename(
+        &mut self,
+        uri: &Uri,
+        at: (u32, u32),
+        new_name: &str,
+    ) -> Result<Option<WorkspaceEdit>, Value> {
+        let params = RenameParams {
+            text_document_position: position_params(uri, at),
+            new_name: new_name.into(),
+            work_done_progress_params: WorkDoneProgressParams::default(),
+        };
+        let method = <request::Rename as Request>::METHOD;
+        let result = self
+            .request_raw(method, serde_json::to_value(params).unwrap())
+            .await?;
+        Ok(serde_json::from_value(result).unwrap())
+    }
+
+    /// `workspace/willRenameFiles` for `renames` (old path, new path).
+    pub async fn will_rename_files(&mut self, renames: &[(&Path, &Path)]) -> Option<WorkspaceEdit> {
+        self.request::<request::WillRenameFiles>(rename_files_params(renames))
+            .await
+    }
+
+    /// `workspace/didRenameFiles` for `renames` (old path, new path).
+    pub async fn did_rename_files(&mut self, renames: &[(&Path, &Path)]) {
+        self.notify::<notification::DidRenameFiles>(rename_files_params(renames))
+            .await;
+    }
+
     /// The server's view of the workspace ([`INDEX_METHOD`]).
     pub async fn index(&mut self) -> IndexReport {
         let report = self.request_raw(INDEX_METHOD, Value::Null).await.unwrap();
@@ -448,6 +493,91 @@ pub fn initialize_params(roots: &[&Path]) -> InitializeParams {
         },
         ..InitializeParams::default()
     }
+}
+
+/// [`initialize_params`] for a client that also takes versioned `documentChanges` in
+/// workspace edits.
+pub fn initialize_params_with_document_changes(roots: &[&Path]) -> InitializeParams {
+    let mut params = initialize_params(roots);
+    if let Some(workspace) = params.capabilities.workspace.as_mut() {
+        workspace.workspace_edit = Some(WorkspaceEditClientCapabilities {
+            document_changes: Some(true),
+            ..WorkspaceEditClientCapabilities::default()
+        });
+    }
+    params
+}
+
+/// The parameters of `workspace/willRenameFiles` and `didRenameFiles` for `renames`.
+fn rename_files_params(renames: &[(&Path, &Path)]) -> RenameFilesParams {
+    let files = renames
+        .iter()
+        .map(|(old, new)| FileRename {
+            old_uri: uri(old).as_str().to_owned(),
+            new_uri: uri(new).as_str().to_owned(),
+        })
+        .collect();
+    RenameFilesParams { files }
+}
+
+/// The text edits of `edit` per document, from `changes` or from `documentChanges`
+/// (versions dropped), each document's sorted by position.
+pub fn text_edits(edit: &WorkspaceEdit) -> BTreeMap<String, Vec<TextEdit>> {
+    let mut found: BTreeMap<String, Vec<TextEdit>> = BTreeMap::new();
+    for (uri, edits) in edit.changes.iter().flatten() {
+        found
+            .entry(uri.as_str().to_owned())
+            .or_default()
+            .extend(edits.iter().cloned());
+    }
+    if let Some(DocumentChanges::Edits(changes)) = &edit.document_changes {
+        for change in changes {
+            let edits = change.edits.iter().map(|edit| match edit {
+                OneOf::Left(edit) => edit.clone(),
+                OneOf::Right(annotated) => annotated.text_edit.clone(),
+            });
+            found
+                .entry(change.text_document.uri.as_str().to_owned())
+                .or_default()
+                .extend(edits);
+        }
+    }
+    for edits in found.values_mut() {
+        edits.sort_by_key(|edit| (edit.range.start, edit.range.end));
+    }
+    found
+}
+
+/// `text` with the LSP `edits` (UTF-16 positions) applied.
+pub fn apply(text: &str, edits: &[TextEdit]) -> String {
+    let source = SourceFile::new(None, text);
+    let edits: Vec<SourceEdit> = edits
+        .iter()
+        .map(|edit| SourceEdit {
+            range: mrq_lsp::convert::byte_range(&source, edit.range, PositionEncoding::Utf16),
+            replacement: edit.new_text.clone(),
+        })
+        .collect();
+    apply_edits(text, &edits).unwrap()
+}
+
+/// What `edit` makes of the files of `fixture`: each changed file's relative path and new
+/// text, read from disk.
+pub fn edited(fixture: &Fixture, edit: &WorkspaceEdit) -> BTreeMap<String, String> {
+    text_edits(edit)
+        .into_iter()
+        .map(|(uri, edits)| {
+            let uri: Uri = uri.parse().unwrap();
+            let path = uri.to_file_path().unwrap().into_owned();
+            let text = std::fs::read_to_string(&path).unwrap();
+            let relative = path
+                .strip_prefix(fixture.root())
+                .unwrap()
+                .to_string_lossy()
+                .replace('\\', "/");
+            (relative, apply(&text, &edits))
+        })
+        .collect()
 }
 
 /// The `file:` URI of the absolute `path`.

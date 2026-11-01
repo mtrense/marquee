@@ -10,12 +10,15 @@ use tower_lsp_server::ls_types::{
     CompletionOptions, CompletionParams, CompletionResponse, DidChangeTextDocumentParams,
     DidChangeWatchedFilesParams, DidChangeWatchedFilesRegistrationOptions,
     DidChangeWorkspaceFoldersParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentSymbolParams, DocumentSymbolResponse, FileSystemWatcher, GlobPattern,
+    DocumentSymbolParams, DocumentSymbolResponse, FileChangeType, FileSystemWatcher, GlobPattern,
     GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability,
     InitializeParams, InitializeResult, InitializedParams, Location, MessageType, OneOf, Position,
-    ReferenceParams, Registration, ServerCapabilities, ServerInfo, TextDocumentSyncCapability,
-    TextDocumentSyncKind, TextDocumentSyncOptions, Uri, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities, WorkspaceSymbolParams, WorkspaceSymbolResponse,
+    PrepareRenameResponse, ReferenceParams, Registration, RenameFilesParams, RenameOptions,
+    RenameParams, ServerCapabilities, ServerInfo, TextDocumentPositionParams,
+    TextDocumentSyncCapability, TextDocumentSyncKind, TextDocumentSyncOptions, Uri,
+    WorkDoneProgressOptions, WorkspaceEdit, WorkspaceFileOperationsServerCapabilities,
+    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities, WorkspaceSymbolParams,
+    WorkspaceSymbolResponse,
 };
 use tower_lsp_server::{Client, LanguageServer};
 
@@ -24,7 +27,7 @@ use crate::convert::{self, uri_to_path};
 use crate::diagnostics::{Change, Publisher};
 use crate::index::{IndexReport, WorkspaceIndex, is_config_file, is_indexed_kind};
 use crate::store::DocumentStore;
-use crate::{complete, navigate, symbols};
+use crate::{complete, navigate, rename, symbols};
 
 /// The globs of the files the server asks the client to watch: Markdown files and the
 /// config files (`.mrq.yaml`, markdownlint's).
@@ -33,6 +36,16 @@ const WATCHED_GLOBS: [&str; 3] = [
     "**/.mrq.{yaml,yml}",
     "**/.markdownlint*",
 ];
+
+/// The (old, new) paths of the `file:` URIs of a rename.
+fn renamed_paths(params: &RenameFilesParams) -> Vec<(PathBuf, PathBuf)> {
+    let path = |uri: &str| uri_to_path(&uri.parse().ok()?);
+    params
+        .files
+        .iter()
+        .filter_map(|rename| Some((path(&rename.old_uri)?, path(&rename.new_uri)?)))
+        .collect()
+}
 
 /// What the server knows: the open documents and the workspace index.
 #[derive(Debug)]
@@ -45,6 +58,21 @@ pub struct State {
     pending_roots: Vec<PathBuf>,
     /// Whether the client registers file watchers on request.
     watch_files: bool,
+    /// Whether the client takes versioned `documentChanges` in workspace edits.
+    document_changes: bool,
+}
+
+impl State {
+    /// `edits` as a workspace edit for the client; see [`rename::workspace_edit`].
+    fn workspace_edit(&self, edits: rename::Edits) -> Option<WorkspaceEdit> {
+        rename::workspace_edit(
+            &self.index,
+            &self.store,
+            edits,
+            self.encoding,
+            self.document_changes,
+        )
+    }
 }
 
 /// The language server. Handlers run one at a time, in the order the client sent them
@@ -69,6 +97,7 @@ impl Backend {
             index: WorkspaceIndex::new(options),
             pending_roots: Vec::new(),
             watch_files: false,
+            document_changes: false,
         }));
         let publisher = Publisher::spawn(client.clone(), Arc::clone(&state), delay);
         Self {
@@ -173,12 +202,14 @@ impl Backend {
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
         let encoding = convert::negotiate_encoding(&params.capabilities);
-        let watch_files = params
-            .capabilities
-            .workspace
-            .as_ref()
+        let workspace = params.capabilities.workspace.as_ref();
+        let watch_files = workspace
             .and_then(|workspace| workspace.did_change_watched_files.as_ref())
             .and_then(|watched| watched.dynamic_registration)
+            .unwrap_or(false);
+        let document_changes = workspace
+            .and_then(|workspace| workspace.workspace_edit.as_ref())
+            .and_then(|edit| edit.document_changes)
             .unwrap_or(false);
         let roots = match &params.workspace_folders {
             Some(folders) => folders.iter().filter_map(|f| uri_to_path(&f.uri)).collect(),
@@ -189,6 +220,7 @@ impl LanguageServer for Backend {
             let mut state = self.state();
             state.encoding = encoding;
             state.watch_files = watch_files;
+            state.document_changes = document_changes;
             state.pending_roots = roots;
         }
         let capabilities = ServerCapabilities {
@@ -205,13 +237,21 @@ impl LanguageServer for Backend {
                     supported: Some(true),
                     change_notifications: Some(OneOf::Left(true)),
                 }),
-                file_operations: None,
+                file_operations: Some(WorkspaceFileOperationsServerCapabilities {
+                    will_rename: Some(rename::file_operations()),
+                    did_rename: Some(rename::file_operations()),
+                    ..WorkspaceFileOperationsServerCapabilities::default()
+                }),
             }),
             definition_provider: Some(OneOf::Left(true)),
             references_provider: Some(OneOf::Left(true)),
             document_symbol_provider: Some(OneOf::Left(true)),
             workspace_symbol_provider: Some(OneOf::Left(true)),
             hover_provider: Some(HoverProviderCapability::Simple(true)),
+            rename_provider: Some(OneOf::Right(RenameOptions {
+                prepare_provider: Some(true),
+                work_done_progress_options: WorkDoneProgressOptions::default(),
+            })),
             completion_provider: Some(CompletionOptions {
                 trigger_characters: Some(complete::TRIGGER_CHARACTERS.map(String::from).to_vec()),
                 ..CompletionOptions::default()
@@ -400,6 +440,76 @@ impl LanguageServer for Backend {
             })
             .await?;
         Ok(found.map(CompletionResponse::Array))
+    }
+
+    async fn prepare_rename(
+        &self,
+        params: TextDocumentPositionParams,
+    ) -> Result<Option<PrepareRenameResponse>> {
+        self.read_at(
+            &params.text_document.uri,
+            params.position,
+            |state, path, offset| {
+                let (span, placeholder) = rename::heading_at(&state.index, path, offset)?;
+                let source = state.index.document(path)?.source();
+                Some(PrepareRenameResponse::RangeWithPlaceholder {
+                    range: convert::range(source, span, state.encoding),
+                    placeholder,
+                })
+            },
+        )
+        .await
+    }
+
+    async fn rename(&self, params: RenameParams) -> Result<Option<WorkspaceEdit>> {
+        let at = params.text_document_position;
+        let new_name = params.new_name;
+        let renamed = self
+            .read_at(
+                &at.text_document.uri,
+                at.position,
+                move |state, path, offset| {
+                    let renamed = rename::rename_heading(&state.index, path, offset, &new_name)?;
+                    Some(renamed.map(|edits| state.workspace_edit(edits)))
+                },
+            )
+            .await?;
+        match renamed {
+            Some(Ok(edit)) => Ok(edit),
+            Some(Err(message)) => Err(Error::invalid_params(message)),
+            None => Ok(None),
+        }
+    }
+
+    async fn will_rename_files(&self, params: RenameFilesParams) -> Result<Option<WorkspaceEdit>> {
+        let renames = renamed_paths(&params);
+        self.read_blocking(move |state| {
+            let edits = rename::rename_files(&state.index, &renames);
+            state.workspace_edit(edits)
+        })
+        .await
+    }
+
+    async fn did_rename_files(&self, params: RenameFilesParams) {
+        let renames = renamed_paths(&params);
+        self.update_blocking(move |state| {
+            let mut errors = Vec::new();
+            for (old, new) in renames.iter().filter(|(old, _)| is_indexed_kind(old)) {
+                errors.extend(
+                    state
+                        .index
+                        .file_changed(old, FileChangeType::DELETED, &state.store),
+                );
+                errors.extend(
+                    state
+                        .index
+                        .file_changed(new, FileChangeType::CREATED, &state.store),
+                );
+            }
+            errors
+        })
+        .await;
+        self.publisher.changed(Change::Updated);
     }
 
     async fn document_symbol(
