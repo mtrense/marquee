@@ -1,18 +1,21 @@
 //! [`Backend`]: the [`LanguageServer`] implementation.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use mrq_core::source::PositionEncoding;
-use tower_lsp_server::jsonrpc::Result;
+use tower_lsp_server::jsonrpc::{Error, Result};
 use tower_lsp_server::ls_types::{
     DidChangeTextDocumentParams, DidChangeWatchedFilesParams,
     DidChangeWatchedFilesRegistrationOptions, DidChangeWorkspaceFoldersParams,
-    DidCloseTextDocumentParams, DidOpenTextDocumentParams, FileSystemWatcher, GlobPattern,
-    InitializeParams, InitializeResult, InitializedParams, MessageType, OneOf, Registration,
-    ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
-    TextDocumentSyncOptions, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    DidCloseTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbolParams,
+    DocumentSymbolResponse, FileSystemWatcher, GlobPattern, GotoDefinitionParams,
+    GotoDefinitionResponse, Hover, HoverParams, HoverProviderCapability, InitializeParams,
+    InitializeResult, InitializedParams, Location, MessageType, OneOf, Position, ReferenceParams,
+    Registration, ServerCapabilities, ServerInfo, TextDocumentSyncCapability, TextDocumentSyncKind,
+    TextDocumentSyncOptions, Uri, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
+    WorkspaceSymbolParams, WorkspaceSymbolResponse,
 };
 use tower_lsp_server::{Client, LanguageServer};
 
@@ -21,6 +24,7 @@ use crate::convert::{self, uri_to_path};
 use crate::diagnostics::{Change, Publisher};
 use crate::index::{IndexReport, WorkspaceIndex, is_config_file, is_indexed_kind};
 use crate::store::DocumentStore;
+use crate::{navigate, symbols};
 
 /// The globs of the files the server asks the client to watch: Markdown files and the
 /// config files (`.mrq.yaml`, markdownlint's).
@@ -109,6 +113,47 @@ impl Backend {
         }
     }
 
+    /// Runs `read` on the state on a blocking thread (it may read files and walk the
+    /// vault) and returns its answer.
+    async fn read_blocking<T: Send + 'static>(
+        &self,
+        read: impl FnOnce(&State) -> T + Send + 'static,
+    ) -> Result<T> {
+        let state = Arc::clone(&self.state);
+        tokio::task::spawn_blocking(move || {
+            let state = state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            read(&state)
+        })
+        .await
+        .map_err(|err| {
+            let mut error = Error::internal_error();
+            error.message = err.to_string().into();
+            error
+        })
+    }
+
+    /// Runs `read` with the path of `uri` and the byte offset of `position` in its
+    /// indexed document (see [`read_blocking`](Self::read_blocking)); `None` if the
+    /// document is not indexed.
+    async fn read_at<T: Send + 'static>(
+        &self,
+        uri: &Uri,
+        position: Position,
+        read: impl FnOnce(&State, &Path, usize) -> Option<T> + Send + 'static,
+    ) -> Result<Option<T>> {
+        let Some(path) = uri_to_path(uri) else {
+            return Ok(None);
+        };
+        self.read_blocking(move |state| {
+            let document = state.index.document(&path)?;
+            let offset = convert::offset(document.source(), position, state.encoding);
+            read(state, &path, offset)
+        })
+        .await
+    }
+
     /// The [`INDEX_METHOD`](crate::INDEX_METHOD) request.
     #[allow(
         clippy::unused_async,
@@ -162,6 +207,11 @@ impl LanguageServer for Backend {
                 }),
                 file_operations: None,
             }),
+            definition_provider: Some(OneOf::Left(true)),
+            references_provider: Some(OneOf::Left(true)),
+            document_symbol_provider: Some(OneOf::Left(true)),
+            workspace_symbol_provider: Some(OneOf::Left(true)),
+            hover_provider: Some(HoverProviderCapability::Simple(true)),
             ..ServerCapabilities::default()
         };
         Ok(InitializeResult {
@@ -295,5 +345,70 @@ impl LanguageServer for Backend {
         })
         .await;
         self.publisher.changed(Change::Updated);
+    }
+
+    async fn goto_definition(
+        &self,
+        params: GotoDefinitionParams,
+    ) -> Result<Option<GotoDefinitionResponse>> {
+        let at = params.text_document_position_params;
+        let found = self
+            .read_at(&at.text_document.uri, at.position, |state, path, offset| {
+                navigate::definition(&state.index, path, offset, state.encoding)
+            })
+            .await?;
+        Ok(found.map(GotoDefinitionResponse::Scalar))
+    }
+
+    async fn references(&self, params: ReferenceParams) -> Result<Option<Vec<Location>>> {
+        let at = params.text_document_position;
+        let include_declaration = params.context.include_declaration;
+        self.read_at(
+            &at.text_document.uri,
+            at.position,
+            move |state, path, offset| {
+                let found = navigate::references(
+                    &state.index,
+                    path,
+                    offset,
+                    include_declaration,
+                    state.encoding,
+                );
+                Some(found)
+            },
+        )
+        .await
+    }
+
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        let at = params.text_document_position_params;
+        self.read_at(&at.text_document.uri, at.position, |state, path, offset| {
+            navigate::hover(&state.index, path, offset, state.encoding)
+        })
+        .await
+    }
+
+    async fn document_symbol(
+        &self,
+        params: DocumentSymbolParams,
+    ) -> Result<Option<DocumentSymbolResponse>> {
+        let Some(path) = uri_to_path(&params.text_document.uri) else {
+            return Ok(None);
+        };
+        let state = self.state();
+        let symbols = state
+            .index
+            .document(&path)
+            .map(|document| symbols::document_symbols(document, state.encoding));
+        Ok(symbols.map(DocumentSymbolResponse::Nested))
+    }
+
+    async fn symbol(
+        &self,
+        params: WorkspaceSymbolParams,
+    ) -> Result<Option<WorkspaceSymbolResponse>> {
+        let state = self.state();
+        let symbols = symbols::workspace_symbols(&state.index, &params.query, state.encoding);
+        Ok(Some(WorkspaceSymbolResponse::Nested(symbols)))
     }
 }

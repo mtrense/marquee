@@ -28,10 +28,13 @@ use mrq_lsp::ls_types::request::{self, Request};
 use mrq_lsp::ls_types::{
     ClientCapabilities, DidChangeTextDocumentParams, DidChangeWatchedFilesClientCapabilities,
     DidChangeWatchedFilesParams, DidCloseTextDocumentParams, DidOpenTextDocumentParams,
-    FileChangeType, FileEvent, InitializeParams, InitializeResult, InitializedParams,
-    NumberOrString, Position, PublishDiagnosticsParams, Range, TextDocumentContentChangeEvent,
-    TextDocumentIdentifier, TextDocumentItem, Uri, VersionedTextDocumentIdentifier,
-    WorkspaceClientCapabilities, WorkspaceFolder,
+    DocumentSymbol, DocumentSymbolParams, DocumentSymbolResponse, FileChangeType, FileEvent,
+    GotoDefinitionParams, GotoDefinitionResponse, HoverContents, HoverParams, InitializeParams,
+    InitializeResult, InitializedParams, Location, MarkupKind, NumberOrString, PartialResultParams,
+    Position, PublishDiagnosticsParams, Range, ReferenceContext, ReferenceParams,
+    TextDocumentContentChangeEvent, TextDocumentIdentifier, TextDocumentItem,
+    TextDocumentPositionParams, Uri, VersionedTextDocumentIdentifier, WorkDoneProgressParams,
+    WorkspaceClientCapabilities, WorkspaceFolder, WorkspaceSymbol, WorkspaceSymbolParams,
 };
 use mrq_lsp::{INDEX_METHOD, IndexReport, ServerOptions};
 use serde_json::{Value, json};
@@ -299,6 +302,85 @@ impl TestClient {
             .await;
     }
 
+    /// `textDocument/definition` at (line, character) `at` of `uri`, as one location.
+    pub async fn definition(&mut self, uri: &Uri, at: (u32, u32)) -> Option<Location> {
+        let params = GotoDefinitionParams {
+            text_document_position_params: position_params(uri, at),
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+        };
+        match self.request::<request::GotoDefinition>(params).await? {
+            GotoDefinitionResponse::Scalar(location) => Some(location),
+            other => panic!("not a single location: {other:?}"),
+        }
+    }
+
+    /// `textDocument/references` at `at` of `uri`; empty for `null`.
+    pub async fn references(
+        &mut self,
+        uri: &Uri,
+        at: (u32, u32),
+        include_declaration: bool,
+    ) -> Vec<Location> {
+        let params = ReferenceParams {
+            text_document_position: position_params(uri, at),
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+            context: ReferenceContext {
+                include_declaration,
+            },
+        };
+        self.request::<request::References>(params)
+            .await
+            .unwrap_or_default()
+    }
+
+    /// `textDocument/hover` at `at` of `uri`: the Markdown contents and the range.
+    pub async fn hover(&mut self, uri: &Uri, at: (u32, u32)) -> Option<(String, Option<Range>)> {
+        let params = HoverParams {
+            text_document_position_params: position_params(uri, at),
+            work_done_progress_params: WorkDoneProgressParams::default(),
+        };
+        let hover = self.request::<request::HoverRequest>(params).await?;
+        match hover.contents {
+            HoverContents::Markup(markup) => {
+                assert_eq!(markup.kind, MarkupKind::Markdown);
+                Some((markup.value, hover.range))
+            }
+            other => panic!("not Markdown: {other:?}"),
+        }
+    }
+
+    /// `textDocument/documentSymbol` of `uri`, as nested symbols.
+    pub async fn document_symbols(&mut self, uri: &Uri) -> Vec<DocumentSymbol> {
+        let params = DocumentSymbolParams {
+            text_document: TextDocumentIdentifier::new(uri.clone()),
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+        };
+        match self.request::<request::DocumentSymbolRequest>(params).await {
+            Some(DocumentSymbolResponse::Nested(symbols)) => symbols,
+            None => Vec::new(),
+            other => panic!("not nested: {other:?}"),
+        }
+    }
+
+    /// `workspace/symbol` for `query`, as `WorkspaceSymbol`s.
+    pub async fn workspace_symbols(&mut self, query: &str) -> Vec<WorkspaceSymbol> {
+        let params = WorkspaceSymbolParams {
+            query: query.into(),
+            work_done_progress_params: WorkDoneProgressParams::default(),
+            partial_result_params: PartialResultParams::default(),
+        };
+        // Both response forms deserialize as `Flat`, so they are told apart here.
+        let method = <request::WorkspaceSymbolRequest as Request>::METHOD;
+        let params = serde_json::to_value(params).unwrap();
+        let result = self.request_raw(method, params).await.unwrap();
+        serde_json::from_value::<Option<Vec<WorkspaceSymbol>>>(result)
+            .unwrap()
+            .unwrap_or_default()
+    }
+
     /// The server's view of the workspace ([`INDEX_METHOD`]).
     pub async fn index(&mut self) -> IndexReport {
         let report = self.request_raw(INDEX_METHOD, Value::Null).await.unwrap();
@@ -355,6 +437,24 @@ pub fn initialize_params(roots: &[&Path]) -> InitializeParams {
 /// The `file:` URI of the absolute `path`.
 pub fn uri(path: &Path) -> Uri {
     Uri::from_file_path(path).unwrap_or_else(|| panic!("no URI for {}", path.display()))
+}
+
+/// The range from (line, character) `start` to `end`.
+pub fn range(start: (u32, u32), end: (u32, u32)) -> Range {
+    Range::new(Position::new(start.0, start.1), Position::new(end.0, end.1))
+}
+
+/// The location of `start`..`end` in `uri`.
+pub fn location(uri: &Uri, start: (u32, u32), end: (u32, u32)) -> Location {
+    Location::new(uri.clone(), range(start, end))
+}
+
+/// The position `at` in `uri`, as request parameters.
+fn position_params(uri: &Uri, at: (u32, u32)) -> TextDocumentPositionParams {
+    TextDocumentPositionParams::new(
+        TextDocumentIdentifier::new(uri.clone()),
+        Position::new(at.0, at.1),
+    )
 }
 
 /// The codes of published diagnostics, in order.

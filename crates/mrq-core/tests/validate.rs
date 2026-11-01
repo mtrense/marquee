@@ -399,6 +399,61 @@ fn the_vault_finds_wikilink_targets_by_name() {
     assert_eq!(vault.find("Missing"), None);
 }
 
+#[test]
+fn the_resolver_finds_where_links_point() {
+    let mut ws = Workspace::new("site");
+    ws.insert(doc_with(
+        "obsidian",
+        "site/b.md",
+        "# B\n\n## Setup\n\nLine ^blk\n",
+    ));
+    let from = doc_with(
+        "obsidian",
+        "site/a.md",
+        "# A\n\n[t](#a) [e]() [n](#nope) [b](b.md#setup) [bt](b.md) [bx](b.md#x) \
+         [m](gone.md) [[b#Setup]] [[b#^blk]] [[gone]] [w](https://x.org)\n",
+    );
+    let mut resolver = validate::Resolver::new(&ws);
+    let b = PathBuf::from("site/b.md");
+    let found: Vec<_> = validate::links(&from, &ws)
+        .iter()
+        .map(|link| resolver.destination(&from, link))
+        .collect();
+    let here = |offset| Some(validate::Destination::Here { offset });
+    let file = |path: &Path, offset| {
+        Some(validate::Destination::File {
+            path: path.to_path_buf(),
+            offset,
+        })
+    };
+    assert_eq!(
+        found,
+        [
+            here(Some(0)),
+            here(Some(0)),
+            here(None),
+            file(&b, Some(5)),
+            file(&b, Some(0)),
+            file(&b, None),
+            None,
+            file(&b, Some(5)),
+            file(&b, Some(15)),
+            None,
+            None,
+        ]
+    );
+    assert_eq!(
+        resolver.markdown(&b).map(Document::text),
+        Some(ws.get(&b).unwrap().text())
+    );
+    assert_eq!(resolver.wikilink("B"), Some(b));
+}
+
+#[test]
+fn labels_match_with_case_and_whitespace_folded() {
+    assert_eq!(validate::normalize_label(" Foo \n  Bar"), "foo bar");
+}
+
 /// Every check over `tests/fixtures/validate`, a small repository with a gfm README, a
 /// mkdocs page, an Obsidian vault, blog posts with a frontmatter schema (from its
 /// `.mrq.yaml`) and a book whose `mrq:` directives are stale, missing or cyclic, rendered

@@ -78,6 +78,10 @@
 //!   expansion is not checked either: that needs the include resolver (M7.4), so
 //!   nothing is reported until then (see the TODO in `directives.rs`).
 //!
+//! A [`Resolver`] follows links the same way, for navigation: [`Resolver::destination`]
+//! is the document or file a link points at, with where its anchor is in it. Labels
+//! compare by [`normalize_label`].
+//!
 //! # Frontmatter schemas
 //!
 //! With the `frontmatter-schema` feature (on by default), `FrontmatterSchemas` maps
@@ -139,10 +143,11 @@ mod external;
 mod http;
 mod links;
 mod refdefs;
+mod resolve;
 #[cfg(feature = "frontmatter-schema")]
 mod schema;
 
-pub use check::{Checker, Vault, anchor_offset, codes};
+pub use check::{Checker, Vault, anchor_offset, codes, normalize_label};
 pub(crate) use directives::is_remote;
 pub use external::{
     ExcludeError, ExternalChecker, ExternalExclude, ExternalOptions, ExternalStatus,
@@ -152,5 +157,6 @@ pub use http::{CacheOptions, HttpChecker, HttpError, HttpOptions};
 pub use links::{DocumentLink, Target, links};
 pub(crate) use links::{percent_decode, scheme};
 pub use refdefs::{ReferenceDefinition, reference_definitions};
+pub use resolve::{Destination, Resolver};
 #[cfg(feature = "frontmatter-schema")]
 pub use schema::{FrontmatterSchemas, SchemaError};

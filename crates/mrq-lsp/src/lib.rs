@@ -17,6 +17,10 @@
 //! internal checks and `lint`), once [`ServerOptions::diagnostics_delay`] has passed
 //! without another change.
 //!
+//! Requests read the index: [`navigate`] answers `textDocument/definition`,
+//! `textDocument/references` and `textDocument/hover`, [`symbols`]
+//! `textDocument/documentSymbol` and `workspace/symbol`.
+//!
 //! The custom request [`INDEX_METHOD`] returns an [`IndexReport`] of what is indexed,
 //! for tests and debugging.
 
@@ -33,8 +37,10 @@ use tower_lsp_server::{LspService, Server};
 pub mod convert;
 pub mod diagnostics;
 pub mod index;
+pub mod navigate;
 mod server;
 pub mod store;
+pub mod symbols;
 
 pub use index::{DocumentReport, IndexReport, RootReport};
 pub use server::{Backend, State};

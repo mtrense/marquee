@@ -11,12 +11,11 @@ use super::FrontmatterSchemas;
 use super::brackets::{Unresolved, unresolved};
 use super::directives::check_toc;
 use super::external::External;
-use super::{DocumentLink, Target, links, reference_definitions};
+use super::{DocumentLink, Resolver, Target, links, reference_definitions};
 use super::{ExternalChecker, ExternalExclude};
 use crate::ast::{NodeKind, NodeType, Span};
 use crate::diag::{Diagnostic, Label, Severity};
 use crate::flavor::obsidian_anchor;
-use crate::input::has_markdown_extension;
 use crate::{Document, Workspace};
 
 /// The diagnostic codes of the internal checks; see the [module docs](super) for what
@@ -77,10 +76,8 @@ pub mod codes {
 #[derive(Debug)]
 pub struct Checker<'w> {
     pub(super) workspace: &'w Workspace,
-    /// Markdown files outside the workspace by path; `None` if unreadable.
-    loaded: HashMap<PathBuf, Option<Document>>,
-    /// The vault's files, listed on first use.
-    vault: Option<Vault>,
+    /// Looks up link targets, with the caches of loaded files and the vault.
+    resolver: Resolver<'w>,
     #[cfg(feature = "frontmatter-schema")]
     schemas: Option<&'w FrontmatterSchemas>,
     /// External link checks, if enabled.
@@ -109,8 +106,7 @@ impl<'w> Checker<'w> {
     pub fn new(workspace: &'w Workspace) -> Self {
         Self {
             workspace,
-            loaded: HashMap::new(),
-            vault: None,
+            resolver: Resolver::new(workspace),
             #[cfg(feature = "frontmatter-schema")]
             schemas: None,
             external: None,
@@ -289,24 +285,12 @@ impl<'w> Checker<'w> {
 
     /// The Markdown document at `path`: from the workspace, else loaded from disk.
     pub(super) fn markdown(&mut self, path: &Path) -> Option<&Document> {
-        if let Some(document) = self.workspace.get(path) {
-            return Some(document);
-        }
-        if !has_markdown_extension(path) || !path.is_file() {
-            return None;
-        }
-        let options = self.workspace.options();
-        self.loaded
-            .entry(path.to_owned())
-            .or_insert_with(|| options.load(path).ok())
-            .as_ref()
+        self.resolver.markdown(path)
     }
 
     /// The file a wikilink `name` points at; see [`Vault::find`].
     fn wikilink_target(&mut self, name: &str) -> Option<PathBuf> {
-        let workspace = self.workspace;
-        let vault = self.vault.get_or_insert_with(|| Vault::list(workspace));
-        vault.find(name).map(Path::to_owned)
+        self.resolver.wikilink(name)
     }
 }
 
@@ -568,8 +552,13 @@ fn check_references(document: &Document, links: &[DocumentLink], out: &mut Vec<D
     }
 }
 
-/// A label as `CommonMark` matches it: whitespace runs collapsed, case folded.
-fn normalize_label(label: &str) -> String {
+/// A footnote or reference label as `CommonMark` matches it: whitespace runs collapsed,
+/// case folded.
+///
+/// ```
+/// assert_eq!(mrq_core::validate::normalize_label(" Foo \n Bar"), "foo bar");
+/// ```
+pub fn normalize_label(label: &str) -> String {
     label
         .split_whitespace()
         .collect::<Vec<_>>()
