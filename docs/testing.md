@@ -78,3 +78,20 @@ Paths in the log are relative to the current directory (`docs/broken.md`), which
 7. Delete the shown file in the other terminal (`rm`): the status line says it was deleted and its content is kept; `w` writes it back. Recreate it with other text and check that it reloads.
 8. Follow a link to a file that was not open yet, change that file in the other terminal and check that it reloads too.
 9. On Linux, repeat 4–7 once (inotify instead of FSEvents), and on a file reached through a symlinked directory.
+
+### `mrq show` draws images and diagrams in kitty and WezTerm
+
+`crates/mrq-tui/tests/images.rs` draws images and diagrams on a `TestBackend` with halfblocks and with faked kitty, iTerm2 and sixel pickers: the rows reserved for them, images partly scrolled off the top or bottom of the panel, the cache per size, the text fallbacks without a picker and for an image that does not decode, and the choice of protocol from the environment. Whether a real terminal answers the query and shows the escapes in the right cells can only be checked by hand:
+
+1. In a scratch directory, put a PNG taller than the screen (`big.png`, e.g. a screenshot), a small PNG (`small.png`), an SVG (`logo.svg`) and a `doc.md` with text around them: a few paragraphs, `![big](big.png)`, a paragraph, `> ![small](small.png)`, `- ![logo](logo.svg)`, a ```` ```dot ```` block (`digraph { a -> b }`), a ```` ```mermaid ```` block if built with `mermaid`, a broken `![gone](nope.png)` and a few more paragraphs. Run `mrq show doc.md` (built with `cargo run --` or installed).
+2. In kitty (and Ghostty, if at hand), check that:
+   - every image and the DOT diagram show as pictures at their size or shrunk to the panel's width, never wider, with the right aspect ratio; `nope.png` shows `[image: gone]`;
+   - the quoted image has the `│` bar on each of its rows, and the list item's image starts after its bullet;
+   - `↓`/`↑` step over each image as one block (the gutter mark covers all its rows), `PgDn`/`PgUp` and `Home`/`End` scroll through `big.png` with the part above or below the panel cut off cleanly, nothing drawn over the border, the status line or the outline, and no leftovers when an image leaves the screen;
+   - resizing the window (narrower than `big.png`, then wider again) re-lays the images out without leftovers, and scrolling back and forth stays smooth (each image is scaled once per size);
+   - `?` covers the images with the help box, and closing it shows them again; so does `Tab` to the outline and back, and `o`;
+   - `/` with a word after an image finds it on the right line, and `Enter` on an outline heading below `big.png` lands on it;
+   - `e` and quitting the editor bring the images back.
+3. In WezTerm, repeat 2: ratatui-image uses iTerm2's protocol there (its kitty support has no placeholders); check the same, in particular that partly scrolled images are cut at the panel.
+4. Check the fallbacks: `MRQ_GRAPHICS=halfblocks mrq show doc.md` shows colored `▀` blocks in place of the images; `MRQ_GRAPHICS=none` and `--color never` show the alt texts and the DOT block as code; `NO_COLOR=1` keeps the pictures in kitty. Inside tmux, the images are half blocks. In Terminal.app (no protocol) they are half blocks, without a noticeable pause at start. `mrq show - < doc.md` does not query the terminal (its answer would come on stdin): it starts at once, shows the relative images' alt texts (stdin has no directory) and the DOT diagram as half blocks or, with `MRQ_GRAPHICS=kitty`, as a picture.
+5. If at hand, check sixel in foot or `xterm -ti vt340`, with `MRQ_GRAPHICS=sixel` where the terminal is not detected, scrolling through `big.png` as in 2.

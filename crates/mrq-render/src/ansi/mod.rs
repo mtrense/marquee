@@ -48,8 +48,9 @@
 //! - **Images:** a paragraph of only images (and Obsidian image embeds) shows them as
 //!   graphics with [`AnsiOptions::graphics`], when the file is a local PNG or SVG
 //!   (rasterized, feature `png`) next to the document; at most the width, never scaled
-//!   up, with [`AnsiOptions::cell_size`] pixels per cell. Otherwise, and for images in
-//!   text, `[image: alt]`.
+//!   up, with [`AnsiOptions::cell_size`] pixels per cell, and followed by a line per
+//!   further row with [`AnsiOptions::reserve_rows`]. Otherwise, and for images in text,
+//!   `[image: alt]`.
 //! - **Footnotes:** numbered by first reference, listed after a short rule at the end.
 //! - Definition lists: the term bold, details indented by 4. Thematic breaks: a rule.
 //!
@@ -102,6 +103,10 @@ use styles::Styles;
 
 /// How [`AnsiRenderer`] lays out.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "independent switches of the layout"
+)]
 pub struct AnsiOptions {
     /// The terminal width in columns (at least 1).
     pub width: usize,
@@ -113,9 +118,15 @@ pub struct AnsiOptions {
     pub highlight: bool,
     /// The pixel size of a terminal cell (width, height), for sizing images.
     pub cell_size: (u32, u32),
+    /// Follow each graphic's line with a line for each further row it takes, with only
+    /// the prefix of its container: for a viewer that draws the images over the lines
+    /// (the TUI), so that every line is one row. [`StyledDocument::to_ansi`] leaves them
+    /// blank.
+    pub reserve_rows: bool,
 }
 
-/// 80 columns, link URLs shown, no graphics, highlighting on, 10×20 pixel cells.
+/// 80 columns, link URLs shown, no graphics, highlighting on, 10×20 pixel cells, no
+/// reserved rows.
 impl Default for AnsiOptions {
     fn default() -> Self {
         Self {
@@ -124,6 +135,7 @@ impl Default for AnsiOptions {
             graphics: false,
             highlight: true,
             cell_size: (10, 20),
+            reserve_rows: false,
         }
     }
 }
@@ -225,6 +237,15 @@ impl AnsiRenderer {
     #[must_use]
     pub fn with_width(mut self, width: usize) -> Self {
         self.options.width = width.max(1);
+        self
+    }
+
+    /// Lays out with `options` instead (the width at least 1), e.g. with graphics for a
+    /// terminal whose cell size is known only once it runs.
+    #[must_use]
+    pub fn with_options(mut self, options: AnsiOptions) -> Self {
+        self.options = options;
+        self.options.width = options.width.max(1);
         self
     }
 

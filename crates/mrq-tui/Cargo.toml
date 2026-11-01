@@ -13,6 +13,8 @@ repository.workspace = true
 mrq-core.workspace = true
 mrq-render.workspace = true
 ratatui.workspace = true
+ratatui-image.workspace = true
+image.workspace = true
 notify.workspace = true
 similar.workspace = true
 

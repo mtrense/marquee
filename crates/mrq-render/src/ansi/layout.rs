@@ -238,19 +238,15 @@ impl<'a> Layout<'a> {
         let lines = images
             .iter()
             .zip(loaded)
-            .map(|((_, alt), image)| {
+            .flat_map(|((_, alt), image)| {
                 let fallback = vec![StyledSpan::new(format!("[image: {}]", clean(alt)), style)];
                 match image {
-                    Some(image) => Line {
-                        spans: Vec::new(),
-                        block: Some(self.info(id)),
-                        graphic: Some(self.graphic(image, width, fallback)),
-                    },
-                    None => Line {
+                    Some(image) => self.graphic_lines(id, image, width, fallback),
+                    None => vec![Line {
                         spans: fallback,
                         block: Some(self.info(id)),
                         graphic: None,
-                    },
+                    }],
                 }
             })
             .collect();
@@ -280,6 +276,34 @@ impl<'a> Layout<'a> {
             return rasterized(&bytes);
         }
         Image::from_png(bytes)
+    }
+
+    /// The line of `image` in block `id`, followed by a line for each further row with
+    /// [`AnsiOptions::reserve_rows`](super::AnsiOptions::reserve_rows).
+    fn graphic_lines(
+        &self,
+        id: NodeId,
+        image: Image,
+        width: usize,
+        fallback: Vec<StyledSpan>,
+    ) -> Vec<Line> {
+        let graphic = self.graphic(image, width, fallback);
+        let reserved = if self.renderer.options.reserve_rows {
+            graphic.rows - 1
+        } else {
+            0
+        };
+        let mut lines = vec![Line {
+            spans: Vec::new(),
+            block: Some(self.info(id)),
+            graphic: Some(graphic),
+        }];
+        lines.extend((0..reserved).map(|_| Line {
+            spans: Vec::new(),
+            block: Some(self.info(id)),
+            graphic: None,
+        }));
+        lines
     }
 
     /// `image` sized in cells: at its own pixel size, shrunk to `width` columns.
@@ -502,11 +526,7 @@ impl<'a> Layout<'a> {
                         format!("[{} diagram]", clean(lang)),
                         self.renderer.styles.image,
                     )];
-                    Some(vec![Line {
-                        spans: Vec::new(),
-                        block: Some(self.info(id)),
-                        graphic: Some(self.graphic(image, width, fallback)),
-                    }])
+                    Some(self.graphic_lines(id, image, width, fallback))
                 }
                 DiagramOutput::Text(text) => {
                     Some(self.literal(id, text.trim_end_matches('\n'), width, TextStyle::default()))

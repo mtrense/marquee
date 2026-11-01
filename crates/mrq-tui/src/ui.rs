@@ -7,7 +7,9 @@
 //! name in the file list and the status line.
 //! The sidebar is left out below [`SIDEBAR_MIN_SCREEN`] columns. The document panel
 //! draws only the lines on screen, behind a [`GUTTER`] that marks the selected block and
-//! the blocks of query matches; search matches are highlighted in the text.
+//! the blocks of query matches; search matches are highlighted in the text. Images and
+//! diagrams are drawn over the rows their lines reserve, clipped to the panel; one that
+//! cannot be drawn shows its text fallback on its first row.
 
 use std::ops::Range;
 
@@ -24,6 +26,7 @@ use ratatui::widgets::{
 use crate::app::{App, FileView, Overlay, Panel};
 use crate::event::KEYS;
 use crate::find::Find;
+use crate::graphics::{SignedPosition, SlicedImage};
 use crate::prompt::Prompt;
 
 /// The narrowest terminal that gets a sidebar.
@@ -204,6 +207,17 @@ fn draw_document(frame: &mut Frame, app: &App, area: Rect) {
     let blank = Span::raw(" ".repeat(usize::from(GUTTER)));
     let find = app.find();
     let visible = view.visible();
+    // The graphics with rows on screen, and how each is drawn: `None` shows its fallback.
+    let graphics: Vec<_> = file
+        .graphics_on_screen()
+        .iter()
+        .map(|&(at, key)| {
+            let graphic = file.lines()[at].graphic.as_ref();
+            let protocol = graphic.and_then(|graphic| app.images().protocol(key, graphic));
+            (at, protocol)
+        })
+        .collect();
+    let failed = |i: usize| graphics.iter().any(|(at, p)| *at == i && p.is_none());
     let lines: Vec<Line> = file.lines()[visible.clone()]
         .iter()
         .zip(visible)
@@ -220,11 +234,32 @@ fn draw_document(frame: &mut Frame, app: &App, area: Rect) {
             let highlights = find.map_or_else(Vec::new, |find| highlights(find, i));
             let mut line = line(styled, app.color_level(), &highlights);
             line.spans.insert(0, gutter.clone());
+            if failed(i) {
+                line.spans.extend(fallback(styled, app.color_level()));
+            }
             line
         })
         .collect();
     let title = file.document().name().display().to_string();
     frame.render_widget(Paragraph::new(lines).block(panel(title, focused)), area);
+    let text = inner(area);
+    let text = Rect {
+        x: text.x + GUTTER.min(text.width),
+        width: text.width.saturating_sub(GUTTER),
+        ..text
+    };
+    for (at, protocol) in &graphics {
+        let Some(protocol) = protocol else { continue };
+        let prefix: usize = file.lines()[*at].spans.iter().map(StyledSpan::width).sum();
+        let x = i16::try_from(prefix).unwrap_or(i16::MAX);
+        if prefix >= usize::from(text.width) {
+            continue;
+        }
+        // Negative for an image that starts above the screen.
+        let y = i16::try_from(at.cast_signed() - view.top().cast_signed()).unwrap_or(i16::MIN);
+        let position = SignedPosition::from((x, y));
+        frame.render_widget(SlicedImage::new(protocol, position), text);
+    }
 }
 
 fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
@@ -315,12 +350,9 @@ fn draw_help(frame: &mut Frame, area: Rect) {
 }
 
 /// The spans of a line of the ANSI layout that are drawn: what a search looks through.
+/// A graphic is drawn over the line, after its spans (the prefix of its container).
 pub(crate) fn drawn(line: &ansi::Line) -> &[StyledSpan] {
-    match &line.graphic {
-        // Images come with M10.7; until then, their text fallback.
-        Some(graphic) => &graphic.fallback,
-        None => &line.spans,
-    }
+    &line.spans
 }
 
 /// The search matches of `find` on line `line`, with their styles.
@@ -337,6 +369,14 @@ fn highlights(find: &Find, line: usize) -> Vec<(Range<usize>, Style)> {
             (hit.columns.clone(), style)
         })
         .collect()
+}
+
+/// The text fallback of the graphic of `line`, with colours for `level`.
+fn fallback(line: &ansi::Line, level: ColorLevel) -> impl Iterator<Item = Span<'_>> {
+    line.graphic
+        .iter()
+        .flat_map(|graphic| &graphic.fallback)
+        .map(move |span| Span::styled(span.text.as_str(), style(span.style, level)))
 }
 
 /// A styled line of the ANSI layout as a ratatui line, with colours for `level` and

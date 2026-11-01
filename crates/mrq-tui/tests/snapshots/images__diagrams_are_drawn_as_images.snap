@@ -1,0 +1,10 @@
+---
+source: crates/mrq-tui/tests/images.rs
+expression: rows(&app)
+---
+"┃▌ ▄▄                        ┃"
+"┃▌ ▀▀                        ┃"
+"┃▌ ▀▀                        ┃"
+"┃                            ┃"
+"┃  After.                    ┃"
+"┃                            ┃"

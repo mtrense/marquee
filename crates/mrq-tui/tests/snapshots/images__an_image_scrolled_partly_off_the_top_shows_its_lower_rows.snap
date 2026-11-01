@@ -1,0 +1,9 @@
+---
+source: crates/mrq-tui/tests/images.rs
+expression: rows(&app)
+---
+"┃  ▀▀                        ┃"
+"┃                            ┃"
+"┃  Paragraph 0.              ┃"
+"┃                            ┃"
+"┃▌ Paragraph 1.              ┃"

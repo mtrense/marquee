@@ -24,7 +24,8 @@
 //!   ([`watch::FileWatcher`]) and are reloaded, unless that would drop unsaved edits.
 //! - [`ui::draw`] renders an [`App`] into a ratatui [`Frame`](ratatui::Frame), so tests
 //!   draw to a `TestBackend` and snapshot the text. The document panel draws only its
-//!   visible lines.
+//!   visible lines, and the images and diagrams on them with the app's ratatui-image
+//!   picker ([`graphics`]; [`App::set_picker`]), whose rows the layout reserves.
 //! - [`run_on`] is the event loop over any backend and any source of events; [`run`]
 //!   drives it on the real terminal with crossterm and the file watcher's changes,
 //!   restoring the terminal when it ends, fails or panics.
@@ -42,7 +43,7 @@
 //! assert_eq!(app.focus(), Panel::Outline);
 //! ```
 
-use std::io;
+use std::io::{self, IsTerminal};
 use std::iter;
 use std::time::{Duration, Instant};
 
@@ -55,6 +56,7 @@ pub mod edit;
 pub mod editor;
 pub mod event;
 pub mod find;
+pub mod graphics;
 pub mod open;
 pub mod prompt;
 pub mod ui;
@@ -64,6 +66,7 @@ pub mod watch;
 pub use app::{App, FileView, Location, Overlay, Panel};
 pub use editor::{Editor, SystemEditor};
 pub use event::{Action, Event};
+pub use graphics::Graphics;
 pub use open::{Opener, SystemOpener};
 pub use view::{Block, DocumentView};
 pub use watch::Watch;
@@ -72,13 +75,24 @@ pub use watch::Watch;
 const POLL: Duration = Duration::from_millis(50);
 
 /// Runs `app` on the terminal until it quits: raw mode on the alternate screen, events
-/// from crossterm, and the open files watched for changes (if the file system can be
-/// watched; else the status line says why not). The terminal is restored afterwards,
+/// from crossterm, images drawn with the picker its [`Graphics`] get from the terminal,
+/// and the open files watched for changes (if the file system can be watched; else the
+/// status line says why not). The terminal is restored afterwards,
 /// also on an error or a panic.
 pub fn run(app: &mut App) -> io::Result<()> {
     // Also installs a panic hook that restores the terminal before the panic message.
     let mut terminal = ratatui::try_init()?;
     let _restore = Restore;
+    // In raw mode on the alternate screen, before any key is read. The answer comes on
+    // stdin, so not when the document came from there.
+    let picker = app.graphics().picker(|| {
+        if io::stdin().is_terminal() {
+            graphics::Picker::from_query_stdio()
+        } else {
+            Err(graphics::Errors::NoStdinResponse)
+        }
+    });
+    app.set_picker(picker);
     let mut changes = match watch::FileWatcher::new() {
         Ok((watcher, changes)) => {
             app.set_watcher(watcher);

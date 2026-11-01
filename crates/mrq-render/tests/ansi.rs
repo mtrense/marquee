@@ -664,4 +664,60 @@ mod images {
         let styled = render_with(&doc, options(40), registry());
         assert_eq!(styled.plain_text(), "text\n");
     }
+
+    #[test]
+    fn reserved_rows_follow_the_graphic_with_its_prefix() {
+        let (_dir, doc) = with_image("> ![alt](pic.png)\n\nAfter.\n");
+        let options = AnsiOptions {
+            cell_size: (1, 1),
+            reserve_rows: true,
+            ..graphics(80)
+        };
+        let styled = render_with(&doc, options, Registry::new());
+        let graphic = styled.lines[0].graphic.as_ref().unwrap();
+        assert_eq!(graphic.rows, 2);
+        // The second row is a line of its own, of the same block, behind the bar.
+        let row = &styled.lines[1];
+        assert!(row.graphic.is_none());
+        assert_eq!(row.block, styled.lines[0].block);
+        assert_eq!(row.text(), styled.lines[0].spans[0].text);
+        assert_eq!(styled.lines[3].text(), "After.");
+        // Without, the image takes one line.
+        let styled = render_with(
+            &doc,
+            AnsiOptions {
+                reserve_rows: false,
+                ..options
+            },
+            Registry::new(),
+        );
+        assert_eq!(styled.lines[2].text(), "After.");
+    }
+
+    #[test]
+    fn reserved_rows_follow_png_diagrams() {
+        let doc = Document::parse("```bob\nsource\n```\n");
+        let registry =
+            Registry::new().with_renderer(Fixed::new("bob", Ok(DiagramOutput::Png(png()))));
+        let options = AnsiOptions {
+            cell_size: (1, 1),
+            reserve_rows: true,
+            ..graphics(40)
+        };
+        let styled = render_with(&doc, options, registry);
+        assert_eq!(styled.lines.len(), 2);
+        assert_eq!(styled.lines[1].block, styled.lines[0].block);
+    }
+
+    #[test]
+    fn options_can_be_replaced() {
+        let renderer = AnsiRenderer::new(&Theme::default(), options(80))
+            .unwrap()
+            .with_options(AnsiOptions {
+                width: 0,
+                ..graphics(80)
+            });
+        assert!(renderer.options().graphics);
+        assert_eq!(renderer.options().width, 1);
+    }
 }

@@ -11,7 +11,7 @@ use mrq_core::ast::NodeId;
 use mrq_core::document::{DocumentOptions, Workspace};
 use mrq_core::toc::TocEntry;
 use mrq_core::validate::Vault;
-use mrq_render::ansi::{AnsiRenderer, ColorLevel, Line, StyledDocument};
+use mrq_render::ansi::{AnsiOptions, AnsiRenderer, ColorLevel, Line, StyledDocument};
 use ratatui::crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::layout::Rect;
 
@@ -19,6 +19,7 @@ use crate::edit::{Structural, UndoStack};
 use crate::editor::{Editor, SystemEditor};
 use crate::event::{self, Action, Event};
 use crate::find::Find;
+use crate::graphics::{self, Graphics, Images, Picker};
 use crate::open::{Opener, SystemOpener};
 use crate::prompt::Prompt;
 use crate::ui;
@@ -67,6 +68,8 @@ pub struct FileView {
     outline_cursor: usize,
     /// The document laid out, with the width it was laid out for.
     styled: Option<(usize, StyledDocument)>,
+    /// The lines of the layout with a graphic, in order, with the key of its image.
+    graphics: Vec<(usize, u64)>,
     view: DocumentView,
     undo: UndoStack,
     /// The text last read from or written to the file, to tell news from our own saves.
@@ -86,6 +89,7 @@ impl FileView {
             outline_text,
             outline_cursor: 0,
             styled: None,
+            graphics: Vec::new(),
             view: DocumentView::default(),
             undo: UndoStack::default(),
             deleted: false,
@@ -152,6 +156,25 @@ impl FileView {
             .map_or(&[], |(_, styled)| styled.lines.as_slice())
     }
 
+    /// The lines with a graphic that are on screen, or whose graphic's rows are: the
+    /// line's index and the key of its image for [`Images`].
+    pub(crate) fn graphics_on_screen(&self) -> &[(usize, u64)] {
+        let visible = self.view.visible();
+        let rows = |line: usize| {
+            self.lines()[line]
+                .graphic
+                .as_ref()
+                .map_or(1, |graphic| graphic.rows)
+        };
+        let start = self
+            .graphics
+            .partition_point(|&(line, _)| line + rows(line) <= visible.start);
+        let end = self
+            .graphics
+            .partition_point(|&(line, _)| line < visible.end);
+        &self.graphics[start..end.max(start)]
+    }
+
     /// Lays the document out for `width` columns, unless it already is, keeping the
     /// selection, and gives the view `height` rows.
     fn lay_out(&mut self, renderer: &AnsiRenderer, width: usize, height: usize) {
@@ -159,6 +182,12 @@ impl FileView {
             let styled = renderer.clone().with_width(width).render(&self.document);
             self.view = DocumentView::new(&styled.lines, self.document.ast(), &self.outline)
                 .following(&self.view);
+            self.graphics = styled
+                .lines
+                .iter()
+                .enumerate()
+                .filter_map(|(i, line)| Some((i, graphics::key(line.graphic.as_ref()?))))
+                .collect();
             self.styled = Some((width, styled));
         }
         self.view.set_height(height);
@@ -186,6 +215,10 @@ pub struct App {
     size: (u16, u16),
     renderer: AnsiRenderer,
     color_level: ColorLevel,
+    /// How [`run`](crate::run) gets its picker.
+    graphics: Graphics,
+    /// The picker and the images drawn with it.
+    images: Images,
     quit: bool,
     /// Where links resolve and how linked files are loaded; its documents are unused.
     workspace: Workspace,
@@ -234,6 +267,8 @@ impl App {
             size: (80, 24),
             renderer,
             color_level: ColorLevel::TrueColor,
+            graphics: Graphics::Off,
+            images: Images::new(None),
             quit: false,
             workspace: Workspace::new("."),
             vault: None,
@@ -257,6 +292,70 @@ impl App {
     pub fn with_color_level(mut self, level: ColorLevel) -> Self {
         self.color_level = level;
         self
+    }
+
+    /// This app with images and diagrams drawn as `graphics` says once [`run`](crate::run)
+    /// has the terminal (off by default, and for [`run_on`](crate::run_on)).
+    #[must_use]
+    pub fn with_graphics(mut self, graphics: Graphics) -> Self {
+        self.graphics = graphics;
+        self
+    }
+
+    /// How [`run`](crate::run) gets its picker; see [`with_graphics`](Self::with_graphics).
+    pub fn graphics(&self) -> Graphics {
+        self.graphics
+    }
+
+    /// This app drawing images and diagrams with `picker`; see [`set_picker`](Self::set_picker).
+    #[must_use]
+    pub fn with_picker(mut self, picker: Option<Picker>) -> Self {
+        self.set_picker(picker);
+        self
+    }
+
+    /// Draws images and diagrams with `picker` from now on, laid out at its cell size; with
+    /// `None`, shows their text fallbacks. Every file is laid out again, and the images
+    /// drawn so far are dropped.
+    pub fn set_picker(&mut self, picker: Option<Picker>) {
+        let options = *self.renderer.options();
+        let options = match &picker {
+            Some(picker) => {
+                let cell = picker.font_size();
+                AnsiOptions {
+                    graphics: true,
+                    reserve_rows: true,
+                    cell_size: (u32::from(cell.width), u32::from(cell.height)),
+                    ..options
+                }
+            }
+            None => AnsiOptions {
+                graphics: false,
+                reserve_rows: false,
+                ..options
+            },
+        };
+        self.renderer = self.renderer.clone().with_options(options);
+        self.images = Images::new(picker);
+        for file in &mut self.files {
+            file.styled = None;
+        }
+        self.relayout();
+    }
+
+    /// The picker images and diagrams are drawn with; `None` shows their text.
+    pub fn picker(&self) -> Option<&Picker> {
+        self.images.picker()
+    }
+
+    /// How many images were decoded and scaled for a size with the current picker: each
+    /// is, once, when it is first drawn at that size.
+    pub fn cached_images(&self) -> usize {
+        self.images.len()
+    }
+
+    pub(crate) fn images(&self) -> &Images {
+        &self.images
     }
 
     /// This app resolving links against the workspace root `root` (for paths starting

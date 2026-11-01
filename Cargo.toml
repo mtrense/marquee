@@ -75,6 +75,8 @@ typst-assets = "0.15.1"
 pdf-extract = "0.12.1"
 ratatui = { version = "0.30.2", default-features = false, features = ["crossterm", "layout-cache", "underline-color"] }
 notify = "8.2.1"
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+ratatui-image = { version = "11.1.0", default-features = false, features = ["crossterm"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

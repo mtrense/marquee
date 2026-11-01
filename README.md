@@ -391,7 +391,7 @@ The output starts with `--- OLD` and `+++ NEW` (nothing at all if there is no ch
 
 ### `mrq show`
 
-An interactive viewer for one or more files, or a directory, with colors, syntax highlighting, rendered tables, inline images and diagrams (on kitty, iTerm2, WezTerm or sixel terminals), and an outline sidebar.
+An interactive viewer for one or more files, or a directory, with colors, syntax highlighting, rendered tables, inline images and diagrams (on kitty, iTerm2, WezTerm or sixel terminals, and as colored half blocks elsewhere), and an outline sidebar.
 
 | Key                     | Action                                                |
 | ----------------------- | ----------------------------------------------------- |
@@ -423,6 +423,8 @@ The editing keys act on a section: the selected heading with everything up to th
 `e` hands the terminal to `$VISUAL`, else `$EDITOR`, else `vi`, as `$EDITOR +line file` with the line of the selected block (the command is split at spaces, so `code --wait` works), and reloads the file when the editor exits. It refuses stdin input, and a file with unsaved edits: write them with `w` or drop them with `R` first, so that neither the editor nor the reload loses them.
 
 Open files are watched (through their directories, so saves that rename a temporary file over the original are seen) and reloaded when they change on disk, with the selection kept on the same line of text. Our own `w` and changes that leave the text as it was are ignored. A file with unsaved edits is not reloaded: the status line says it changed, `w` writes the edits over it, and `R` reloads it, which `u` takes back to the edits. A file deleted on disk keeps its content in the viewer, and `w` writes it back. `R` also reloads a file without edits by hand, e.g. where the file system cannot be watched.
+
+A paragraph of only images shows them, when they are local PNG or SVG files, at their own size or shrunk to the panel's width; diagrams in a language with a renderer are rasterized to PNG (see [Diagrams](#diagrams)). An image takes as many rows as it is tall, and scrolls and is selected like a block of text, cut off at the panel's edges. On start, the viewer asks the terminal for its graphics protocol and cell size: kitty (kitty, Ghostty), iTerm2 (iTerm2, WezTerm) or sixel (foot, xterm in VT340 mode, …), else, or inside tmux and screen, colored half blocks (`▀`). `MRQ_GRAPHICS=kitty|iterm2|sixel` forces a protocol, `halfblocks` the half blocks, and `none` turns images off. Without images (`MRQ_GRAPHICS=none`, `--color never`, half blocks without colors, or an image that does not decode), images show their alt text and diagrams their text rendering or code, as in `render -o ansi`.
 
 ### `mrq lsp`
 
