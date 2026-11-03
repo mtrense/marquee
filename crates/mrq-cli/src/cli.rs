@@ -11,7 +11,7 @@ use clap_complete::Shell;
 /// A Markdown toolkit for the terminal: verify, lint, format, query,
 /// transform, render and display Markdown.
 #[derive(Debug, Parser)]
-#[command(name = "mrq", version)]
+#[command(name = "mrq", bin_name = "mrq", version)]
 pub struct Cli {
     #[command(flatten)]
     pub global: GlobalArgs,
