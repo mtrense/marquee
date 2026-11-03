@@ -1,0 +1,3 @@
+# Check out text with LF everywhere: fixtures, snapshots and schemas are compared byte for
+# byte, and Windows' default core.autocrlf would turn them into CRLF.
+* text=auto eol=lf
