@@ -4,7 +4,6 @@
 //! empty one, so no user config leaks in.
 
 use std::fs;
-use std::path::Path;
 
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -186,6 +185,7 @@ fn check_requires_insert() {
 #[test]
 fn insert_keeps_file_permissions() {
     use std::os::unix::fs::PermissionsExt;
+    use std::path::Path;
 
     let mrq = Mrq::new();
     mrq.write("README.md", STALE);
