@@ -33,6 +33,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use unicode_segmentation::UnicodeSegmentation;
 
+use crate::Slashed;
 use crate::ast::{Admonition, Callout, Event, Link, NodeKind, TaskState, WikiLink};
 use crate::document::Document;
 
@@ -399,7 +400,7 @@ impl Report {
         self.total.counts += &counts;
         self.total.reading_minutes = reading_minutes(self.total.counts.words, self.wpm);
         self.files.push(FileStats {
-            file: doc.path().map(|path| path.display().to_string()),
+            file: doc.path().map(Slashed::slashed),
             reading_minutes: reading_minutes(counts.words, self.wpm),
             counts,
         });

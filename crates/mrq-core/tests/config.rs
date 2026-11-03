@@ -264,7 +264,7 @@ fn unknown_key_names_file_and_line() {
     assert_eq!(location.column, 3);
     let message = err.to_string();
     assert!(
-        message.contains(&format!("{}:4:3", near.display())),
+        message.contains(&format!("{}:4:3", near.display()).replace('\\', "/")),
         "{message}"
     );
     assert!(

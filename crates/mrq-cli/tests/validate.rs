@@ -65,16 +65,9 @@ impl Mrq {
 
 fn normalize(bytes: &[u8]) -> String {
     let text = String::from_utf8(bytes.to_vec()).unwrap();
-    // Schema paths in the help are absolute; JSON escapes Windows separators.
-    let dir = fixtures().display().to_string();
-    let text = text
-        .replace(&dir, "[fixtures]")
-        .replace(&dir.replace('\\', "\\\\"), "[fixtures]");
-    let text = if cfg!(windows) {
-        text.replace("\\\\", "/").replace('\\', "/")
-    } else {
-        text
-    };
+    // Schema paths in the help are absolute, and `mrq` prints them with `/` separators.
+    let dir = fixtures().display().to_string().replace('\\', "/");
+    let text = text.replace(&dir, "[fixtures]");
     text.replace(env!("CARGO_PKG_VERSION"), "[version]")
 }
 

@@ -283,7 +283,7 @@ fn other_local_files_go_to_the_opener() {
     let recorder = Recorder::default();
     let mut app = on_disk(dir.path(), "a.md", recorder.clone());
     press(&mut app, [key(KeyCode::Down), key(KeyCode::Enter)]);
-    let logo = dir.path().join("img/logo.png");
+    let logo = dir.path().join("img").join("logo.png");
     assert_eq!(recorder.opened(), [logo.as_os_str()]);
     assert_eq!(app.history(), []);
     press(&mut app, [key(KeyCode::Right), key(KeyCode::Enter)]);

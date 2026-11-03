@@ -182,8 +182,16 @@ mod tests {
         assert!(uri.as_str().starts_with("file:///"), "{}", uri.as_str());
         assert!(uri.as_str().contains("a%20b"), "{}", uri.as_str());
         assert_eq!(uri_to_path(&uri).unwrap(), path);
-        let dotted: Uri = "file:///x/./y/../z.md".parse().unwrap();
-        assert_eq!(uri_to_path(&dotted).unwrap(), Path::new("/x/z.md"));
+        #[cfg(unix)]
+        {
+            let dotted: Uri = "file:///x/./y/../z.md".parse().unwrap();
+            assert_eq!(uri_to_path(&dotted).unwrap(), Path::new("/x/z.md"));
+        }
+        #[cfg(windows)]
+        {
+            let dotted: Uri = "file:///C:/x/./y/../z.md".parse().unwrap();
+            assert_eq!(uri_to_path(&dotted).unwrap(), Path::new(r"C:\x\z.md"));
+        }
         let untitled: Uri = "untitled:Untitled-1".parse().unwrap();
         assert_eq!(uri_to_path(&untitled), None);
     }

@@ -4,6 +4,7 @@
 use std::io::{self, Write};
 use std::process::ExitCode;
 
+use mrq_core::Slashed as _;
 use mrq_core::document::{Document, DocumentOptions};
 use mrq_core::input::Input;
 use mrq_core::source::{SourceFile, apply_edits};
@@ -50,7 +51,7 @@ pub fn run(args: &TocArgs, inputs: &[Input], options: &DocumentOptions) -> ExitC
             let entries = entries(&doc, args.depth);
             if inputs.len() > 1 {
                 let separator = if first { "" } else { "\n" };
-                let _ = writeln!(out, "{separator}==> {} <==", doc.name().display());
+                let _ = writeln!(out, "{separator}==> {} <==", doc.name().slashed());
             }
             first = false;
             let text = if args.links {
@@ -110,12 +111,12 @@ pub fn insert(
                 let _ = writeln!(
                     stdout.lock(),
                     "{}: table of contents is out of date",
-                    doc.name().display()
+                    doc.name().slashed()
                 );
             }
         } else if let Some(path) = doc.path().filter(|_| input.is_writable()) {
             if changed && let Err(err) = crate::write_atomic(path, &text) {
-                let _ = writeln!(io::stderr().lock(), "mrq: {}: {err}", path.display());
+                let _ = writeln!(io::stderr().lock(), "mrq: {}: {err}", path.slashed());
                 failed = true;
             }
         } else {

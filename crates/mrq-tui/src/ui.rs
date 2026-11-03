@@ -29,6 +29,8 @@ use crate::find::Find;
 use crate::graphics::{SignedPosition, SlicedImage};
 use crate::prompt::Prompt;
 
+use mrq_core::Slashed as _;
+
 /// The narrowest terminal that gets a sidebar.
 pub const SIDEBAR_MIN_SCREEN: u16 = 40;
 
@@ -240,7 +242,7 @@ fn draw_document(frame: &mut Frame, app: &App, area: Rect) {
             line
         })
         .collect();
-    let title = file.document().name().display().to_string();
+    let title = file.document().name().slashed();
     frame.render_widget(Paragraph::new(lines).block(panel(title, focused)), area);
     let text = inner(area);
     let text = Rect {
@@ -286,7 +288,7 @@ fn draw_status(frame: &mut Frame, app: &App, area: Rect) {
 
 /// The file's name, with `[+]` after it while it has unsaved edits.
 fn name(file: &FileView) -> String {
-    let name = file.document().name().display().to_string();
+    let name = file.document().name().slashed();
     if file.is_dirty() {
         format!("{name} {DIRTY_MARK}")
     } else {

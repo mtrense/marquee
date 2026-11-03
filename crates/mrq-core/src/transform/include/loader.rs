@@ -5,6 +5,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::Slashed as _;
 use crate::document::normalize;
 
 /// What an `mrq:include`'s `path` names, resolved.
@@ -24,7 +25,7 @@ impl IncludeTarget {
     /// absolute, normalized path if it cannot be canonicalized), or the URL.
     pub fn identity(&self) -> String {
         match self {
-            Self::File(path) => identity(path).display().to_string(),
+            Self::File(path) => identity(path).slashed(),
             Self::Url(url) => url.clone(),
         }
     }
@@ -41,7 +42,7 @@ impl IncludeTarget {
 impl fmt::Display for IncludeTarget {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::File(path) => write!(f, "{}", path.display()),
+            Self::File(path) => write!(f, "{}", path.slashed()),
             Self::Url(url) => f.write_str(url),
         }
     }

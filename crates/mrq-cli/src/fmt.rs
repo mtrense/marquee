@@ -4,6 +4,7 @@
 use std::io::{self, Write};
 use std::process::ExitCode;
 
+use mrq_core::Slashed as _;
 use mrq_core::config::LoadedConfig;
 use mrq_core::diag::Diagnostic;
 use mrq_core::document::DocumentOptions;
@@ -69,7 +70,7 @@ pub fn run(
             if text != original
                 && let Err(err) = crate::write_atomic(path, text)
             {
-                report(&format!("{}: {err}", path.display()));
+                report(&format!("{}: {err}", path.slashed()));
                 failed = true;
             }
         } else {

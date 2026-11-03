@@ -7,7 +7,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use super::{Checker, codes, scheme};
+use crate::Slashed as _;
 use crate::ast::Span;
+
 use crate::diag::{Diagnostic, Severity};
 use crate::directive::DirectiveKind;
 use crate::document::normalize;
@@ -64,7 +66,7 @@ impl Checker<'_> {
                                 span,
                                 format!("included file `{written}` does not exist"),
                             )
-                            .with_help(format!("resolved to `{}`", path.display())),
+                            .with_help(format!("resolved to `{}`", path.slashed())),
                         );
                     } else if let Some(origin) = &origin
                         && let Some(chain) = self.chain_back(&path, origin)
@@ -205,13 +207,13 @@ fn identity(path: &Path) -> PathBuf {
 /// `a includes b, which includes c, which includes a` for the file `origin` and the
 /// `chain` of files between; `a includes itself` if there are none.
 fn describe_cycle(origin: &Path, chain: &[PathBuf]) -> String {
-    let origin = origin.display();
+    let origin = origin.slashed();
     if chain.is_empty() {
         return format!("{origin} includes itself");
     }
     let mut text = format!("{origin} includes ");
     for path in chain {
-        let _ = write!(text, "{}, which includes ", path.display());
+        let _ = write!(text, "{}, which includes ", path.slashed());
     }
     let _ = write!(text, "{origin}");
     text

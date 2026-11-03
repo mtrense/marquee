@@ -26,6 +26,7 @@ use std::path::Path;
 use std::time::Duration;
 
 use mrq_core::Document;
+use mrq_core::Slashed as _;
 use mrq_core::source::{ByteRange, PositionEncoding, SourceFile, TextEdit};
 use similar::{DiffTag, TextDiff};
 
@@ -59,7 +60,7 @@ impl App {
             return;
         };
         if let Err(err) = watcher.watch(path) {
-            let name = document.name().display();
+            let name = document.name().slashed();
             self.status = Some(format!("cannot watch {name} for changes: {err}"));
         }
     }
@@ -67,7 +68,7 @@ impl App {
     /// Edits the shown file in the editor at the selected block, then reloads it.
     pub(super) fn edit_externally(&mut self) {
         let file = self.file();
-        let name = file.document.name().display().to_string();
+        let name = file.document.name().slashed();
         let Some(path) = file.document.path().map(Path::to_owned) else {
             self.status = Some(format!("cannot edit {name}: it has no file"));
             return;
@@ -108,7 +109,7 @@ impl App {
     /// unsaved edits it was not asked to; see the [module docs](self).
     fn reload(&mut self, index: usize, why: Why) {
         let file = &mut self.files[index];
-        let name = file.document.name().display().to_string();
+        let name = file.document.name().slashed();
         let Some(path) = file.document.path().map(Path::to_owned) else {
             self.status = Some(format!("cannot reload {name}: it has no file"));
             return;

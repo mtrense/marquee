@@ -4,6 +4,7 @@ use std::fmt;
 use std::io;
 use std::path::PathBuf;
 
+use crate::Slashed as _;
 use crate::diag::{Diagnostic, Severity};
 use crate::source::ByteRange;
 
@@ -25,7 +26,7 @@ pub struct Location {
 
 impl fmt::Display for Location {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}:{}", self.path.display(), self.line, self.column)
+        write!(f, "{}:{}:{}", self.path.slashed(), self.line, self.column)
     }
 }
 
@@ -33,7 +34,7 @@ impl fmt::Display for Location {
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     /// A config file could not be read.
-    #[error("cannot read config file {}: {source}", path.display())]
+    #[error("cannot read config file {}: {source}", path.slashed())]
     Io {
         path: PathBuf,
         #[source]

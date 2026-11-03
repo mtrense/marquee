@@ -11,6 +11,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use mrq_core::Slashed as _;
 use mrq_core::config::{
     CONFIG_FILE_NAMES, Config, ConfigError, ConfigLoader, LoadedConfig, MARKDOWNLINT_FILE_NAMES,
     Origin,
@@ -132,7 +133,7 @@ impl Root {
             .base_dir(&self.path)
             .ignore_patterns(ignore)
             .resolve(&["."])
-            .map_err(|err| format!("{}: {err}", self.path.display()))?;
+            .map_err(|err| format!("{}: {err}", self.path.slashed()))?;
         Ok(inputs
             .iter()
             .filter_map(|input| input.path().map(Path::to_path_buf))

@@ -19,6 +19,8 @@ impl Tree {
     fn new() -> Self {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path().canonicalize().unwrap();
+        // Windows canonicalizes to a verbatim `\\?\C:\…` path; `mrq` gets the plain one.
+        let root = PathBuf::from(root.to_string_lossy().trim_start_matches(r"\\?\"));
         fs::create_dir_all(root.join("user")).unwrap();
         fs::create_dir_all(root.join("proj/docs")).unwrap();
         Self { _dir: dir, root }

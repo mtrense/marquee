@@ -7,6 +7,7 @@ use std::io::{self, Write};
 use std::path::Path;
 use std::process::ExitCode;
 
+use mrq_core::Slashed as _;
 use mrq_core::config::LoadedConfig;
 use mrq_core::diag::{Diagnostic, Severity};
 use mrq_core::document::{Document, DocumentOptions};
@@ -89,7 +90,7 @@ pub fn run(
             }
         } else if let Some(path) = doc.path().filter(|_| args.in_place && input.is_writable()) {
             if changed && let Err(err) = crate::write_atomic(path, &text) {
-                report(&format!("{}: {err}", path.display()));
+                report(&format!("{}: {err}", path.slashed()));
                 failed = true;
             }
         } else {

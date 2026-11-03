@@ -393,7 +393,7 @@ mod tests {
         assert_eq!(split.diagnostics, []);
         std::iter::once(split.index)
             .chain(split.parts)
-            .map(|file| (file.path.to_string_lossy().into_owned(), file.text))
+            .map(|file| (file.path.to_string_lossy().replace('\\', "/"), file.text))
             .collect()
     }
 
@@ -518,7 +518,7 @@ mod tests {
         let names: Vec<String> = split(&doc("x.md", &text), &SplitOptions::new().dir(""))
             .parts
             .into_iter()
-            .map(|part| part.path.to_string_lossy().into_owned())
+            .map(|part| part.path.to_string_lossy().replace('\\', "/"))
             .collect();
         assert_eq!(
             names,

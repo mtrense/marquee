@@ -5,6 +5,7 @@ use std::path::Path;
 
 use super::Linter;
 use crate::Document;
+use crate::Slashed as _;
 use crate::diag::Diagnostic;
 use crate::document::DocumentOptions;
 use crate::flavor::FlavorError;
@@ -98,7 +99,7 @@ impl Linter {
         while passes < MAX_FIX_PASSES && diagnostics.iter().any(|diag| diag.fix.is_some()) {
             let text =
                 apply_fixes(document.text(), &diagnostics).map_err(|source| FixError::Edit {
-                    name: document.name().display().to_string(),
+                    name: document.name().slashed(),
                     source,
                 })?;
             if text == document.text() {

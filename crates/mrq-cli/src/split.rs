@@ -6,6 +6,7 @@ use std::io::{self, Write};
 use std::path::Path;
 use std::process::ExitCode;
 
+use mrq_core::Slashed as _;
 use mrq_core::document::DocumentOptions;
 use mrq_core::input::Input;
 use mrq_core::transform::{SplitOptions, split};
@@ -50,7 +51,7 @@ pub fn run(args: &SplitArgs, options: &DocumentOptions, global: &GlobalArgs) -> 
     if split.parts.is_empty() {
         report(&format!(
             "{}: no level-{} headings to split at",
-            doc.name().display(),
+            doc.name().slashed(),
             args.depth
         ));
         return ExitCode::from(crate::EXIT_USAGE);
@@ -62,7 +63,7 @@ pub fn run(args: &SplitArgs, options: &DocumentOptions, global: &GlobalArgs) -> 
         if let Some(file) = files.iter().find(|file| canonical(&file.path) == input) {
             report(&format!(
                 "{}: splitting would overwrite the file itself",
-                file.path.display()
+                file.path.slashed()
             ));
             return ExitCode::from(crate::EXIT_USAGE);
         }
@@ -70,7 +71,7 @@ pub fn run(args: &SplitArgs, options: &DocumentOptions, global: &GlobalArgs) -> 
     if args.dry_run {
         let mut stdout = io::stdout().lock();
         for file in &files {
-            let _ = writeln!(stdout, "{}", file.path.display());
+            let _ = writeln!(stdout, "{}", file.path.slashed());
         }
         return ExitCode::SUCCESS;
     }
@@ -79,13 +80,13 @@ pub fn run(args: &SplitArgs, options: &DocumentOptions, global: &GlobalArgs) -> 
         _ => Path::new("."),
     };
     if let Err(err) = fs::create_dir_all(dir) {
-        report(&format!("{}: {err}", dir.display()));
+        report(&format!("{}: {err}", dir.slashed()));
         return ExitCode::from(crate::EXIT_USAGE);
     }
     let mut failed = false;
     for file in &files {
         if let Err(err) = crate::write_atomic(&file.path, &file.text) {
-            report(&format!("{}: {err}", file.path.display()));
+            report(&format!("{}: {err}", file.path.slashed()));
             failed = true;
         }
     }

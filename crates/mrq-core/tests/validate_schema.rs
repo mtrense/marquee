@@ -279,7 +279,7 @@ fn config_paths_resolve_against_the_declaring_config_file() {
         .iter()
         .map(|diag| (diag.message.as_str(), diag.help.clone().unwrap()))
         .collect();
-    let help = |rel: &str| format!("schema `{}`", root.join(rel).display());
+    let help = |rel: &str| format!("schema `{}`", root.join(rel).display()).replace('\\', "/");
     assert_eq!(
         summary,
         [

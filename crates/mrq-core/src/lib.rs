@@ -19,6 +19,7 @@ pub mod lint;
 pub mod parse;
 pub mod process;
 pub mod query;
+pub mod slashed;
 pub mod source;
 pub mod stats;
 pub mod symbol;
@@ -27,6 +28,7 @@ pub mod transform;
 pub mod validate;
 
 pub use document::{Document, Workspace};
+pub use slashed::Slashed;
 
 /// Compiles the Rust examples of `README.md` as doctests.
 #[cfg(doctest)]

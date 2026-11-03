@@ -6,6 +6,7 @@ use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use mrq_core::Slashed as _;
 use mrq_core::document::DocumentOptions;
 use mrq_core::input::Input;
 use mrq_core::transform::{FrontmatterMerge, MergeOptions, merge};
@@ -71,7 +72,7 @@ pub fn run(
     }
     .and_then(|()| crate::write_atomic(path, &merged.text));
     if let Err(err) = written {
-        report(&format!("{}: {err}", path.display()));
+        report(&format!("{}: {err}", path.slashed()));
         return ExitCode::from(crate::EXIT_USAGE);
     }
     ExitCode::SUCCESS

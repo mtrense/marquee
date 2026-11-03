@@ -13,6 +13,7 @@ use super::directives::check_toc;
 use super::external::External;
 use super::{DocumentLink, Resolver, Target, links, reference_definitions};
 use super::{ExternalChecker, ExternalExclude};
+use crate::Slashed as _;
 use crate::ast::{NodeKind, NodeType, Span};
 use crate::diag::{Diagnostic, Label, Severity};
 use crate::flavor::obsidian_anchor;
@@ -225,7 +226,7 @@ impl<'w> Checker<'w> {
                 link.span,
                 message,
             )
-            .with_help(format!("resolved to `{}`", path.display())),
+            .with_help(format!("resolved to `{}`", path.slashed())),
         )
     }
 
@@ -246,7 +247,7 @@ impl<'w> Checker<'w> {
                         };
                         let written = written_destination(document, &link);
                         let message = format!("{what} `{written}` does not exist");
-                        let help = format!("resolved to `{}`", path.display());
+                        let help = format!("resolved to `{}`", path.slashed());
                         out.push(report(code, Severity::Error, message).with_help(help));
                     } else if let Some(anchor) = anchor {
                         out.extend(self.missing_file_anchor(document, &link, path, anchor));
@@ -263,7 +264,7 @@ impl<'w> Checker<'w> {
                             && self.lacks_anchor(&path, anchor, true)
                         {
                             let message = format!("no anchor `#{anchor}` in `{name}`");
-                            let help = format!("`{name}` is `{}`", path.display());
+                            let help = format!("`{name}` is `{}`", path.slashed());
                             out.push(
                                 report(codes::MISSING_ANCHOR, Severity::Error, message)
                                     .with_help(help),

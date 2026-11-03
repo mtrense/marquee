@@ -114,7 +114,7 @@ async fn help_goes_into_the_message_and_labels_into_related_information() {
         missing.message,
         format!(
             "file `b.md` does not exist\n\nhelp: resolved to `{}`",
-            resolved.display()
+            resolved.display().to_string().replace('\\', "/")
         )
     );
     assert!(client.shutdown().await);

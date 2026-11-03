@@ -6,6 +6,8 @@ use figment::value::{Empty, Num, Tag, Value};
 
 use super::load::{LoadedConfig, Origin};
 
+use crate::Slashed as _;
+
 impl LoadedConfig {
     /// The effective configuration as YAML, keys sorted. With `origins`, every value is
     /// followed by a comment naming its source: `path:line`, `default` or `cli`.
@@ -23,7 +25,7 @@ impl LoadedConfig {
             match self.origin(path) {
                 Some(Origin::Default) => "  # default".to_owned(),
                 Some(Origin::Cli) => "  # cli".to_owned(),
-                Some(Origin::File { path, line }) => format!("  # {}:{line}", path.display()),
+                Some(Origin::File { path, line }) => format!("  # {}:{line}", path.slashed()),
                 None => String::new(),
             }
         };

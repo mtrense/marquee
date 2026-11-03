@@ -98,12 +98,7 @@ fn copy_dir(from: &Path, to: &Path) {
 }
 
 fn normalize(bytes: &[u8]) -> String {
-    let text = String::from_utf8(bytes.to_vec()).unwrap();
-    if cfg!(windows) {
-        text.replace("\\\\", "/").replace('\\', "/")
-    } else {
-        text
-    }
+    String::from_utf8(bytes.to_vec()).unwrap()
 }
 
 /// The names in `dir`, sorted.

@@ -41,6 +41,7 @@ use globset::GlobBuilder;
 use ignore::WalkBuilder;
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 
+use crate::Slashed as _;
 use crate::source::SourceFile;
 
 /// File extensions picked up by directory walks (compared case-insensitively).
@@ -117,7 +118,7 @@ impl Input {
     fn name(&self) -> String {
         self.path
             .as_ref()
-            .map_or_else(|| "<stdin>".to_owned(), |p| p.display().to_string())
+            .map_or_else(|| "<stdin>".to_owned(), |p| p.slashed())
     }
 }
 
@@ -125,7 +126,7 @@ impl Input {
 #[derive(Debug, thiserror::Error)]
 pub enum InputError {
     /// A path argument that exists neither as a file nor a directory and is no glob.
-    #[error("{}: no such file or directory", path.display())]
+    #[error("{}: no such file or directory", path.slashed())]
     NotFound { path: PathBuf },
     /// A glob argument that matched no file.
     #[error("no files match the glob pattern `{pattern}`")]

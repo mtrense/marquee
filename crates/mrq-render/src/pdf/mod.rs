@@ -98,6 +98,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use mrq_core::Document;
+use mrq_core::Slashed as _;
 use mrq_core::diag::{Diagnostic, Severity};
 use mrq_core::source::ByteRange;
 
@@ -153,7 +154,7 @@ pub enum PdfError {
     #[error(transparent)]
     Highlight(#[from] HighlightError),
     /// The `overrides.pdf` template cannot be read.
-    #[error("cannot read the PDF override {}: {source}", path.display())]
+    #[error("cannot read the PDF override {}: {source}", path.slashed())]
     Override {
         path: PathBuf,
         #[source]

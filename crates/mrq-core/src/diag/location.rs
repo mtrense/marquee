@@ -39,12 +39,7 @@ pub(crate) fn resolve(source: Option<&SourceFile>, range: ByteRange) -> Option<(
 
 /// `path` with `/` separators, for output formats that want portable paths.
 pub(crate) fn display_path(path: &Path) -> String {
-    let text = path.to_string_lossy();
-    if std::path::MAIN_SEPARATOR == '\\' {
-        text.replace('\\', "/")
-    } else {
-        text.into_owned()
-    }
+    crate::Slashed::slashed(path)
 }
 
 #[cfg(test)]

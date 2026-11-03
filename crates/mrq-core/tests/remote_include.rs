@@ -221,8 +221,10 @@ fn failed_fetches_are_reported_and_leave_the_include() {
     );
     let (code, refused) = messages[4];
     assert_eq!(code, INCLUDE_CODE);
+    // Windows retries refused connections for seconds, past the test's short timeout.
     assert!(
-        refused.starts_with(&format!("cannot include `{closed}`: connection failed")),
+        refused.starts_with(&format!("cannot include `{closed}`: connection failed"))
+            || (cfg!(windows) && refused == format!("cannot include `{closed}`: timed out")),
         "{refused}"
     );
 }

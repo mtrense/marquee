@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use mrq_core::Document;
+use mrq_core::Slashed;
 use mrq_core::config::{LoadedConfig, Origin};
 use mrq_core::diag::Diagnostic;
 use mrq_core::document::DocumentOptions;
@@ -123,7 +124,7 @@ fn run(
             None => io::stdout().lock().write_all(&bytes),
         };
         if let Err(err) = written {
-            let name = path.map_or_else(|| "<stdout>".to_owned(), |p| p.display().to_string());
+            let name = path.map_or_else(|| "<stdout>".to_owned(), |p| p.slashed());
             report(&format!("{name}: {err}"));
             return usage();
         }
@@ -161,7 +162,7 @@ fn render_all(
         let files: Vec<_> = docs
             .iter()
             .map(|doc| {
-                let file = doc.path().map(|path| path.display().to_string());
+                let file = doc.path().map(Slashed::slashed);
                 json!({ "file": file, "ast": doc.to_json_ast() })
             })
             .collect();
@@ -218,9 +219,9 @@ fn output_names(
         if let Some(other) = seen.insert(name.clone(), path) {
             return Err(format!(
                 "{} and {} would both be written to {}",
-                other.display(),
-                path.display(),
-                name.display()
+                other.slashed(),
+                path.slashed(),
+                name.slashed()
             ));
         }
         names.push(name);
@@ -372,7 +373,7 @@ impl Backend {
             Self::Pdf(renderer) => match renderer.render_with_diagnostics(doc) {
                 Ok(out) => (out.pdf, out.diagnostics),
                 Err(err) => {
-                    report(&format!("{}: {err}", doc.name().display()));
+                    report(&format!("{}: {err}", doc.name().slashed()));
                     return Err(());
                 }
             },

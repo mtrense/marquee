@@ -9,6 +9,8 @@ use serde_json::{Map, Value};
 
 use super::model::Theme;
 
+use mrq_core::Slashed as _;
+
 /// The names of the built-in themes, in the order they are documented.
 pub const BUILTIN_THEMES: [&str; 4] = ["light", "dark", "github", "paper"];
 
@@ -29,7 +31,7 @@ pub fn builtin_sources() -> impl Iterator<Item = (&'static str, &'static str)> {
 #[derive(Debug, thiserror::Error)]
 pub enum ThemeError {
     /// A theme file could not be read.
-    #[error("cannot read theme file {}: {source}", path.display())]
+    #[error("cannot read theme file {}: {source}", path.slashed())]
     Io {
         path: PathBuf,
         #[source]
@@ -66,7 +68,7 @@ struct Prefix<'a>(Option<&'a Path>, usize, usize);
 impl fmt::Display for Prefix<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(path) = self.0 {
-            write!(f, "{}:", path.display())?;
+            write!(f, "{}:", path.slashed())?;
         }
         write!(f, "{}:{}: ", self.1, self.2)
     }
@@ -81,7 +83,7 @@ impl fmt::Display for Chain<'_> {
             if i > 0 {
                 f.write_str(" -> ")?;
             }
-            write!(f, "{}", path.display())?;
+            write!(f, "{}", path.slashed())?;
         }
         Ok(())
     }

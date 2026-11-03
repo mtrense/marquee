@@ -89,6 +89,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use mrq_core::Document;
+use mrq_core::Slashed as _;
 use mrq_core::diag::Diagnostic;
 
 use crate::diagram::Registry;
@@ -162,7 +163,7 @@ pub enum AnsiError {
     #[error(transparent)]
     Highlight(#[from] HighlightError),
     /// The `overrides.ansi` file cannot be read or is invalid.
-    #[error("cannot load the ANSI override {}: {message}", path.display())]
+    #[error("cannot load the ANSI override {}: {message}", path.slashed())]
     Override { path: PathBuf, message: String },
 }
 

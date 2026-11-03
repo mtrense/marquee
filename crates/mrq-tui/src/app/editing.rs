@@ -8,6 +8,7 @@
 //! chosen link is forgotten. `w` writes the file atomically (also when it has no edits
 //! but was deleted on disk); `q` asks before quitting while a file has unsaved edits.
 
+use mrq_core::Slashed as _;
 use mrq_core::source::write_atomic;
 
 use super::search::Purpose;
@@ -88,7 +89,7 @@ impl App {
     /// Writes the shown file if it has unsaved edits, or was deleted on disk.
     pub(super) fn save(&mut self) {
         let file = &mut self.files[self.current];
-        let name = file.document.name().display().to_string();
+        let name = file.document.name().slashed();
         self.status = Some(if !file.is_dirty() && !file.deleted {
             "no changes to write".to_owned()
         } else if let Some(path) = file.document.path() {
@@ -113,7 +114,7 @@ impl App {
             .files
             .iter()
             .filter(|file| file.is_dirty())
-            .map(|file| file.document.name().display().to_string())
+            .map(|file| file.document.name().slashed())
             .collect();
         if dirty.is_empty() {
             self.quit = true;

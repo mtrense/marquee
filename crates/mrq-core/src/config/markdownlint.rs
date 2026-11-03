@@ -8,6 +8,7 @@ use super::error::ConfigError;
 use super::load::{Layer, location_at, location_of, not_a_mapping, parse_yaml, read_text};
 use super::locate::KeyIndex;
 use super::model::LintExtends;
+use crate::Slashed as _;
 use crate::lint::Registry;
 
 /// markdownlint config file names, in order of preference within one directory.
@@ -43,7 +44,7 @@ pub(super) fn layers(start_dir: &Path) -> Result<Vec<Layer>, ConfigError> {
             return Err(extends_error(
                 from,
                 text,
-                format!("`extends` cycle: {} is extended again", path.display()),
+                format!("`extends` cycle: {} is extended again", path.slashed()),
             ));
         }
         if let Some((from, text, _)) = chain.last()
@@ -52,7 +53,7 @@ pub(super) fn layers(start_dir: &Path) -> Result<Vec<Layer>, ConfigError> {
             return Err(extends_error(
                 from,
                 text,
-                format!("`extends` file {} does not exist", path.display()),
+                format!("`extends` file {} does not exist", path.slashed()),
             ));
         }
         let text = read_text(&path)?;

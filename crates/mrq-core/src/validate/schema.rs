@@ -11,6 +11,7 @@ use serde_json::{Map, Value};
 
 use super::codes;
 use crate::Document;
+use crate::Slashed as _;
 use crate::ast::Span;
 use crate::config::{LoadedConfig, Origin};
 use crate::diag::{Diagnostic, Severity};
@@ -28,18 +29,18 @@ pub enum SchemaError {
         source: globset::Error,
     },
     /// The schema file cannot be read.
-    #[error("cannot read schema `{}`: {source}", path.display())]
+    #[error("cannot read schema `{}`: {source}", path.slashed())]
     Read {
         path: PathBuf,
         #[source]
         source: std::io::Error,
     },
     /// The schema file is not valid JSON (or YAML, for `.yaml`/`.yml` files).
-    #[error("cannot parse schema `{}`: {message}", path.display())]
+    #[error("cannot parse schema `{}`: {message}", path.slashed())]
     Parse { path: PathBuf, message: String },
     /// The schema (from the file at `path`, if any) is not a valid JSON Schema, or has a
     /// `$ref` that cannot be resolved.
-    #[error("invalid schema{}: {message}", path.as_ref().map(|p| format!(" `{}`", p.display())).unwrap_or_default())]
+    #[error("invalid schema{}: {message}", path.as_ref().map(|p| format!(" `{}`", p.slashed())).unwrap_or_default())]
     Invalid {
         path: Option<PathBuf>,
         message: String,
@@ -309,7 +310,7 @@ fn report(
             message,
         );
         if let Some(name) = &rule.name {
-            diagnostic = diagnostic.with_help(format!("schema `{}`", name.display()));
+            diagnostic = diagnostic.with_help(format!("schema `{}`", name.slashed()));
         }
         out.push(diagnostic);
     }

@@ -42,6 +42,8 @@ use two_face::theme::LazyThemeSet;
 
 use crate::theme::{CodeStyle, Color};
 
+use mrq_core::Slashed as _;
+
 pub use classed::CLASS_PREFIX;
 pub use language::language_token;
 
@@ -72,7 +74,7 @@ pub enum HighlightError {
     )]
     UnknownTheme { name: String },
     /// A `.tmTheme` file could not be read or parsed.
-    #[error("cannot load code theme {}: {source}", path.display())]
+    #[error("cannot load code theme {}: {source}", path.slashed())]
     ThemeFile {
         path: PathBuf,
         #[source]

@@ -10,10 +10,12 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use mrq_core::Document;
+use mrq_core::Slashed as _;
 use mrq_core::diag::HumanStyle;
 use mrq_core::diff::{self, Block, BlockOp, DiffOptions, DocDiff, SectionDiff, SectionSide};
 use mrq_core::diff::{SectionStatus, WordOp};
 use mrq_core::input::{Input, InputError};
+use mrq_core::source::SourceFile;
 use serde::Serialize;
 
 use crate::cli::{ColorChoice, DiffArgs, GlobalArgs};
@@ -51,6 +53,10 @@ pub fn command(args: &DiffArgs, global: &GlobalArgs) -> ExitCode {
         if path == stdin {
             return options.read(&Input::stdin()).map_err(|err| err.to_string());
         }
+        if is_null_device(path) {
+            let source = SourceFile::new(Some(path.to_path_buf()), "");
+            return options.parse_source(source).map_err(|err| err.to_string());
+        }
         // Checked first for a message that is the same on every OS.
         if !path.exists() {
             let path = path.to_path_buf();
@@ -85,12 +91,19 @@ fn fail(message: &str) -> ExitCode {
     ExitCode::from(EXIT_USAGE)
 }
 
+/// Whether `path` is the empty side `git difftool` passes for an added or deleted file
+/// and that cannot be read as a file: on Windows, Git passes `nul` (or `/dev/null`).
+fn is_null_device(path: &Path) -> bool {
+    cfg!(windows)
+        && (path.as_os_str().eq_ignore_ascii_case("nul") || path == Path::new("/dev/null"))
+}
+
 /// A side's name as given, `<stdin>` for `-`.
 fn name(path: &Path) -> String {
     if path == Path::new("-") {
         "<stdin>".to_owned()
     } else {
-        path.display().to_string()
+        path.slashed()
     }
 }
 

@@ -336,8 +336,15 @@ fn relative_links_become_file_uris() {
     fs::write(&path, "[other](other.md#x) [self](#top)\n").unwrap();
     let doc = Document::load(&path).unwrap();
     let ansi = render_with(&doc, options(80), Registry::new()).to_ansi(&truecolor());
+    // `file:///C:/…` on Windows: `/` separators and a leading `/` before the drive.
     let base = std::path::absolute(dir.path()).unwrap();
-    let uri = |file: &str| format!("\x1b]8;;file://{}/{file}\x1b\\", base.display());
+    let base = base.display().to_string().replace('\\', "/");
+    let base = if base.starts_with('/') {
+        base
+    } else {
+        format!("/{base}")
+    };
+    let uri = |file: &str| format!("\x1b]8;;file://{base}/{file}\x1b\\");
     assert!(ansi.contains(&uri("other.md#x")), "{}", visible(&ansi));
     assert!(ansi.contains(&uri("doc.md#top")), "{}", visible(&ansi));
 }

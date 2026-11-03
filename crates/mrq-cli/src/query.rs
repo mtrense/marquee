@@ -4,6 +4,7 @@
 use std::io::{self, Write};
 use std::process::ExitCode;
 
+use mrq_core::Slashed;
 use mrq_core::document::{Document, DocumentOptions};
 use mrq_core::input::Input;
 use mrq_core::query::{JsonOutput, Match, Query, QueryError, Syntax};
@@ -74,7 +75,7 @@ pub fn run(
             }
         };
         let report = |err: QueryError| {
-            let name = doc.name().display();
+            let name = doc.name().slashed();
             let _ = writeln!(io::stderr().lock(), "mrq: {name}: {err}");
         };
         if args.output == QueryOutput::Json {
@@ -84,7 +85,7 @@ pub fn run(
             };
             any_match |= !outputs.is_empty();
             let matches: Vec<Value> = outputs.into_iter().map(JsonOutput::into_value).collect();
-            let file = doc.path().map(|path| path.display().to_string());
+            let file = doc.path().map(Slashed::slashed);
             files.push(json!({ "file": file, "matches": matches }));
             continue;
         }
@@ -98,7 +99,7 @@ pub fn run(
         }
         if inputs.len() > 1 {
             let separator = if first { "" } else { "\n" };
-            let _ = writeln!(out, "{separator}==> {} <==", doc.name().display());
+            let _ = writeln!(out, "{separator}==> {} <==", doc.name().slashed());
         }
         first = false;
         let mut previous: Option<&Found<'_>> = None;

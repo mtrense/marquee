@@ -127,6 +127,7 @@ pub const INCLUDE_CODE: &str = "include";
 /// use std::collections::HashMap;
 /// use std::io;
 /// use mrq_core::document::DocumentOptions;
+/// use mrq_core::Slashed as _;
 /// use mrq_core::source::SourceFile;
 /// use mrq_core::transform::{IncludeTarget, Includer, Loader};
 ///
@@ -134,8 +135,8 @@ pub const INCLUDE_CODE: &str = "include";
 ///
 /// impl Loader for Files {
 ///     fn load(&self, target: &IncludeTarget) -> io::Result<String> {
-///         let path = target.file().and_then(|path| path.to_str()).unwrap_or_default();
-///         self.0.get(path).map(|text| text.to_string()).ok_or(io::ErrorKind::NotFound.into())
+///         let path = target.file().map(|path| path.slashed()).unwrap_or_default();
+///         self.0.get(path.as_str()).map(|text| text.to_string()).ok_or(io::ErrorKind::NotFound.into())
 ///     }
 /// }
 ///

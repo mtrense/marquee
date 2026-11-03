@@ -213,9 +213,15 @@ mod tests {
         assert_eq!(hyperlink("#x", None), None);
         assert_eq!(hyperlink("other.md", None), None);
         assert_eq!(hyperlink("[[Note]]", None), None);
+        #[cfg(unix)]
         assert_eq!(
             hyperlink("a%20b.md#c", Some(Path::new("/docs/x.md"))).as_deref(),
             Some("file:///docs/a%20b.md#c")
+        );
+        #[cfg(windows)]
+        assert_eq!(
+            hyperlink("a%20b.md#c", Some(Path::new(r"C:\docs\x.md"))).as_deref(),
+            Some("file:///C:/docs/a%20b.md#c")
         );
     }
 }

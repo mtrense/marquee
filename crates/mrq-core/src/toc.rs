@@ -27,6 +27,7 @@ use std::fmt::Write as _;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::Slashed;
 use crate::ast::json::{self, Position};
 use crate::ast::{Directive, NodeId, NodeKind, Span};
 use crate::diag::{Diagnostic, Severity};
@@ -167,7 +168,7 @@ impl JsonToc {
     /// The outline `entries` of `doc` (usually [`Document::toc`], possibly filtered).
     pub fn new(doc: &Document, entries: &[TocEntry]) -> Self {
         Self {
-            file: doc.path().map(|path| path.display().to_string()),
+            file: doc.path().map(Slashed::slashed),
             flavor: doc.flavor().name().to_owned(),
             headings: entries
                 .iter()
