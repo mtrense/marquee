@@ -151,8 +151,7 @@ fn dry_run_lists_the_files_and_writes_nothing() {
                 "guide/03-usage.md",
                 "",
             ]
-            .join("\n")
-            .replace('/', std::path::MAIN_SEPARATOR_STR),
+            .join("\n"),
         )
         .stderr(predicate::str::is_empty());
     assert_eq!(mrq.entries("."), ["guide.md"]);

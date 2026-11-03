@@ -56,10 +56,6 @@ impl Mrq {
     }
 }
 
-fn sep(path: &str) -> String {
-    path.replace('/', std::path::MAIN_SEPARATOR_STR)
-}
-
 #[test]
 fn insert_rewrites_the_file_and_is_idempotent() {
     let mrq = Mrq::new();
@@ -101,10 +97,7 @@ fn check_reports_stale_files_without_writing() {
     mrq.cmd(&["toc", "--insert", "--check", "docs"])
         .assert()
         .code(1)
-        .stdout(format!(
-            "{}: table of contents is out of date\n",
-            sep("docs/a.md")
-        ));
+        .stdout("docs/a.md: table of contents is out of date\n");
     assert_eq!(mrq.read("docs/a.md"), STALE);
 
     mrq.cmd(&["toc", "--insert", "docs"]).assert().success();

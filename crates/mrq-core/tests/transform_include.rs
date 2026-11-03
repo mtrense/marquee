@@ -12,6 +12,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use mrq_core::Document;
+use mrq_core::Slashed as _;
 use mrq_core::diag::Diagnostic;
 use mrq_core::document::DocumentOptions;
 use mrq_core::source::{PositionEncoding, SourceFile, apply_edits};
@@ -67,13 +68,11 @@ fn diagnostic_lines(dir: &Path, diagnostics: &[Diagnostic]) -> String {
             .file
             .strip_prefix(dir)
             .unwrap_or(&diagnostic.file);
-        let message = diagnostic
-            .message
-            .replace(&*canonical.to_string_lossy(), "<dir>");
+        let message = diagnostic.message.replace(&canonical.slashed(), "<dir>");
         writeln!(
             out,
             "{}:{}:{} {}: {message}",
-            file.display(),
+            file.slashed(),
             position.line + 1,
             position.col + 1,
             diagnostic.code,
@@ -217,8 +216,8 @@ fn cycles_through_symlinks_show_canonical_paths() {
         cycle.message,
         format!(
             "`mrq:include` cycle: {a} includes {b}, which includes {a}",
-            a = canonical.join("a.md").display(),
-            b = canonical.join("real/b.md").display(),
+            a = canonical.join("a.md").slashed(),
+            b = canonical.join("real/b.md").slashed(),
         )
     );
 }

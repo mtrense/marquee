@@ -5,6 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use mrq_core::Document;
+use mrq_core::Slashed as _;
 use mrq_core::ast::{
     Alignment, Ast, CodeBlock, ListKind, NodeId, NodeKind, OrderedDelimiter, TaskState, WikiLink,
 };
@@ -638,7 +639,7 @@ impl<'a> Writer<'a> {
             .and_then(Path::parent)
             .map_or_else(PathBuf::new, Path::to_path_buf);
         let file = base.join(path);
-        let data = std::fs::read(&file).map_err(|e| format!("{}: {e}", file.display()))?;
+        let data = std::fs::read(&file).map_err(|e| format!("{}: {e}", file.slashed()))?;
         Ok((extension, Bytes::new(data)))
     }
 

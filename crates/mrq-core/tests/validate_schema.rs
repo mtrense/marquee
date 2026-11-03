@@ -4,6 +4,7 @@
 use std::fs;
 use std::path::PathBuf;
 
+use mrq_core::Slashed as _;
 use mrq_core::config::ConfigLoader;
 use mrq_core::diag::Severity;
 use mrq_core::document::{Document, DocumentOptions, Workspace};
@@ -279,7 +280,7 @@ fn config_paths_resolve_against_the_declaring_config_file() {
         .iter()
         .map(|diag| (diag.message.as_str(), diag.help.clone().unwrap()))
         .collect();
-    let help = |rel: &str| format!("schema `{}`", root.join(rel).display()).replace('\\', "/");
+    let help = |rel: &str| format!("schema `{}`", root.join(rel).slashed());
     assert_eq!(
         summary,
         [

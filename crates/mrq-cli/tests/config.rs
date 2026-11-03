@@ -167,7 +167,12 @@ fn config_errors_honour_the_diagnostics_format() {
         .output()
         .unwrap();
     assert_eq!(out.status.code(), Some(2));
-    let stderr = tree.redact(&out.stderr);
+    // Workflow command properties escape `:`, so a Windows drive reads `C%3A/…`.
+    let stderr = tree.redact(
+        String::from_utf8_lossy(&out.stderr)
+            .replace("%3A", ":")
+            .as_bytes(),
+    );
     assert!(
         stderr.starts_with("::error file=[TMP]/proj/.mrq.yaml,line=2,"),
         "{stderr}"

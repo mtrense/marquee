@@ -2,6 +2,7 @@
 //! text, as a nested Markdown list of anchor links, and as JSON.
 
 use mrq_core::Document;
+use mrq_core::Slashed as _;
 use mrq_core::document::DocumentOptions;
 use mrq_core::toc::{self, JsonToc};
 
@@ -122,6 +123,6 @@ fn json_file_is_the_document_path() {
     std::fs::write(&path, "# A\n").unwrap();
     let doc = Document::load(&path).unwrap();
     let json = JsonToc::new(&doc, &doc.toc());
-    assert_eq!(json.file.as_deref(), Some(path.to_str().unwrap()));
+    assert_eq!(json.file.as_deref(), Some(path.slashed().as_str()));
     assert_eq!(json.headings.len(), 1);
 }

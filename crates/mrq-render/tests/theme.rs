@@ -4,6 +4,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use mrq_core::Slashed as _;
 use mrq_render::theme::{
     self, BUILTIN_THEMES, Color, FontWeight, Length, LengthUnit, Theme, ThemeError,
 };
@@ -319,7 +320,7 @@ fn an_unknown_key_is_an_error_with_file_and_line() {
     assert!(message.contains("forground"), "{message}");
     assert!(
         err.to_string()
-            .starts_with(&format!("{}:3:", path.display())),
+            .starts_with(&format!("{}:3:", path.slashed())),
         "{err}"
     );
 }

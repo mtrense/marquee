@@ -9,6 +9,7 @@ use std::io::{self, IsTerminal, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use mrq_core::Slashed as _;
 use mrq_core::config::{
     ConfigError, ConfigLoader, FlavorName, LoadedConfig, Origin, user_config_path,
 };
@@ -311,7 +312,7 @@ fn emit_diagnostics_to(
 /// A unified diff from `a/<name>` (`old`) to `b/<name>` (`new`), with `/` separators in
 /// the name; empty if they are equal.
 fn unified_diff(name: &Path, old: &str, new: &str) -> String {
-    let label = name.display().to_string().replace('\\', "/");
+    let label = name.slashed();
     similar::TextDiff::from_lines(old, new)
         .unified_diff()
         .header(&format!("a/{label}"), &format!("b/{label}"))

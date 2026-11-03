@@ -5,6 +5,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use mrq_core::Slashed as _;
 use mrq_core::config::{
     Config, ConfigError, ConfigLoader, FlavorName, LintExtends, OrderedList, Origin, RuleSetting,
     Wrap, user_cache_dir, user_config_path,
@@ -264,7 +265,7 @@ fn unknown_key_names_file_and_line() {
     assert_eq!(location.column, 3);
     let message = err.to_string();
     assert!(
-        message.contains(&format!("{}:4:3", near.display()).replace('\\', "/")),
+        message.contains(&format!("{}:4:3", near.slashed())),
         "{message}"
     );
     assert!(

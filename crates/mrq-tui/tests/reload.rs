@@ -17,6 +17,7 @@ use std::time::{Duration, Instant};
 
 use common::{GUIDE, key, key_with, press, renderer, selected};
 use mrq_core::Document;
+use mrq_core::Slashed as _;
 use mrq_core::document::DocumentOptions;
 use mrq_core::source::SourceFile;
 use mrq_tui::watch::{FileWatcher, Watch};
@@ -120,7 +121,7 @@ fn e_opens_the_editor_at_the_selected_line_and_reloads_the_file() {
     assert_eq!(editor.opened(), [(path.clone(), 5)]);
     assert_eq!(text(&app), guide_with_more());
     assert_eq!(selected(&app), "## Install");
-    assert_eq!(app.status(), Some(&*format!("reloaded {}", path.display())));
+    assert_eq!(app.status(), Some(&*format!("reloaded {}", path.slashed())));
     assert!(!app.file().is_dirty());
     // The editor had the terminal: the loop clears the screen before the next draw.
     assert!(app.take_repaint());
@@ -135,7 +136,7 @@ fn an_editor_that_changes_nothing_says_so() {
     assert_eq!(text(&app), GUIDE);
     assert_eq!(
         app.status(),
-        Some(&*format!("{} is unchanged", path.display()))
+        Some(&*format!("{} is unchanged", path.slashed()))
     );
 }
 
@@ -174,7 +175,7 @@ fn e_refuses_stdin_and_unsaved_edits() {
         app.status(),
         Some(&*format!(
             "unsaved edits in {}: w writes them, R drops them, then e edits the file",
-            path.display()
+            path.slashed()
         ))
     );
     assert_eq!(editor.opened(), []);
@@ -199,7 +200,7 @@ fn a_change_on_disk_reloads_the_file_keeping_the_selection() {
     assert_eq!(selected(&app), "## Usage");
     let view = app.file().view();
     assert_eq!(view.selected().unwrap().lines.start - view.top(), row);
-    assert_eq!(app.status(), Some(&*format!("reloaded {}", path.display())));
+    assert_eq!(app.status(), Some(&*format!("reloaded {}", path.slashed())));
     assert_eq!(app.file().outline().len(), 5);
     assert!(!app.file().is_dirty());
     // There is nothing to undo: the reload is not an edit.
@@ -221,11 +222,11 @@ fn changes_that_leave_the_text_as_it_is_are_ignored() {
     press(&mut app, [key(KeyCode::Char('d')), key(KeyCode::Char('w'))]);
     let saved = text(&app).to_owned();
     press(&mut app, [changed(&path)]);
-    assert_eq!(app.status(), Some(&*format!("wrote {}", path.display())));
+    assert_eq!(app.status(), Some(&*format!("wrote {}", path.slashed())));
     assert_eq!(text(&app), saved);
     // Files that are not open are no concern either.
     press(&mut app, [changed(Path::new("elsewhere.md"))]);
-    assert_eq!(app.status(), Some(&*format!("wrote {}", path.display())));
+    assert_eq!(app.status(), Some(&*format!("wrote {}", path.slashed())));
 }
 
 #[test]
@@ -245,7 +246,7 @@ fn a_change_on_disk_keeps_unsaved_edits_and_r_reloads_undoably() {
         app.status(),
         Some(&*format!(
             "{} changed on disk; your edits are kept: w writes them over it, R reloads it",
-            path.display()
+            path.slashed()
         ))
     );
     // The same change reported again is not news.
@@ -260,7 +261,7 @@ fn a_change_on_disk_keeps_unsaved_edits_and_r_reloads_undoably() {
         app.status(),
         Some(&*format!(
             "reloaded {} (u brings your edits back)",
-            path.display()
+            path.slashed()
         ))
     );
     // Undoing the reload gives the edits back, unsaved.
@@ -299,12 +300,12 @@ fn r_reloads_a_clean_file_and_refuses_stdin() {
     press(&mut app, [reload()]);
     assert_eq!(
         app.status(),
-        Some(&*format!("{} is unchanged", path.display()))
+        Some(&*format!("{} is unchanged", path.slashed()))
     );
     fs::write(&path, "# New\n").unwrap();
     press(&mut app, [reload()]);
     assert_eq!(text(&app), "# New\n");
-    assert_eq!(app.status(), Some(&*format!("reloaded {}", path.display())));
+    assert_eq!(app.status(), Some(&*format!("reloaded {}", path.slashed())));
 
     let stdin = DocumentOptions::new()
         .parse_source(SourceFile::new(None, GUIDE.to_owned()))
@@ -326,7 +327,7 @@ fn a_deleted_file_keeps_its_content_and_w_writes_it_back() {
         app.status(),
         Some(&*format!(
             "{} was deleted on disk; its content is kept (w writes it back)",
-            path.display()
+            path.slashed()
         ))
     );
     press(&mut app, [key(KeyCode::Char('w'))]);
@@ -358,7 +359,7 @@ fn a_file_that_is_not_shown_reloads_too() {
     assert_eq!(app.files()[1].document().text(), "# Other\n\nNew text.\n");
     assert_eq!(
         app.status(),
-        Some(&*format!("reloaded {}", other.display()))
+        Some(&*format!("reloaded {}", other.slashed()))
     );
     // Shown, it is laid out with the new text.
     press(

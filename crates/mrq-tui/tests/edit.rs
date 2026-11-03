@@ -11,6 +11,7 @@ use std::path::PathBuf;
 
 use common::{GUIDE, NOTES, app, doc, draw, guide, key, key_with, press, selected};
 use mrq_core::Document;
+use mrq_core::Slashed as _;
 use mrq_core::document::DocumentOptions;
 use mrq_core::source::SourceFile;
 use mrq_tui::edit::{self, Structural, UndoStack};
@@ -224,7 +225,7 @@ fn w_writes_the_file_and_it_is_clean_again() {
     press(&mut app, vec![key(KeyCode::Down); 2]);
     press(&mut app, [key(KeyCode::Char('d')), key(KeyCode::Char('w'))]);
     assert_eq!(fs::read_to_string(&path).unwrap(), text(&app));
-    assert_eq!(app.status(), Some(&*format!("wrote {}", path.display())));
+    assert_eq!(app.status(), Some(&*format!("wrote {}", path.slashed())));
     assert!(!app.file().is_dirty());
     // Undoing past the save makes it dirty again.
     press(&mut app, [key(KeyCode::Char('u'))]);
