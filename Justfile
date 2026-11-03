@@ -41,6 +41,10 @@ build-debug:
 build-release:
     cargo build --workspace --release
 
+# Release build of the whole workspace with all available features.
+build-release-all-features:
+    cargo build --workspace --release --all-features
+
 # Install the `mrq` binary into ~/.cargo/bin.
 install:
     cargo install --path crates/mrq-cli --locked
