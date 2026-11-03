@@ -6,6 +6,9 @@
 //! directory, so no user config leaks in. The fixtures' `.mrq.yaml` sets
 //! `fmt.list_marker: "*"`.
 
+// Some helpers are only used by the `cfg(unix)` tests.
+#![cfg_attr(not(unix), allow(unused_imports, dead_code))]
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Output;

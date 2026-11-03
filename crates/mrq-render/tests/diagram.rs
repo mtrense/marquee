@@ -2,6 +2,9 @@
 //! renderer (with a fake renderer script, `tests/fixtures/diagrams/fake.sh`, run through
 //! `sh`), the content-hash cache, and diagrams in HTML.
 
+// The fake renderer needs `sh`, so its helpers are only used by the `cfg(unix)` tests.
+#![cfg_attr(not(unix), allow(unused_imports, dead_code))]
+
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};

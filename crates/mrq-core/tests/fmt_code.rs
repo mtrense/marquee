@@ -2,6 +2,9 @@
 //! seam with in-process fakes, and [`CommandFormatter`] with a fake formatter script
 //! (`tests/fixtures/formatters/fake.sh`, run through `sh`).
 
+// Some helpers are only used by the `cfg(unix)` tests.
+#![cfg_attr(not(unix), allow(unused_imports, dead_code))]
+
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::time::{Duration, Instant};

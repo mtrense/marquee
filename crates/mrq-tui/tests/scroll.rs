@@ -19,8 +19,10 @@ use ratatui::crossterm::event::KeyCode;
 /// The most a key and a frame may take on average.
 const FRAME_BUDGET: Duration = Duration::from_millis(16);
 
-/// The most laying out the whole document may take once (start, resize).
-const LAYOUT_BUDGET: Duration = Duration::from_secs(5);
+/// The most laying out the whole document may take once (start, resize). Generous: CI
+/// runners take twice as long as a laptop on an unoptimized build, and coverage
+/// instrumentation slows it down further; the per-frame budget is what scrolling feels.
+const LAYOUT_BUDGET: Duration = Duration::from_secs(20);
 
 /// About 10 000 lines at 100 columns: sections with a paragraph, a list and code.
 fn long_document() -> String {

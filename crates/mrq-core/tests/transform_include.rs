@@ -4,6 +4,9 @@
 //! the subdirectories. The symbol includes in `tests/fixtures/transform/symbols/` work the
 //! same way, with the `tree-sitter` feature.
 
+// Some helpers are only used by the `cfg(unix)` tests.
+#![cfg_attr(not(unix), allow(unused_imports, dead_code))]
+
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
