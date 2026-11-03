@@ -16,7 +16,7 @@ lint:
 
 # Run all tests, every feature on (external-link tests start a mock HTTP server on 127.0.0.1).
 test:
-    cargo test --workspace --all-features
+    cargo test --workspace --all-features --no-fail-fast
 
 # Advisories, licences, bans, duplicates and sources from deny.toml; needs `cargo install cargo-deny`.
 deny:

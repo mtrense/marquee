@@ -54,14 +54,22 @@ impl Tree {
 }
 
 /// Replaces the temp root by `[TMP]` and, on those lines, `\\` by `/` (Windows paths).
+///
+/// On Windows the canonical root is a verbatim path (`\\?\C:\…`) while `mrq` prints
+/// `C:\…` or `C:/…`, so the root is matched without that prefix and with `/` separators.
 fn redact_path(text: &str, root: &Path) -> String {
+    let root = root.display().to_string();
+    let root = root
+        .strip_prefix(r"\\?\")
+        .unwrap_or(&root)
+        .replace('\\', "/");
     text.split_inclusive('\n')
         .map(|line| {
-            let line = line.replace(&root.display().to_string(), "[TMP]");
-            if line.contains("[TMP]") {
-                line.replace('\\', "/")
+            let slashed = line.replace('\\', "/");
+            if slashed.contains(&root) {
+                slashed.replace(&root, "[TMP]")
             } else {
-                line
+                line.to_owned()
             }
         })
         .collect()
