@@ -1,0 +1,587 @@
+---
+source: crates/mrq-cli/tests/completions.rs
+expression: "completions(\"nushell\")"
+---
+module completions {
+
+  def "nu-complete mrq flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # A Markdown toolkit for the terminal: verify, lint, format, query, transform, render and display Markdown
+  export extern mrq [
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq color" # When to use colors
+    --format: string@"nu-complete mrq format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    --version(-V)             # Print version
+  ]
+
+  def "nu-complete mrq toc flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq toc color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq toc format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Print the heading outline of each file
+  export extern "mrq toc" [
+    --json                    # Emit level, text, slug and source position per heading as JSON
+    --depth: string           # Only include headings up to this level
+    --links                   # Print a nested Markdown list with anchor links
+    --insert                  # Refresh a `<!-- mrq:toc -->` … `<!-- mrq:end -->` block in place
+    --check                   # With --insert: write nothing, list out-of-date files and exit 1 if there are any
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq toc flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq toc color" # When to use colors
+    --format: string@"nu-complete mrq toc format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    ...paths: path            # Files, directories, globs, or `-` for stdin
+  ]
+
+  def "nu-complete mrq render output" [] {
+    [ "html" "ansi" "pdf" "md" "json" "man" ]
+  }
+
+  def "nu-complete mrq render flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq render color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq render format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Render files or stdin to HTML, ANSI, PDF, Markdown, JSON or man
+  export extern "mrq render" [
+    --output(-o): string@"nu-complete mrq render output" # Output format
+    --style(-s): string       # Built-in theme (light, dark, github, paper) or a theme file [default: config `render.style`, then light]
+    --fragment                # HTML body only, without the `<html>` wrapper and the stylesheet
+    --width: string           # Terminal width for `-o ansi` [default: the terminal's, then $COLUMNS, then 80]
+    --out: path               # Write to this file instead of stdout
+    --out-dir: directory      # Write one file per input into this directory, named after the input (`guide.md` → `guide.html`)
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq render flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq render color" # When to use colors
+    --format: string@"nu-complete mrq render format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    ...paths: path            # Files, directories, globs, or `-` for stdin
+  ]
+
+  def "nu-complete mrq validate flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq validate color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq validate format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Check links, anchors, assets, footnotes, includes and frontmatter
+  export extern "mrq validate" [
+    --external                # Also check external http(s) links
+    --strict                  # Exit 1 on warnings too, not only on errors
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq validate flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq validate color" # When to use colors
+    --format: string@"nu-complete mrq validate format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    ...paths: path            # Files, directories, globs, or `-` for stdin
+  ]
+
+  def "nu-complete mrq lint flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq lint color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq lint format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Apply markdownlint-compatible style rules
+  export extern "mrq lint" [
+    --fix                     # Apply automatic fixes in place (stdin: print the fixed text), then report what is left
+    --fix-only                # Like --fix, but report nothing and exit 0 even if findings without a fix remain
+    --diff                    # Do not write; print the fixes as a unified diff and exit 1 if there are any
+    --rule: string            # Only run this rule, alias or tag (repeatable), even if the config turns it off
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq lint flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq lint color" # When to use colors
+    --format: string@"nu-complete mrq lint format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    ...paths: path            # Files, directories, globs, or `-` for stdin
+  ]
+
+  def "nu-complete mrq fmt flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq fmt color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq fmt format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Format Markdown canonically
+  export extern "mrq fmt" [
+    --check                   # Do not write; exit 1 and show a diff if anything would change
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq fmt flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq fmt color" # When to use colors
+    --format: string@"nu-complete mrq fmt format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    ...paths: path            # Files, directories, globs, or `-` for stdin
+  ]
+
+  def "nu-complete mrq query output" [] {
+    [ "md" "json" "text" ]
+  }
+
+  def "nu-complete mrq query flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq query color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq query format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Select parts of documents
+  export extern "mrq query" [
+    --css                     # Interpret QUERY as a CSS-style selector
+    --jq                      # Interpret QUERY as a jq program over the JSON AST
+    --output(-o): string@"nu-complete mrq query output" # Output format
+    --exit-status(-e)         # Exit 1 if nothing matches in any input
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq query flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq query color" # When to use colors
+    --format: string@"nu-complete mrq query format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    query: string             # The query (Markdown selector by default)
+    ...paths: path            # Files, directories, globs, or `-` for stdin
+  ]
+
+  def "nu-complete mrq merge frontmatter" [] {
+    [ "keep-first" "merge" "strip" ]
+  }
+
+  def "nu-complete mrq merge flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq merge color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq merge format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Combine several files into one document
+  export extern "mrq merge" [
+    --shift: string           # Push each file's headings down by N levels (default: one per heading level above them, the section headings and the title)
+    --title: string           # Title of the merged document
+    --no-wrap                 # Concatenate without wrapping each file in a section heading
+    --frontmatter: string@"nu-complete mrq merge frontmatter" # How to combine frontmatter
+    --output(-o): path        # Write to this file instead of stdout
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq merge flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq merge color" # When to use colors
+    --format: string@"nu-complete mrq merge format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    ...paths: path            # Files, directories, globs, or `-` for stdin
+  ]
+
+  def "nu-complete mrq interpolate flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq interpolate color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq interpolate format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Expand `mrq:include` directives
+  export extern "mrq interpolate" [
+    --in-place                # Refresh the content between the markers in place (stdin: print the result)
+    --check                   # Do not write; exit 1 and show a diff if --in-place would change anything
+    --keep-directives         # Print the content between the markers instead of replacing the markers with it
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq interpolate flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq interpolate color" # When to use colors
+    --format: string@"nu-complete mrq interpolate format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    ...paths: path            # Files, directories, globs, or `-` for stdin
+  ]
+
+  def "nu-complete mrq split flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq split color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq split format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Split a file into one file per section
+  export extern "mrq split" [
+    --depth(-d): string       # Heading level to split at
+    --out(-o): directory      # Directory to write the files to [default: the file's path without its extension]
+    --dry-run                 # Do not write; list the files that would be written
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq split flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq split color" # When to use colors
+    --format: string@"nu-complete mrq split format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    file: path                # The file to split, or `-` for stdin (needs --out)
+  ]
+
+  def "nu-complete mrq stats flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq stats color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq stats format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Count words, headings, links, code blocks, tasks and more
+  export extern "mrq stats" [
+    --json                    # Emit per-file and total counts as JSON
+    --wpm: string             # Reading speed for the reading-time estimate, in words per minute
+    --include-code            # Count words and characters in code blocks and math too
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq stats flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq stats color" # When to use colors
+    --format: string@"nu-complete mrq stats format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    ...paths: path            # Files, directories, globs, or `-` for stdin
+  ]
+
+  def "nu-complete mrq diff flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq diff color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq diff format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Structural, semantic diff of two documents
+  export extern "mrq diff" [
+    --json                    # Emit the diff as JSON
+    --word                    # Show word-level changes inside modified paragraphs
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq diff flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq diff color" # When to use colors
+    --format: string@"nu-complete mrq diff format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    old: path                 # The old document
+    new: path                 # The new document
+  ]
+
+  def "nu-complete mrq show flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq show color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq show format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Browse files in an interactive viewer
+  export extern "mrq show" [
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq show flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq show color" # When to use colors
+    --format: string@"nu-complete mrq show format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    ...paths: path            # Files, directories, globs, or `-` for stdin
+  ]
+
+  def "nu-complete mrq lsp flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq lsp color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq lsp format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Run the language server on stdio
+  export extern "mrq lsp" [
+    --stdio                   # Talk over stdin and stdout, the only transport; for clients that pass it
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq lsp flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq lsp color" # When to use colors
+    --format: string@"nu-complete mrq lsp format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+  ]
+
+  def "nu-complete mrq config flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq config color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq config format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Inspect the configuration
+  export extern "mrq config" [
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq config flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq config color" # When to use colors
+    --format: string@"nu-complete mrq config format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+  ]
+
+  def "nu-complete mrq config show flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq config show color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq config show format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Print the effective configuration
+  export extern "mrq config show" [
+    --origin                  # Show where each value came from
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq config show flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq config show color" # When to use colors
+    --format: string@"nu-complete mrq config show format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+  ]
+
+  def "nu-complete mrq config schema flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq config schema color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq config schema format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Print the JSON Schema of `.mrq.yaml`
+  export extern "mrq config schema" [
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq config schema flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq config schema color" # When to use colors
+    --format: string@"nu-complete mrq config schema format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+  ]
+
+  # Print this message or the help of the given subcommand(s)
+  export extern "mrq config help" [
+  ]
+
+  # Print the effective configuration
+  export extern "mrq config help show" [
+  ]
+
+  # Print the JSON Schema of `.mrq.yaml`
+  export extern "mrq config help schema" [
+  ]
+
+  # Print this message or the help of the given subcommand(s)
+  export extern "mrq config help help" [
+  ]
+
+  def "nu-complete mrq completions shell" [] {
+    [ "bash" "elvish" "fish" "nushell" "powershell" "zsh" ]
+  }
+
+  def "nu-complete mrq completions flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq completions color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq completions format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Print a shell completion script to stdout
+  export extern "mrq completions" [
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq completions flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq completions color" # When to use colors
+    --format: string@"nu-complete mrq completions format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+    shell: string@"nu-complete mrq completions shell" # Target shell
+  ]
+
+  # Print this message or the help of the given subcommand(s)
+  export extern "mrq help" [
+  ]
+
+  # Print the heading outline of each file
+  export extern "mrq help toc" [
+  ]
+
+  # Render files or stdin to HTML, ANSI, PDF, Markdown, JSON or man
+  export extern "mrq help render" [
+  ]
+
+  # Check links, anchors, assets, footnotes, includes and frontmatter
+  export extern "mrq help validate" [
+  ]
+
+  # Apply markdownlint-compatible style rules
+  export extern "mrq help lint" [
+  ]
+
+  # Format Markdown canonically
+  export extern "mrq help fmt" [
+  ]
+
+  # Select parts of documents
+  export extern "mrq help query" [
+  ]
+
+  # Combine several files into one document
+  export extern "mrq help merge" [
+  ]
+
+  # Expand `mrq:include` directives
+  export extern "mrq help interpolate" [
+  ]
+
+  # Split a file into one file per section
+  export extern "mrq help split" [
+  ]
+
+  # Count words, headings, links, code blocks, tasks and more
+  export extern "mrq help stats" [
+  ]
+
+  # Structural, semantic diff of two documents
+  export extern "mrq help diff" [
+  ]
+
+  # Browse files in an interactive viewer
+  export extern "mrq help show" [
+  ]
+
+  # Run the language server on stdio
+  export extern "mrq help lsp" [
+  ]
+
+  # Inspect the configuration
+  export extern "mrq help config" [
+  ]
+
+  # Print the effective configuration
+  export extern "mrq help config show" [
+  ]
+
+  # Print the JSON Schema of `.mrq.yaml`
+  export extern "mrq help config schema" [
+  ]
+
+  # Print a shell completion script to stdout
+  export extern "mrq help completions" [
+  ]
+
+  # Print this message or the help of the given subcommand(s)
+  export extern "mrq help help" [
+  ]
+
+}
+
+export use completions *

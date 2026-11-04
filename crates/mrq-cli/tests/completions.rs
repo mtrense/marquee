@@ -104,3 +104,82 @@ fn zsh_snapshot() {
 fn fish_snapshot() {
     insta::assert_snapshot!("fish", completions("fish"));
 }
+
+#[test]
+fn nushell_snapshot() {
+    insta::assert_snapshot!("nushell", completions("nushell"));
+}
+
+/// Whether `program` is on `PATH`.
+fn on_path(program: &str) -> bool {
+    std::env::var_os("PATH").is_some_and(|paths| {
+        std::env::split_paths(&paths)
+            .any(|dir| dir.join(program).is_file() || dir.join(format!("{program}.exe")).is_file())
+    })
+}
+
+/// Asks nu's completion engine (`nu --ide-complete`) for the completions at the end of
+/// `line`, with the generated script sourced first.
+fn nu_complete(dir: &std::path::Path, line: &str) -> Vec<String> {
+    let query = dir.join("query.nu");
+    let text = format!("source mrq.nu\n{line}");
+    std::fs::write(&query, &text).unwrap();
+    let out = std::process::Command::new("nu")
+        .current_dir(dir)
+        .args([
+            "--no-config-file",
+            "--ide-complete",
+            &text.len().to_string(),
+            "query.nu",
+        ])
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "{out:?}");
+    let json: serde_json::Value = serde_json::from_slice(&out.stdout)
+        .unwrap_or_else(|e| panic!("{e}: {}", String::from_utf8_lossy(&out.stdout)));
+    json["completions"]
+        .as_array()
+        .unwrap_or_else(|| panic!("no completions for `{line}`: {json}"))
+        .iter()
+        .map(|v| v.as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[test]
+fn nushell_script_sources_and_completes_values() {
+    if !on_path("nu") {
+        eprintln!("skipped: `nu` is not on PATH");
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("mrq.nu"), completions("nushell")).unwrap();
+
+    // Every subcommand is a known extern.
+    let out = std::process::Command::new("nu")
+        .current_dir(dir.path())
+        .args([
+            "--no-config-file",
+            "-c",
+            "source mrq.nu; scope commands | where name =~ '^mrq' | get name | to json",
+        ])
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "{out:?}");
+    let known: Vec<String> = serde_json::from_slice(&out.stdout).unwrap();
+    for sub in mrq_cli::cli::command().get_subcommands() {
+        let name = format!("mrq {}", sub.get_name());
+        assert!(known.contains(&name), "{name} missing from {known:?}");
+    }
+
+    let colors = nu_complete(dir.path(), "mrq --color a");
+    assert_eq!(colors, ["always", "auto"]);
+    let formats = nu_complete(dir.path(), "mrq render -o ");
+    for format in ["html", "ansi", "md", "json", "man"] {
+        assert!(
+            formats.iter().any(|f| f == format),
+            "{format} missing from {formats:?}"
+        );
+    }
+    let shells = nu_complete(dir.path(), "mrq completions n");
+    assert!(shells.iter().any(|s| s == "nushell"), "{shells:?}");
+}

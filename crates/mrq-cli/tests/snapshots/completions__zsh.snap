@@ -558,6 +558,7 @@ github\:"GitHub Actions workflow annotations"))' \
 ':shell -- Target shell:((bash\:"Bourne Again SHell"
 elvish\:"Elvish"
 fish\:"Friendly Interactive SHell"
+nushell\:"Nushell (\`extern\` definitions)"
 powershell\:"PowerShell"
 zsh\:"Z SHell"))' \
 && ret=0

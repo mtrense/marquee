@@ -139,6 +139,8 @@ pub enum CompletionShell {
     Elvish,
     #[value(help = "Friendly Interactive SHell")]
     Fish,
+    /// Nushell (`extern` definitions).
+    Nushell,
     #[value(help = "PowerShell")]
     Powershell,
     #[value(help = "Z SHell")]
@@ -146,14 +148,16 @@ pub enum CompletionShell {
 }
 
 impl CompletionShell {
-    /// The `clap_complete` generator for this shell.
-    pub fn generator(self) -> clap_complete::Shell {
+    /// Writes the completion script for `cmd`, invoked as `bin_name`, to `buf`.
+    pub fn generate(self, cmd: &mut clap::Command, bin_name: &str, buf: &mut dyn std::io::Write) {
+        use clap_complete::{Shell, generate};
         match self {
-            Self::Bash => clap_complete::Shell::Bash,
-            Self::Elvish => clap_complete::Shell::Elvish,
-            Self::Fish => clap_complete::Shell::Fish,
-            Self::Powershell => clap_complete::Shell::PowerShell,
-            Self::Zsh => clap_complete::Shell::Zsh,
+            Self::Bash => generate(Shell::Bash, cmd, bin_name, buf),
+            Self::Elvish => generate(Shell::Elvish, cmd, bin_name, buf),
+            Self::Fish => generate(Shell::Fish, cmd, bin_name, buf),
+            Self::Powershell => generate(Shell::PowerShell, cmd, bin_name, buf),
+            Self::Zsh => generate(Shell::Zsh, cmd, bin_name, buf),
+            Self::Nushell => generate(clap_complete_nushell::Nushell, cmd, bin_name, buf),
         }
     }
 }

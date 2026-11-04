@@ -14,6 +14,7 @@ Arguments:
           - bash:       Bourne Again SHell
           - elvish:     Elvish
           - fish:       Friendly Interactive SHell
+          - nushell:    Nushell (`extern` definitions)
           - powershell: PowerShell
           - zsh:        Z SHell
 
