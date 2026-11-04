@@ -27,20 +27,14 @@ mrq show docs/                          # browse in the TUI
 ## Installation
 
 ```sh
-# Homebrew
+# Homebrew (macOS and Linux)
 brew install mtrense/tap/mrq
 
-# Nix
-nix profile install github:mtrense/mrq
-
-# Arch Linux (AUR)
-paru -S mrq
-
-# From source / crates.io (the crate is called mrq-cli; the binary is mrq)
-cargo install mrq-cli
+# From source (the crate is called mrq-cli; the binary is mrq)
+cargo install --git https://github.com/mtrense/marquee mrq-cli --locked
 ```
 
-Prebuilt binaries for Linux, macOS and Windows are attached to every GitHub release.
+Prebuilt binaries for Linux, macOS and Windows are attached to every [GitHub release](https://github.com/mtrense/marquee/releases).
 
 ### Cargo features
 
