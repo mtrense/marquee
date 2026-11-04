@@ -183,3 +183,89 @@ fn nushell_script_sources_and_completes_values() {
     let shells = nu_complete(dir.path(), "mrq completions n");
     assert!(shells.iter().any(|s| s == "nushell"), "{shells:?}");
 }
+
+#[test]
+fn carapace_snapshot() {
+    insta::assert_snapshot!("carapace", completions("carapace"));
+}
+
+/// The carapace spec validates against carapace-spec's JSON Schema, vendored from
+/// <https://github.com/carapace-sh/carapace-spec/blob/f87190765a152f65a11163c0fb81428d21e49d45/schema.json>
+/// (commit f871907 of 2026-11-03).
+#[test]
+fn carapace_spec_matches_schema() {
+    let schema: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/carapace/schema.json")).unwrap();
+    let validator = jsonschema::validator_for(&schema).unwrap();
+    let spec: serde_json::Value = serde_saphyr::from_str(&completions("carapace")).unwrap();
+    let errors: Vec<String> = validator
+        .iter_errors(&spec)
+        .map(|e| format!("{}: {e}", e.instance_path()))
+        .collect();
+    assert!(errors.is_empty(), "{}", errors.join("\n"));
+    assert_eq!(spec["name"], "mrq");
+}
+
+/// Runs `carapace mrq export '' <args>` in `dir`, with the spec installed into
+/// `dir/config`, and returns the completion values.
+fn carapace_complete(dir: &std::path::Path, args: &[&str]) -> Vec<String> {
+    let config = dir.join("config");
+    let out = std::process::Command::new("carapace")
+        .current_dir(dir.join("work"))
+        .args(["mrq", "export", ""])
+        .args(args)
+        // `XDG_CONFIG_HOME` wins over the platform config dir, macOS included; `HOME`
+        // keeps the user's own carapace config out of the test.
+        .env("XDG_CONFIG_HOME", &config)
+        .env("HOME", &config)
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "{out:?}");
+    let json: serde_json::Value = serde_json::from_slice(&out.stdout)
+        .unwrap_or_else(|e| panic!("{e}: {}", String::from_utf8_lossy(&out.stdout)));
+    let mut values: Vec<String> = json["values"]
+        .as_array()
+        .unwrap_or_else(|| panic!("no values for {args:?}: {json}"))
+        .iter()
+        .map(|v| v["value"].as_str().unwrap().to_owned())
+        .collect();
+    values.sort();
+    values
+}
+
+#[test]
+fn carapace_spec_completes_values() {
+    if !on_path("carapace") {
+        eprintln!("skipped: `carapace` is not on PATH");
+        return;
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let specs = dir.path().join("config/carapace/specs");
+    std::fs::create_dir_all(&specs).unwrap();
+    std::fs::write(specs.join("mrq.yaml"), completions("carapace")).unwrap();
+    let work = dir.path().join("work");
+    std::fs::create_dir_all(work.join("docs")).unwrap();
+    for file in ["a.md", "b.markdown", "c.txt"] {
+        std::fs::write(work.join(file), "").unwrap();
+    }
+
+    let formats = carapace_complete(dir.path(), &["render", "-o", ""]);
+    assert_eq!(formats, ["ansi", "html", "json", "man", "md", "pdf"]);
+    let colors = carapace_complete(dir.path(), &["--color", ""]);
+    assert_eq!(colors, ["always", "auto", "never"]);
+    let subcommands = carapace_complete(dir.path(), &[""]);
+    for sub in mrq_cli::cli::command().get_subcommands() {
+        assert!(
+            subcommands.iter().any(|s| s == sub.get_name()),
+            "{} missing from {subcommands:?}",
+            sub.get_name()
+        );
+    }
+    // Markdown inputs complete Markdown files and directories; other paths any file.
+    let inputs = carapace_complete(dir.path(), &["lint", ""]);
+    assert_eq!(inputs, ["a.md", "b.markdown", "docs/"]);
+    let after_query = carapace_complete(dir.path(), &["query", "heading", ""]);
+    assert_eq!(after_query, ["a.md", "b.markdown", "docs/"]);
+    let out = carapace_complete(dir.path(), &["render", "--out", ""]);
+    assert_eq!(out, ["a.md", "b.markdown", "c.txt", "docs/"]);
+}

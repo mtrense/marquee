@@ -188,7 +188,7 @@ _mrq() {
             return 0
             ;;
         mrq__subcmd__completions)
-            opts="-q -v -h --config --flavor --color --format --quiet --verbose --help bash elvish fish nushell powershell zsh"
+            opts="-q -v -h --config --flavor --color --format --quiet --verbose --help bash carapace elvish fish nushell powershell zsh"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

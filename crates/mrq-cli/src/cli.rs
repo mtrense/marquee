@@ -135,6 +135,8 @@ pub enum Command {
 pub enum CompletionShell {
     #[value(help = "Bourne Again SHell")]
     Bash,
+    /// A carapace spec (YAML), for every shell carapace supports.
+    Carapace,
     /// Elvish.
     Elvish,
     #[value(help = "Friendly Interactive SHell")]
@@ -158,6 +160,7 @@ impl CompletionShell {
             Self::Powershell => generate(Shell::PowerShell, cmd, bin_name, buf),
             Self::Zsh => generate(Shell::Zsh, cmd, bin_name, buf),
             Self::Nushell => generate(clap_complete_nushell::Nushell, cmd, bin_name, buf),
+            Self::Carapace => crate::carapace::generate(cmd, bin_name, buf),
         }
     }
 }

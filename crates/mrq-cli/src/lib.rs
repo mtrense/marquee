@@ -18,6 +18,7 @@ use mrq_core::document::DocumentOptions;
 use mrq_core::input::{Input, InputResolver};
 use mrq_core::source::{SourceFile, write_atomic};
 
+mod carapace;
 pub mod cli;
 mod diff;
 mod fmt;

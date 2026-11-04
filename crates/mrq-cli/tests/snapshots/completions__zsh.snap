@@ -556,6 +556,7 @@ github\:"GitHub Actions workflow annotations"))' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 ':shell -- Target shell:((bash\:"Bourne Again SHell"
+carapace\:"A carapace spec (YAML), for every shell carapace supports"
 elvish\:"Elvish"
 fish\:"Friendly Interactive SHell"
 nushell\:"Nushell (\`extern\` definitions)"

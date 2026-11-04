@@ -1,0 +1,272 @@
+---
+source: crates/mrq-cli/tests/completions.rs
+expression: "completions(\"carapace\")"
+---
+# yaml-language-server: $schema=https://carapace.sh/schemas/command.json
+name: mrq
+description: "A Markdown toolkit for the terminal: verify, lint, format, query, transform, render and display Markdown"
+flags:
+  "-V, --version": Print version
+  "-h, --help": Print help (see more with '--help')
+persistentflags:
+  --color=: When to use colors
+  --config=: Use this config file instead of discovering `.mrq.yaml`
+  --flavor=: "Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]"
+  --format=: "Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]"
+  "-q, --quiet*": Print less output; repeat for even less
+  "-v, --verbose*": Print more output; repeat for even more
+completion:
+  flag:
+    color:
+    - "auto\tColors when writing to a terminal and NO_COLOR is unset"
+    - "always\tAlways emit colors"
+    - "never\tNever emit colors"
+    config:
+    - $files
+    flavor:
+    - "commonmark\tStrict CommonMark"
+    - "gfm\tGitHub Flavored Markdown"
+    - "obsidian\tObsidian: gfm + wikilinks, embeds, callouts, tags, math, comments"
+    - "mkdocs\tMkDocs: gfm + admonitions, heading attributes, definition lists, math"
+    format:
+    - "human\tHuman-readable, with source snippets"
+    - "json\tA single JSON array"
+    - "ndjson\tOne JSON object per line"
+    - "sarif\tSARIF 2.1.0"
+    - "github\tGitHub Actions workflow annotations"
+commands:
+- name: toc
+  description: Print the heading outline of each file
+  flags:
+    --check: "With --insert: write nothing, list out-of-date files and exit 1 if there are any"
+    --depth=: Only include headings up to this level
+    --insert: Refresh a `<!-- mrq:toc -->` … `<!-- mrq:end -->` block in place
+    --json: Emit level, text, slug and source position per heading as JSON
+    --links: Print a nested Markdown list with anchor links
+    "-h, --help": Print help (see more with '--help')
+  completion:
+    positionalany:
+    - $files([.md, .markdown])
+- name: render
+  description: Render files or stdin to HTML, ANSI, PDF, Markdown, JSON or man
+  flags:
+    --fragment: HTML body only, without the `<html>` wrapper and the stylesheet
+    --out-dir=: >-
+      Write one file per input into this directory, named after the input (`guide.md`
+      → `guide.html`)
+    --out=: Write to this file instead of stdout
+    --width=: "Terminal width for `-o ansi` [default: the terminal's, then $COLUMNS, then 80]"
+    "-h, --help": Print help (see more with '--help')
+    "-o, --output=": Output format
+    "-s, --style=": "Built-in theme (light, dark, github, paper) or a theme file [default: config `render.style`, then light]"
+  completion:
+    flag:
+      out:
+      - $files
+      out-dir:
+      - $directories
+      output:
+      - "html\tStandalone HTML page (or body only with --fragment)"
+      - "ansi\tTerminal output with colors and highlighting"
+      - "pdf\tPDF via embedded Typst"
+      - "md\tNormalized Markdown, optionally in another flavor"
+      - "json\tStable mdast-like AST with source positions"
+      - "man\troff, for man pages"
+    positionalany:
+    - $files([.md, .markdown])
+- name: validate
+  description: Check links, anchors, assets, footnotes, includes and frontmatter
+  flags:
+    --external: Also check external http(s) links
+    --strict: Exit 1 on warnings too, not only on errors
+    "-h, --help": Print help (see more with '--help')
+  completion:
+    positionalany:
+    - $files([.md, .markdown])
+- name: lint
+  description: Apply markdownlint-compatible style rules
+  flags:
+    --diff: Do not write; print the fixes as a unified diff and exit 1 if there are any
+    --fix: "Apply automatic fixes in place (stdin: print the fixed text), then report what is left"
+    --fix-only: Like --fix, but report nothing and exit 0 even if findings without a fix remain
+    --rule=*: Only run this rule, alias or tag (repeatable), even if the config turns it off
+    "-h, --help": Print help (see more with '--help')
+  completion:
+    positionalany:
+    - $files([.md, .markdown])
+- name: fmt
+  description: Format Markdown canonically
+  flags:
+    --check: Do not write; exit 1 and show a diff if anything would change
+    "-h, --help": Print help (see more with '--help')
+  completion:
+    positionalany:
+    - $files([.md, .markdown])
+- name: query
+  description: Select parts of documents
+  flags:
+    --css: Interpret QUERY as a CSS-style selector
+    --jq: Interpret QUERY as a jq program over the JSON AST
+    "-e, --exit-status": Exit 1 if nothing matches in any input
+    "-h, --help": Print help (see more with '--help')
+    "-o, --output=": Output format
+  completion:
+    flag:
+      output:
+      - "md\tMarkdown"
+      - "json\tNodes with source positions"
+      - "text\tPlain text content"
+    positional:
+    - []
+    positionalany:
+    - $files([.md, .markdown])
+- name: merge
+  description: Combine several files into one document
+  flags:
+    --frontmatter=: How to combine frontmatter
+    --no-wrap: Concatenate without wrapping each file in a section heading
+    --shift=: "Push each file's headings down by N levels (default: one per heading level above them, the section headings and the title)"
+    --title=: Title of the merged document
+    "-h, --help": Print help (see more with '--help')
+    "-o, --output=": Write to this file instead of stdout
+  completion:
+    flag:
+      frontmatter:
+      - "keep-first\tKeep the first file's frontmatter only"
+      - "merge\tMerge all frontmatter; the first file wins on conflicts"
+      - "strip\tDrop all frontmatter"
+      output:
+      - $files
+    positionalany:
+    - $files([.md, .markdown])
+- name: interpolate
+  description: Expand `mrq:include` directives
+  flags:
+    --check: Do not write; exit 1 and show a diff if --in-place would change anything
+    --in-place: "Refresh the content between the markers in place (stdin: print the result)"
+    --keep-directives: Print the content between the markers instead of replacing the markers with it
+    "-h, --help": Print help (see more with '--help')
+  completion:
+    positionalany:
+    - $files([.md, .markdown])
+- name: split
+  description: Split a file into one file per section
+  flags:
+    --dry-run: Do not write; list the files that would be written
+    "-d, --depth=": Heading level to split at
+    "-h, --help": Print help (see more with '--help')
+    "-o, --out=": "Directory to write the files to [default: the file's path without its extension]"
+  completion:
+    flag:
+      out:
+      - $directories
+    positional:
+    - - $files([.md, .markdown])
+- name: stats
+  description: Count words, headings, links, code blocks, tasks and more
+  flags:
+    --include-code: Count words and characters in code blocks and math too
+    --json: Emit per-file and total counts as JSON
+    --wpm=: Reading speed for the reading-time estimate, in words per minute
+    "-h, --help": Print help (see more with '--help')
+  completion:
+    positionalany:
+    - $files([.md, .markdown])
+- name: diff
+  description: Structural, semantic diff of two documents
+  flags:
+    --json: Emit the diff as JSON
+    --word: Show word-level changes inside modified paragraphs
+    "-h, --help": Print help (see more with '--help')
+  completion:
+    positional:
+    - - $files([.md, .markdown])
+    - - $files([.md, .markdown])
+- name: show
+  description: Browse files in an interactive viewer
+  flags:
+    "-h, --help": Print help (see more with '--help')
+  completion:
+    positionalany:
+    - $files([.md, .markdown])
+- name: lsp
+  description: Run the language server on stdio
+  flags:
+    --stdio: Talk over stdin and stdout, the only transport; for clients that pass it
+    "-h, --help": Print help (see more with '--help')
+- name: config
+  description: Inspect the configuration
+  flags:
+    "-h, --help": Print help (see more with '--help')
+  commands:
+  - name: show
+    description: Print the effective configuration
+    flags:
+      --origin: Show where each value came from
+      "-h, --help": Print help (see more with '--help')
+  - name: schema
+    description: Print the JSON Schema of `.mrq.yaml`
+    flags:
+      "-h, --help": Print help (see more with '--help')
+  - name: help
+    description: Print this message or the help of the given subcommand(s)
+    commands:
+    - name: show
+      description: Print the effective configuration
+    - name: schema
+      description: Print the JSON Schema of `.mrq.yaml`
+    - name: help
+      description: Print this message or the help of the given subcommand(s)
+- name: completions
+  description: Print a shell completion script to stdout
+  flags:
+    "-h, --help": Print help (see more with '--help')
+  completion:
+    positional:
+    - - "bash\tBourne Again SHell"
+      - "carapace\tA carapace spec (YAML), for every shell carapace supports"
+      - "elvish\tElvish"
+      - "fish\tFriendly Interactive SHell"
+      - "nushell\tNushell (`extern` definitions)"
+      - "powershell\tPowerShell"
+      - "zsh\tZ SHell"
+- name: help
+  description: Print this message or the help of the given subcommand(s)
+  commands:
+  - name: toc
+    description: Print the heading outline of each file
+  - name: render
+    description: Render files or stdin to HTML, ANSI, PDF, Markdown, JSON or man
+  - name: validate
+    description: Check links, anchors, assets, footnotes, includes and frontmatter
+  - name: lint
+    description: Apply markdownlint-compatible style rules
+  - name: fmt
+    description: Format Markdown canonically
+  - name: query
+    description: Select parts of documents
+  - name: merge
+    description: Combine several files into one document
+  - name: interpolate
+    description: Expand `mrq:include` directives
+  - name: split
+    description: Split a file into one file per section
+  - name: stats
+    description: Count words, headings, links, code blocks, tasks and more
+  - name: diff
+    description: Structural, semantic diff of two documents
+  - name: show
+    description: Browse files in an interactive viewer
+  - name: lsp
+    description: Run the language server on stdio
+  - name: config
+    description: Inspect the configuration
+    commands:
+    - name: show
+      description: Print the effective configuration
+    - name: schema
+      description: Print the JSON Schema of `.mrq.yaml`
+  - name: completions
+    description: Print a shell completion script to stdout
+  - name: help
+    description: Print this message or the help of the given subcommand(s)

@@ -479,7 +479,7 @@ module completions {
   ]
 
   def "nu-complete mrq completions shell" [] {
-    [ "bash" "elvish" "fish" "nushell" "powershell" "zsh" ]
+    [ "bash" "carapace" "elvish" "fish" "nushell" "powershell" "zsh" ]
   }
 
   def "nu-complete mrq completions flavor" [] {

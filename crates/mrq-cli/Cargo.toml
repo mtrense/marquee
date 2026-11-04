@@ -49,6 +49,7 @@ clap.workspace = true
 clap_complete.workspace = true
 clap_complete_nushell.workspace = true
 serde.workspace = true
+serde-saphyr.workspace = true
 serde_json.workspace = true
 similar.workspace = true
 terminal_size.workspace = true
@@ -57,6 +58,7 @@ terminal_size.workspace = true
 assert_cmd.workspace = true
 predicates.workspace = true
 insta.workspace = true
+jsonschema.workspace = true
 tempfile.workspace = true
 
 [lints]
