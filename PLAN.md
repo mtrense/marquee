@@ -126,10 +126,12 @@ flowchart LR
     M4 --> M11[M11 LSP]
     M5 --> M11
     M6 --> M11
-    M10 --> M12[M12 Release]
-    M11 --> M12
-    M7 --> M12
-    M9 --> M12
+    M10 --> M13[M13 Release]
+    M11 --> M13
+    M7 --> M13
+    M9 --> M13
+    M0 --> M12[M12 Completions]
+    M12 --> M13
 ```
 
 ### M0: Workspace skeleton and infrastructure
@@ -144,7 +146,7 @@ flowchart LR
 - [x] **M0.8 Config.** `.mrq.yaml` structs (all sections from the README, `#[serde(deny_unknown_fields)]`), layered loading with figment (user config, then ancestors with the closest winning, then CLI), provenance in errors, `mrq config show [--origin]`, and `mrq config schema` that prints the JSON Schema via schemars. **AC:** layering tests. An unknown key produces an error naming the file and line.
 
 **M0 summary.** A workspace with five crates plus an internal `xtask` crate (`cargo xtask man`, `just man`). The `Justfile` covers every planned recipe and adds three: `features` (cargo-hack `--each-feature`), `msrv` (`cargo +1.99 check`) and `man`. `deny.toml` bans `openssl`/`openssl-sys`. CI (`.github/workflows/ci.yml`) calls only `just` recipes, with every action pinned to a commit SHA. The clap CLI stubs every README command and exits 2; completions work and `mrq_cli::cli::command()` is exposed for xtask. `mrq_core::source` converts strictly: an invalid position returns an error instead of clamping. Several inserts at the same offset keep their input order, and an insert strictly inside a replaced range is a conflict. `mrq_core::diag` has every emitter, with columns counted in UTF-16 units. miette sits behind the default feature `human`; without it, output falls back to plain `file:line:col` lines. `mrq_core::input` walks `*.md`/`*.markdown` with `require_git(false)`. Explicit files are always included. Missing paths and globs with no matches are errors. `mrq_core::config` layers user config < ancestor `.mrq.yaml` (closest wins) < `--flavor`. `--config` replaces discovery but keeps the user config underneath. `MRQ_CONFIG_HOME` overrides the user config location, and config errors exit 2. Coverage is about 94%. Deviations from the plan:
-- **Releases:** `mrq-render`/`tui`/`lsp` get `version = "0.1.0"` in workspace deps to satisfy cargo-deny's wildcard check. Publishing `mrq-cli` still needs them on crates.io (see M12.3).
+- **Releases:** `mrq-render`/`tui`/`lsp` get `version = "0.1.0"` in workspace deps to satisfy cargo-deny's wildcard check. Publishing `mrq-cli` still needs them on crates.io (see M13.3).
 - **Cross builds:** the M0.2 AC's "nine targets" is really eight distinct triples. MSVC can't be built from a Mac, so `build-cross-all` produces seven.
 - **SARIF:** written with hand-built serde structs instead of `serde-sarif`, to avoid its dependencies. A test validates the output against the vendored official schema.
 - **Config YAML:** figment's `yaml` feature pulls in the deprecated serde_yaml, so a custom figment provider over serde-saphyr is used instead, with granit-parser for line numbers. `deny.toml` allows BSD-3-Clause for `encoding_rs` only. `fmt.frontmatter` was added early from M6.6.
@@ -429,11 +431,20 @@ The harness `tests/support/mod.rs` has a `TestClient` over in-memory pipes (type
   - **Rename:** wikilinks can become ambiguous under the vault's shortest-match lookup, and root-relative links are recomputed against the root the document is in.
   - **Formatting:** fmt warnings are dropped, and a `FixError` simply hides fix-all. README's feature table lists an `lsp` cargo feature that mrq-cli doesn't have. `docs/editors.md` trips MD013 because its prose isn't hard-wrapped.
 
-### M12: Release
+### M12: Completions (nushell and carapace)
 
-- [ ] **M12.1 Docs.** `docs/` with rule reference (generated from the registry), config reference (generated from the schema), query language reference, flavor reference, theme reference and the AST JSON schema. README examples checked by a `trycmd` test. **AC:** every README command example runs in CI against fixtures.
-- [ ] **M12.2 Packaging.** cargo-dist for GitHub Releases over the release targets from the Decisions table (Linux gnu/musl x86_64/aarch64, macOS x86_64/aarch64 plus a universal binary, Windows x86_64 MSVC); cargo-dist config and the `Justfile` cross recipes list the same triples, Homebrew tap formula, Nix flake (`packages.default`, `devShells.default`), AUR `mrq` and `mrq-bin` PKGBUILDs. **AC:** a dry-run release on a tag works in CI.
-- [ ] **M12.3 Publish.** Pre-1.0 API review of `mrq-core` (`cargo public-api` snapshot, `#[non_exhaustive]` on enums), crate metadata, `cargo publish` of `mrq-core` and `mrq-cli`, and a CHANGELOG. **AC:** `cargo install mrq-cli` from crates.io gives a working `mrq`.
+Shell completions so far come from clap_complete's `Shell` enum (bash, zsh, fish, elvish, powershell) and complete only subcommands and flag names. This milestone adds nushell and carapace and makes every shell complete values, all generated statically from the clap tree with no runtime callbacks.
+
+- [ ] **M12.1 Value hints.** Annotate the clap tree so generated scripts complete values, not only flag names: `ValueHint::FilePath`/`DirPath`/`AnyPath` on every path argument and option (`--config`, inputs, `--out`, `--out-dir`, `diff` old/new, …), `ValueEnum` (or `PossibleValues`) for every closed set (`--flavor`, `--format`, `--color`, `render -o`, shells), and help text on each value. Markdown inputs hint `*.md`/`*.markdown` where the shell supports a filter. **AC:** a test walks `mrq_cli::cli::command()` and fails on any `PathBuf` argument without a path hint or any closed-set string argument without possible values. The existing bash/zsh/fish snapshots show the new values.
+- [ ] **M12.2 Nushell.** Replace the bare clap_complete `Shell` argument with mrq's own shell enum that adds `nushell` (via `clap_complete_nushell`) next to the five clap_complete shells, so `mrq completions nushell` prints `extern` definitions. **AC:** snapshot of the nushell output. A test (skipped when `nu` is not on `PATH`) sources the script in `nu -c` and checks that `mrq` subcommands and flag values are known. `cargo deny` stays green.
+- [ ] **M12.3 Carapace spec.** `mrq completions carapace` prints a carapace-spec YAML generated from the clap tree (via `carapace_spec_clap`, or a small hand-written generator if that crate doesn't fit the stack), mapping path hints to `$files`/`$directories` (with `.md`/`.markdown` filters) and possible values to static completions with descriptions. **AC:** snapshot of the spec. The output validates against carapace-spec's JSON Schema in a test. A test (skipped when `carapace` is not on `PATH`) installs the spec into a temp `XDG_CONFIG_HOME` and checks `carapace mrq export '' render -o ''` lists the output formats.
+- [ ] **M12.4 Docs and packaging hooks.** README section on shell completions: one install snippet per shell, including nushell (`mrq completions nushell | save -f ($nu.default-config-dir | path join completions/mrq.nu)` plus `use`) and carapace (`mrq completions carapace` into `~/.config/carapace/specs/mrq.yaml`, which also covers nushell, fish, zsh, … when carapace is the external completer). A `just completions out` recipe (like `just man`) writes every shell's script into `out`, so M13.2 can ship them in archives and packages. **AC:** README examples covered by M13.1's trycmd test. `just completions` writes seven files.
+
+### M13: Release
+
+- [ ] **M13.1 Docs.** `docs/` with rule reference (generated from the registry), config reference (generated from the schema), query language reference, flavor reference, theme reference and the AST JSON schema. README examples checked by a `trycmd` test. **AC:** every README command example runs in CI against fixtures.
+- [ ] **M13.2 Packaging.** cargo-dist for GitHub Releases over the release targets from the Decisions table (Linux gnu/musl x86_64/aarch64, macOS x86_64/aarch64 plus a universal binary, Windows x86_64 MSVC); cargo-dist config and the `Justfile` cross recipes list the same triples, Homebrew tap formula, Nix flake (`packages.default`, `devShells.default`), AUR `mrq` and `mrq-bin` PKGBUILDs. **AC:** a dry-run release on a tag works in CI.
+- [ ] **M13.3 Publish.** Pre-1.0 API review of `mrq-core` (`cargo public-api` snapshot, `#[non_exhaustive]` on enums), crate metadata, `cargo publish` of `mrq-core` and `mrq-cli`, and a CHANGELOG. **AC:** `cargo install mrq-cli` from crates.io gives a working `mrq`.
 
 ## Testing strategy
 
