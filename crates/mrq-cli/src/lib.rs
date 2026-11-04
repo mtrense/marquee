@@ -43,7 +43,7 @@ pub fn run(cli: Cli) -> ExitCode {
     match cli.command {
         Command::Completions { shell } => {
             let mut cmd = cli::command();
-            clap_complete::generate(shell, &mut cmd, "mrq", &mut io::stdout().lock());
+            clap_complete::generate(shell.generator(), &mut cmd, "mrq", &mut io::stdout().lock());
             ExitCode::SUCCESS
         }
         Command::Config(ConfigCommand::Schema) => {

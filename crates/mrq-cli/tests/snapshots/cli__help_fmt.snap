@@ -32,16 +32,20 @@ Global options:
 
       --color <WHEN>
           When to use colors
+
+          Possible values:
+          - auto:   Colors when writing to a terminal and NO_COLOR is unset
+          - always: Always emit colors
+          - never:  Never emit colors
           
           [default: auto]
-          [possible values: auto, always, never]
 
       --format <FORMAT>
           Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
 
           Possible values:
           - human:  Human-readable, with source snippets
-          - json
+          - json:   A single JSON array
           - ndjson: One JSON object per line
           - sarif:  SARIF 2.1.0
           - github: GitHub Actions workflow annotations

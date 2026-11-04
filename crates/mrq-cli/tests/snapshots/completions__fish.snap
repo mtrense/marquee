@@ -1,0 +1,408 @@
+---
+source: crates/mrq-cli/tests/completions.rs
+expression: "completions(\"fish\")"
+---
+# Print an optspec for argparse to handle cmd's options that are independent of any subcommand.
+function __fish_mrq_global_optspecs
+    string join \n config= flavor= color= format= q/quiet v/verbose h/help V/version
+end
+
+function __fish_mrq_needs_command
+    # Figure out if the current invocation already has a command.
+    set -l cmd (commandline -opc)
+    set -e cmd[1]
+    argparse -s (__fish_mrq_global_optspecs) -- $cmd 2>/dev/null
+    or return
+    if set -q argv[1]
+        # Also print the command, so this can be used to figure out what it is.
+        echo $argv[1]
+        return 1
+    end
+    return 0
+end
+
+function __fish_mrq_using_subcommand
+    set -l cmd (__fish_mrq_needs_command)
+    test -z "$cmd"
+    and return 1
+    contains -- $cmd[1] $argv
+end
+
+complete -c mrq -n "__fish_mrq_needs_command" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_needs_command" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_needs_command" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_needs_command" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_needs_command" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_needs_command" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_needs_command" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_needs_command" -s V -l version -d 'Print version'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "toc" -d 'Print the heading outline of each file'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "render" -d 'Render files or stdin to HTML, ANSI, PDF, Markdown, JSON or man'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "validate" -d 'Check links, anchors, assets, footnotes, includes and frontmatter'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "lint" -d 'Apply markdownlint-compatible style rules'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "fmt" -d 'Format Markdown canonically'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "query" -d 'Select parts of documents'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "merge" -d 'Combine several files into one document'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "interpolate" -d 'Expand `mrq:include` directives'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "split" -d 'Split a file into one file per section'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "stats" -d 'Count words, headings, links, code blocks, tasks and more'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "diff" -d 'Structural, semantic diff of two documents'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "show" -d 'Browse files in an interactive viewer'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "lsp" -d 'Run the language server on stdio'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "config" -d 'Inspect the configuration'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "completions" -d 'Print a shell completion script to stdout'
+complete -c mrq -n "__fish_mrq_needs_command" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -l depth -d 'Only include headings up to this level' -r
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -l json -d 'Emit level, text, slug and source position per heading as JSON'
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -l links -d 'Print a nested Markdown list with anchor links'
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -l insert -d 'Refresh a `<!-- mrq:toc -->` … `<!-- mrq:end -->` block in place'
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -l check -d 'With --insert: write nothing, list out-of-date files and exit 1 if there are any'
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand toc" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand render" -s o -l output -d 'Output format' -r -f -a "html\t'Standalone HTML page (or body only with --fragment)'
+ansi\t'Terminal output with colors and highlighting'
+pdf\t'PDF via embedded Typst'
+md\t'Normalized Markdown, optionally in another flavor'
+json\t'Stable mdast-like AST with source positions'
+man\t'roff, for man pages'"
+complete -c mrq -n "__fish_mrq_using_subcommand render" -s s -l style -d 'Built-in theme (light, dark, github, paper) or a theme file [default: config `render.style`, then light]' -r
+complete -c mrq -n "__fish_mrq_using_subcommand render" -l width -d 'Terminal width for `-o ansi` [default: the terminal\'s, then $COLUMNS, then 80]' -r
+complete -c mrq -n "__fish_mrq_using_subcommand render" -l out -d 'Write to this file instead of stdout' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand render" -l out-dir -d 'Write one file per input into this directory, named after the input (`guide.md` → `guide.html`)' -r -f -a "(__fish_complete_directories)"
+complete -c mrq -n "__fish_mrq_using_subcommand render" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand render" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand render" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand render" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand render" -l fragment -d 'HTML body only, without the `<html>` wrapper and the stylesheet'
+complete -c mrq -n "__fish_mrq_using_subcommand render" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand render" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand render" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand validate" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand validate" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand validate" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand validate" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand validate" -l external -d 'Also check external http(s) links'
+complete -c mrq -n "__fish_mrq_using_subcommand validate" -l strict -d 'Exit 1 on warnings too, not only on errors'
+complete -c mrq -n "__fish_mrq_using_subcommand validate" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand validate" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand validate" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -l rule -d 'Only run this rule, alias or tag (repeatable), even if the config turns it off' -r
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -l fix -d 'Apply automatic fixes in place (stdin: print the fixed text), then report what is left'
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -l fix-only -d 'Like --fix, but report nothing and exit 0 even if findings without a fix remain'
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -l diff -d 'Do not write; print the fixes as a unified diff and exit 1 if there are any'
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand lint" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand fmt" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand fmt" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand fmt" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand fmt" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand fmt" -l check -d 'Do not write; exit 1 and show a diff if anything would change'
+complete -c mrq -n "__fish_mrq_using_subcommand fmt" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand fmt" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand fmt" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand query" -s o -l output -d 'Output format' -r -f -a "md\t'Markdown'
+json\t'Nodes with source positions'
+text\t'Plain text content'"
+complete -c mrq -n "__fish_mrq_using_subcommand query" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand query" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand query" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand query" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand query" -l css -d 'Interpret QUERY as a CSS-style selector'
+complete -c mrq -n "__fish_mrq_using_subcommand query" -l jq -d 'Interpret QUERY as a jq program over the JSON AST'
+complete -c mrq -n "__fish_mrq_using_subcommand query" -s e -l exit-status -d 'Exit 1 if nothing matches in any input'
+complete -c mrq -n "__fish_mrq_using_subcommand query" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand query" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand query" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -l shift -d 'Push each file\'s headings down by N levels (default: one per heading level above them, the section headings and the title)' -r
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -l title -d 'Title of the merged document' -r
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -l frontmatter -d 'How to combine frontmatter' -r -f -a "keep-first\t'Keep the first file\'s frontmatter only'
+merge\t'Merge all frontmatter; the first file wins on conflicts'
+strip\t'Drop all frontmatter'"
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -s o -l output -d 'Write to this file instead of stdout' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -l no-wrap -d 'Concatenate without wrapping each file in a section heading'
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand merge" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand interpolate" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand interpolate" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand interpolate" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand interpolate" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand interpolate" -l in-place -d 'Refresh the content between the markers in place (stdin: print the result)'
+complete -c mrq -n "__fish_mrq_using_subcommand interpolate" -l check -d 'Do not write; exit 1 and show a diff if --in-place would change anything'
+complete -c mrq -n "__fish_mrq_using_subcommand interpolate" -l keep-directives -d 'Print the content between the markers instead of replacing the markers with it'
+complete -c mrq -n "__fish_mrq_using_subcommand interpolate" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand interpolate" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand interpolate" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand split" -s d -l depth -d 'Heading level to split at' -r
+complete -c mrq -n "__fish_mrq_using_subcommand split" -s o -l out -d 'Directory to write the files to [default: the file\'s path without its extension]' -r -f -a "(__fish_complete_directories)"
+complete -c mrq -n "__fish_mrq_using_subcommand split" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand split" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand split" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand split" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand split" -l dry-run -d 'Do not write; list the files that would be written'
+complete -c mrq -n "__fish_mrq_using_subcommand split" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand split" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand split" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand stats" -l wpm -d 'Reading speed for the reading-time estimate, in words per minute' -r
+complete -c mrq -n "__fish_mrq_using_subcommand stats" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand stats" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand stats" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand stats" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand stats" -l json -d 'Emit per-file and total counts as JSON'
+complete -c mrq -n "__fish_mrq_using_subcommand stats" -l include-code -d 'Count words and characters in code blocks and math too'
+complete -c mrq -n "__fish_mrq_using_subcommand stats" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand stats" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand stats" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand diff" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand diff" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand diff" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand diff" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand diff" -l json -d 'Emit the diff as JSON'
+complete -c mrq -n "__fish_mrq_using_subcommand diff" -l word -d 'Show word-level changes inside modified paragraphs'
+complete -c mrq -n "__fish_mrq_using_subcommand diff" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand diff" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand diff" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand show" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand show" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand show" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand show" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand show" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand show" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand show" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand lsp" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand lsp" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand lsp" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand lsp" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand lsp" -l stdio -d 'Talk over stdin and stdout, the only transport; for clients that pass it'
+complete -c mrq -n "__fish_mrq_using_subcommand lsp" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand lsp" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand lsp" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and not __fish_seen_subcommand_from show schema help" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand config; and not __fish_seen_subcommand_from show schema help" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand config; and not __fish_seen_subcommand_from show schema help" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand config; and not __fish_seen_subcommand_from show schema help" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand config; and not __fish_seen_subcommand_from show schema help" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and not __fish_seen_subcommand_from show schema help" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and not __fish_seen_subcommand_from show schema help" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and not __fish_seen_subcommand_from show schema help" -f -a "show" -d 'Print the effective configuration'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and not __fish_seen_subcommand_from show schema help" -f -a "schema" -d 'Print the JSON Schema of `.mrq.yaml`'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and not __fish_seen_subcommand_from show schema help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from show" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from show" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from show" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from show" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from show" -l origin -d 'Show where each value came from'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from show" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from show" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from show" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from schema" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from schema" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from schema" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from schema" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from schema" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from schema" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from schema" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "show" -d 'Print the effective configuration'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "schema" -d 'Print the JSON Schema of `.mrq.yaml`'
+complete -c mrq -n "__fish_mrq_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c mrq -n "__fish_mrq_using_subcommand completions" -l config -d 'Use this config file instead of discovering `.mrq.yaml`' -r -F
+complete -c mrq -n "__fish_mrq_using_subcommand completions" -l flavor -d 'Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]' -r -f -a "commonmark\t'Strict CommonMark'
+gfm\t'GitHub Flavored Markdown'
+obsidian\t'Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments'
+mkdocs\t'MkDocs: gfm + admonitions, heading attributes, definition lists, math'"
+complete -c mrq -n "__fish_mrq_using_subcommand completions" -l color -d 'When to use colors' -r -f -a "auto\t'Colors when writing to a terminal and NO_COLOR is unset'
+always\t'Always emit colors'
+never\t'Never emit colors'"
+complete -c mrq -n "__fish_mrq_using_subcommand completions" -l format -d 'Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]' -r -f -a "human\t'Human-readable, with source snippets'
+json\t'A single JSON array'
+ndjson\t'One JSON object per line'
+sarif\t'SARIF 2.1.0'
+github\t'GitHub Actions workflow annotations'"
+complete -c mrq -n "__fish_mrq_using_subcommand completions" -s q -l quiet -d 'Print less output; repeat for even less'
+complete -c mrq -n "__fish_mrq_using_subcommand completions" -s v -l verbose -d 'Print more output; repeat for even more'
+complete -c mrq -n "__fish_mrq_using_subcommand completions" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "toc" -d 'Print the heading outline of each file'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "render" -d 'Render files or stdin to HTML, ANSI, PDF, Markdown, JSON or man'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "validate" -d 'Check links, anchors, assets, footnotes, includes and frontmatter'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "lint" -d 'Apply markdownlint-compatible style rules'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "fmt" -d 'Format Markdown canonically'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "query" -d 'Select parts of documents'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "merge" -d 'Combine several files into one document'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "interpolate" -d 'Expand `mrq:include` directives'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "split" -d 'Split a file into one file per section'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "stats" -d 'Count words, headings, links, code blocks, tasks and more'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "diff" -d 'Structural, semantic diff of two documents'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "show" -d 'Browse files in an interactive viewer'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "lsp" -d 'Run the language server on stdio'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "config" -d 'Inspect the configuration'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "completions" -d 'Print a shell completion script to stdout'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and not __fish_seen_subcommand_from toc render validate lint fmt query merge interpolate split stats diff show lsp config completions help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and __fish_seen_subcommand_from config" -f -a "show" -d 'Print the effective configuration'
+complete -c mrq -n "__fish_mrq_using_subcommand help; and __fish_seen_subcommand_from config" -f -a "schema" -d 'Print the JSON Schema of `.mrq.yaml`'

@@ -5,8 +5,7 @@
 
 use std::path::PathBuf;
 
-use clap::{ArgAction, Args, CommandFactory, Parser, Subcommand, ValueEnum};
-use clap_complete::Shell;
+use clap::{ArgAction, Args, CommandFactory, Parser, Subcommand, ValueEnum, ValueHint};
 
 /// A Markdown toolkit for the terminal: verify, lint, format, query,
 /// transform, render and display Markdown.
@@ -25,7 +24,7 @@ pub struct Cli {
 #[command(next_help_heading = "Global options")]
 pub struct GlobalArgs {
     /// Use this config file instead of discovering `.mrq.yaml`.
-    #[arg(long, global = true, value_name = "PATH")]
+    #[arg(long, global = true, value_name = "PATH", value_hint = ValueHint::FilePath)]
     pub config: Option<PathBuf>,
 
     /// Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm].
@@ -69,8 +68,11 @@ pub enum Flavor {
 /// When to emit ANSI colors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum ColorChoice {
+    #[value(help = "Colors when writing to a terminal and NO_COLOR is unset")]
     Auto,
+    /// Always emit colors.
     Always,
+    /// Never emit colors.
     Never,
 }
 
@@ -79,6 +81,7 @@ pub enum ColorChoice {
 pub enum DiagnosticFormat {
     /// Human-readable, with source snippets.
     Human,
+    /// A single JSON array.
     Json,
     /// One JSON object per line.
     Ndjson,
@@ -123,8 +126,36 @@ pub enum Command {
     /// Print a shell completion script to stdout.
     Completions {
         /// Target shell.
-        shell: Shell,
+        shell: CompletionShell,
     },
+}
+
+/// A shell `mrq completions` can generate a script for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum CompletionShell {
+    #[value(help = "Bourne Again SHell")]
+    Bash,
+    /// Elvish.
+    Elvish,
+    #[value(help = "Friendly Interactive SHell")]
+    Fish,
+    #[value(help = "PowerShell")]
+    Powershell,
+    #[value(help = "Z SHell")]
+    Zsh,
+}
+
+impl CompletionShell {
+    /// The `clap_complete` generator for this shell.
+    pub fn generator(self) -> clap_complete::Shell {
+        match self {
+            Self::Bash => clap_complete::Shell::Bash,
+            Self::Elvish => clap_complete::Shell::Elvish,
+            Self::Fish => clap_complete::Shell::Fish,
+            Self::Powershell => clap_complete::Shell::PowerShell,
+            Self::Zsh => clap_complete::Shell::Zsh,
+        }
+    }
 }
 
 impl Command {
@@ -155,7 +186,7 @@ impl Command {
 #[derive(Debug, Args)]
 pub struct Inputs {
     /// Files, directories, globs, or `-` for stdin.
-    #[arg(value_name = "PATH")]
+    #[arg(value_name = "PATH", value_hint = ValueHint::AnyPath)]
     pub paths: Vec<PathBuf>,
 }
 
@@ -221,11 +252,11 @@ pub struct RenderArgs {
     #[arg(long, value_name = "N", value_parser = clap::value_parser!(u16).range(1..))]
     pub width: Option<u16>,
     /// Write to this file instead of stdout.
-    #[arg(long, value_name = "FILE", conflicts_with = "out_dir")]
+    #[arg(long, value_name = "FILE", value_hint = ValueHint::FilePath, conflicts_with = "out_dir")]
     pub out: Option<PathBuf>,
     /// Write one file per input into this directory, named after the input
     /// (`guide.md` → `guide.html`).
-    #[arg(long, value_name = "DIR")]
+    #[arg(long, value_name = "DIR", value_hint = ValueHint::DirPath)]
     pub out_dir: Option<PathBuf>,
     #[command(flatten)]
     pub inputs: Inputs,
@@ -329,7 +360,7 @@ pub struct MergeArgs {
     #[arg(long, value_name = "MODE", default_value = "merge")]
     pub frontmatter: FrontmatterMode,
     /// Write to this file instead of stdout.
-    #[arg(short, long, value_name = "FILE")]
+    #[arg(short, long, value_name = "FILE", value_hint = ValueHint::FilePath)]
     pub output: Option<PathBuf>,
     #[command(flatten)]
     pub inputs: Inputs,
@@ -356,13 +387,13 @@ pub struct SplitArgs {
     #[arg(short, long, value_name = "LEVEL", default_value_t = 1, value_parser = clap::value_parser!(u8).range(1..=6))]
     pub depth: u8,
     /// Directory to write the files to [default: the file's path without its extension].
-    #[arg(short, long, value_name = "DIR")]
+    #[arg(short, long, value_name = "DIR", value_hint = ValueHint::DirPath)]
     pub out: Option<PathBuf>,
     /// Do not write; list the files that would be written.
     #[arg(long)]
     pub dry_run: bool,
     /// The file to split, or `-` for stdin (needs --out).
-    #[arg(value_name = "FILE")]
+    #[arg(value_name = "FILE", value_hint = ValueHint::FilePath)]
     pub file: PathBuf,
 }
 
@@ -391,10 +422,10 @@ pub struct DiffArgs {
     #[arg(long)]
     pub word: bool,
     /// The old document.
-    #[arg(value_name = "OLD")]
+    #[arg(value_name = "OLD", value_hint = ValueHint::FilePath)]
     pub old: PathBuf,
     /// The new document.
-    #[arg(value_name = "NEW")]
+    #[arg(value_name = "NEW", value_hint = ValueHint::FilePath)]
     pub new: PathBuf,
 }
 

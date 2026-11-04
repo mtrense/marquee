@@ -1,0 +1,925 @@
+---
+source: crates/mrq-cli/tests/completions.rs
+expression: "completions(\"zsh\")"
+---
+#compdef mrq
+
+autoload -U is-at-least
+
+_mrq() {
+    typeset -A opt_args
+    typeset -a _arguments_options
+    local ret=1
+
+    if is-at-least 5.2; then
+        _arguments_options=(-s -S -C)
+    else
+        _arguments_options=(-s -C)
+    fi
+
+    local context curcontext="$curcontext" state line
+    _arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'-V[Print version]' \
+'--version[Print version]' \
+":: :_mrq_commands" \
+"*::: :->mrq" \
+&& ret=0
+    case $state in
+    (mrq)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:mrq-command-$line[1]:"
+        case $line[1] in
+            (toc)
+_arguments "${_arguments_options[@]}" : \
+'--depth=[Only include headings up to this level]:N:_default' \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--json[Emit level, text, slug and source position per heading as JSON]' \
+'(--json)--links[Print a nested Markdown list with anchor links]' \
+'(--json)--insert[Refresh a \`<!-- mrq\:toc -->\` … \`<!-- mrq\:end -->\` block in place]' \
+'--check[With --insert\: write nothing, list out-of-date files and exit 1 if there are any]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'*::paths -- Files, directories, globs, or `-` for stdin:_files' \
+&& ret=0
+;;
+(render)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:((html\:"Standalone HTML page (or body only with --fragment)"
+ansi\:"Terminal output with colors and highlighting"
+pdf\:"PDF via embedded Typst"
+md\:"Normalized Markdown, optionally in another flavor"
+json\:"Stable mdast-like AST with source positions"
+man\:"roff, for man pages"))' \
+'--output=[Output format]:FORMAT:((html\:"Standalone HTML page (or body only with --fragment)"
+ansi\:"Terminal output with colors and highlighting"
+pdf\:"PDF via embedded Typst"
+md\:"Normalized Markdown, optionally in another flavor"
+json\:"Stable mdast-like AST with source positions"
+man\:"roff, for man pages"))' \
+'-s+[Built-in theme (light, dark, github, paper) or a theme file \[default\: config \`render.style\`, then light\]]:STYLE:_default' \
+'--style=[Built-in theme (light, dark, github, paper) or a theme file \[default\: config \`render.style\`, then light\]]:STYLE:_default' \
+'--width=[Terminal width for \`-o ansi\` \[default\: the terminal'\''s, then \$COLUMNS, then 80\]]:N:_default' \
+'(--out-dir)--out=[Write to this file instead of stdout]:FILE:_files' \
+'--out-dir=[Write one file per input into this directory, named after the input (\`guide.md\` → \`guide.html\`)]:DIR:_files -/' \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--fragment[HTML body only, without the \`<html>\` wrapper and the stylesheet]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'*::paths -- Files, directories, globs, or `-` for stdin:_files' \
+&& ret=0
+;;
+(validate)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--external[Also check external http(s) links]' \
+'--strict[Exit 1 on warnings too, not only on errors]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'*::paths -- Files, directories, globs, or `-` for stdin:_files' \
+&& ret=0
+;;
+(lint)
+_arguments "${_arguments_options[@]}" : \
+'*--rule=[Only run this rule, alias or tag (repeatable), even if the config turns it off]:RULE:_default' \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--fix[Apply automatic fixes in place (stdin\: print the fixed text), then report what is left]' \
+'--fix-only[Like --fix, but report nothing and exit 0 even if findings without a fix remain]' \
+'(--fix --fix-only)--diff[Do not write; print the fixes as a unified diff and exit 1 if there are any]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'*::paths -- Files, directories, globs, or `-` for stdin:_files' \
+&& ret=0
+;;
+(fmt)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--check[Do not write; exit 1 and show a diff if anything would change]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'*::paths -- Files, directories, globs, or `-` for stdin:_files' \
+&& ret=0
+;;
+(query)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:((md\:"Markdown"
+json\:"Nodes with source positions"
+text\:"Plain text content"))' \
+'--output=[Output format]:FORMAT:((md\:"Markdown"
+json\:"Nodes with source positions"
+text\:"Plain text content"))' \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'(--jq)--css[Interpret QUERY as a CSS-style selector]' \
+'--jq[Interpret QUERY as a jq program over the JSON AST]' \
+'-e[Exit 1 if nothing matches in any input]' \
+'--exit-status[Exit 1 if nothing matches in any input]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':query -- The query (Markdown selector by default):_default' \
+'*::paths -- Files, directories, globs, or `-` for stdin:_files' \
+&& ret=0
+;;
+(merge)
+_arguments "${_arguments_options[@]}" : \
+'--shift=[Push each file'\''s headings down by N levels (default\: one per heading level above them, the section headings and the title)]:N:_default' \
+'--title=[Title of the merged document]:TITLE:_default' \
+'--frontmatter=[How to combine frontmatter]:MODE:((keep-first\:"Keep the first file'\''s frontmatter only"
+merge\:"Merge all frontmatter; the first file wins on conflicts"
+strip\:"Drop all frontmatter"))' \
+'-o+[Write to this file instead of stdout]:FILE:_files' \
+'--output=[Write to this file instead of stdout]:FILE:_files' \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--no-wrap[Concatenate without wrapping each file in a section heading]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'*::paths -- Files, directories, globs, or `-` for stdin:_files' \
+&& ret=0
+;;
+(interpolate)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'(--check)--in-place[Refresh the content between the markers in place (stdin\: print the result)]' \
+'--check[Do not write; exit 1 and show a diff if --in-place would change anything]' \
+'(--in-place --check)--keep-directives[Print the content between the markers instead of replacing the markers with it]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'*::paths -- Files, directories, globs, or `-` for stdin:_files' \
+&& ret=0
+;;
+(split)
+_arguments "${_arguments_options[@]}" : \
+'-d+[Heading level to split at]:LEVEL:_default' \
+'--depth=[Heading level to split at]:LEVEL:_default' \
+'-o+[Directory to write the files to \[default\: the file'\''s path without its extension\]]:DIR:_files -/' \
+'--out=[Directory to write the files to \[default\: the file'\''s path without its extension\]]:DIR:_files -/' \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--dry-run[Do not write; list the files that would be written]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':file -- The file to split, or `-` for stdin (needs --out):_files' \
+&& ret=0
+;;
+(stats)
+_arguments "${_arguments_options[@]}" : \
+'--wpm=[Reading speed for the reading-time estimate, in words per minute]:N:_default' \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--json[Emit per-file and total counts as JSON]' \
+'--include-code[Count words and characters in code blocks and math too]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'*::paths -- Files, directories, globs, or `-` for stdin:_files' \
+&& ret=0
+;;
+(diff)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--json[Emit the diff as JSON]' \
+'--word[Show word-level changes inside modified paragraphs]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':old -- The old document:_files' \
+':new -- The new document:_files' \
+&& ret=0
+;;
+(show)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+'*::paths -- Files, directories, globs, or `-` for stdin:_files' \
+&& ret=0
+;;
+(lsp)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--stdio[Talk over stdin and stdout, the only transport; for clients that pass it]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(config)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+":: :_mrq__subcmd__config_commands" \
+"*::: :->config" \
+&& ret=0
+
+    case $state in
+    (config)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:mrq-config-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'--origin[Show where each value came from]' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(schema)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_mrq__subcmd__config__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:mrq-config-help-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(schema)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(completions)
+_arguments "${_arguments_options[@]}" : \
+'--config=[Use this config file instead of discovering \`.mrq.yaml\`]:PATH:_files' \
+'--flavor=[Markdown flavor \[default\: frontmatter \`mrq.flavor\`, then config, then gfm\]]:FLAVOR:((commonmark\:"Strict CommonMark"
+gfm\:"GitHub Flavored Markdown"
+obsidian\:"Obsidian\: gfm + wikilinks, embeds, callouts, tags, math, comments"
+mkdocs\:"MkDocs\: gfm + admonitions, heading attributes, definition lists, math"))' \
+'--color=[When to use colors]:WHEN:((auto\:"Colors when writing to a terminal and NO_COLOR is unset"
+always\:"Always emit colors"
+never\:"Never emit colors"))' \
+'--format=[Diagnostics output format \[default\: human, or github when GITHUB_ACTIONS=true\]]:FORMAT:((human\:"Human-readable, with source snippets"
+json\:"A single JSON array"
+ndjson\:"One JSON object per line"
+sarif\:"SARIF 2.1.0"
+github\:"GitHub Actions workflow annotations"))' \
+'(-v --verbose)*-q[Print less output; repeat for even less]' \
+'(-v --verbose)*--quiet[Print less output; repeat for even less]' \
+'*-v[Print more output; repeat for even more]' \
+'*--verbose[Print more output; repeat for even more]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':shell -- Target shell:((bash\:"Bourne Again SHell"
+elvish\:"Elvish"
+fish\:"Friendly Interactive SHell"
+powershell\:"PowerShell"
+zsh\:"Z SHell"))' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_mrq__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:mrq-help-command-$line[1]:"
+        case $line[1] in
+            (toc)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(render)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(validate)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(lint)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(fmt)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(query)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(merge)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(interpolate)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(split)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(stats)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(diff)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(lsp)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(config)
+_arguments "${_arguments_options[@]}" : \
+":: :_mrq__subcmd__help__subcmd__config_commands" \
+"*::: :->config" \
+&& ret=0
+
+    case $state in
+    (config)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:mrq-help-config-command-$line[1]:"
+        case $line[1] in
+            (show)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(schema)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(completions)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+}
+
+(( $+functions[_mrq_commands] )) ||
+_mrq_commands() {
+    local commands; commands=(
+'toc:Print the heading outline of each file' \
+'render:Render files or stdin to HTML, ANSI, PDF, Markdown, JSON or man' \
+'validate:Check links, anchors, assets, footnotes, includes and frontmatter' \
+'lint:Apply markdownlint-compatible style rules' \
+'fmt:Format Markdown canonically' \
+'query:Select parts of documents' \
+'merge:Combine several files into one document' \
+'interpolate:Expand \`mrq\:include\` directives' \
+'split:Split a file into one file per section' \
+'stats:Count words, headings, links, code blocks, tasks and more' \
+'diff:Structural, semantic diff of two documents' \
+'show:Browse files in an interactive viewer' \
+'lsp:Run the language server on stdio' \
+'config:Inspect the configuration' \
+'completions:Print a shell completion script to stdout' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'mrq commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__completions_commands] )) ||
+_mrq__subcmd__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq completions commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__config_commands] )) ||
+_mrq__subcmd__config_commands() {
+    local commands; commands=(
+'show:Print the effective configuration' \
+'schema:Print the JSON Schema of \`.mrq.yaml\`' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'mrq config commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__config__subcmd__help_commands] )) ||
+_mrq__subcmd__config__subcmd__help_commands() {
+    local commands; commands=(
+'show:Print the effective configuration' \
+'schema:Print the JSON Schema of \`.mrq.yaml\`' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'mrq config help commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__config__subcmd__help__subcmd__help_commands] )) ||
+_mrq__subcmd__config__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq config help help commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__config__subcmd__help__subcmd__schema_commands] )) ||
+_mrq__subcmd__config__subcmd__help__subcmd__schema_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq config help schema commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__config__subcmd__help__subcmd__show_commands] )) ||
+_mrq__subcmd__config__subcmd__help__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq config help show commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__config__subcmd__schema_commands] )) ||
+_mrq__subcmd__config__subcmd__schema_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq config schema commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__config__subcmd__show_commands] )) ||
+_mrq__subcmd__config__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq config show commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__diff_commands] )) ||
+_mrq__subcmd__diff_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq diff commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__fmt_commands] )) ||
+_mrq__subcmd__fmt_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq fmt commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help_commands] )) ||
+_mrq__subcmd__help_commands() {
+    local commands; commands=(
+'toc:Print the heading outline of each file' \
+'render:Render files or stdin to HTML, ANSI, PDF, Markdown, JSON or man' \
+'validate:Check links, anchors, assets, footnotes, includes and frontmatter' \
+'lint:Apply markdownlint-compatible style rules' \
+'fmt:Format Markdown canonically' \
+'query:Select parts of documents' \
+'merge:Combine several files into one document' \
+'interpolate:Expand \`mrq\:include\` directives' \
+'split:Split a file into one file per section' \
+'stats:Count words, headings, links, code blocks, tasks and more' \
+'diff:Structural, semantic diff of two documents' \
+'show:Browse files in an interactive viewer' \
+'lsp:Run the language server on stdio' \
+'config:Inspect the configuration' \
+'completions:Print a shell completion script to stdout' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'mrq help commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__completions_commands] )) ||
+_mrq__subcmd__help__subcmd__completions_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help completions commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__config_commands] )) ||
+_mrq__subcmd__help__subcmd__config_commands() {
+    local commands; commands=(
+'show:Print the effective configuration' \
+'schema:Print the JSON Schema of \`.mrq.yaml\`' \
+    )
+    _describe -t commands 'mrq help config commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__config__subcmd__schema_commands] )) ||
+_mrq__subcmd__help__subcmd__config__subcmd__schema_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help config schema commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__config__subcmd__show_commands] )) ||
+_mrq__subcmd__help__subcmd__config__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help config show commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__diff_commands] )) ||
+_mrq__subcmd__help__subcmd__diff_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help diff commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__fmt_commands] )) ||
+_mrq__subcmd__help__subcmd__fmt_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help fmt commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__help_commands] )) ||
+_mrq__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help help commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__interpolate_commands] )) ||
+_mrq__subcmd__help__subcmd__interpolate_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help interpolate commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__lint_commands] )) ||
+_mrq__subcmd__help__subcmd__lint_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help lint commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__lsp_commands] )) ||
+_mrq__subcmd__help__subcmd__lsp_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help lsp commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__merge_commands] )) ||
+_mrq__subcmd__help__subcmd__merge_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help merge commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__query_commands] )) ||
+_mrq__subcmd__help__subcmd__query_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help query commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__render_commands] )) ||
+_mrq__subcmd__help__subcmd__render_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help render commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__show_commands] )) ||
+_mrq__subcmd__help__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help show commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__split_commands] )) ||
+_mrq__subcmd__help__subcmd__split_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help split commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__stats_commands] )) ||
+_mrq__subcmd__help__subcmd__stats_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help stats commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__toc_commands] )) ||
+_mrq__subcmd__help__subcmd__toc_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help toc commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__help__subcmd__validate_commands] )) ||
+_mrq__subcmd__help__subcmd__validate_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq help validate commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__interpolate_commands] )) ||
+_mrq__subcmd__interpolate_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq interpolate commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__lint_commands] )) ||
+_mrq__subcmd__lint_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq lint commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__lsp_commands] )) ||
+_mrq__subcmd__lsp_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq lsp commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__merge_commands] )) ||
+_mrq__subcmd__merge_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq merge commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__query_commands] )) ||
+_mrq__subcmd__query_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq query commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__render_commands] )) ||
+_mrq__subcmd__render_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq render commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__show_commands] )) ||
+_mrq__subcmd__show_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq show commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__split_commands] )) ||
+_mrq__subcmd__split_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq split commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__stats_commands] )) ||
+_mrq__subcmd__stats_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq stats commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__toc_commands] )) ||
+_mrq__subcmd__toc_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq toc commands' commands "$@"
+}
+(( $+functions[_mrq__subcmd__validate_commands] )) ||
+_mrq__subcmd__validate_commands() {
+    local commands; commands=()
+    _describe -t commands 'mrq validate commands' commands "$@"
+}
+
+if [ "$funcstack[1]" = "_mrq" ]; then
+    _mrq "$@"
+else
+    compdef _mrq mrq
+fi
