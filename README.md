@@ -51,6 +51,42 @@ Release binaries enable everything. A minimal build is available with `cargo ins
 | `tui`            | `mrq show` (default)                                              |
 | `lsp`            | `mrq lsp`                                                         |
 
+## Shell completions
+
+`mrq completions <shell>` prints a completion script that completes subcommands, flags, closed value sets (`--format`, `render -o`, …) and file paths. The Homebrew formula installs the bash, zsh and fish scripts for you; otherwise add the line for your shell.
+
+```sh
+# bash, in ~/.bashrc
+source <(mrq completions bash)
+
+# zsh: save into a directory on $fpath, before compinit runs in ~/.zshrc
+mkdir -p ~/.zfunc && mrq completions zsh > ~/.zfunc/_mrq
+# then in ~/.zshrc: fpath=(~/.zfunc $fpath); autoload -Uz compinit && compinit
+
+# fish
+mrq completions fish > ~/.config/fish/completions/mrq.fish
+
+# elvish, in ~/.config/elvish/rc.elv
+eval (mrq completions elvish | slurp)
+
+# PowerShell, in $PROFILE
+mrq completions powershell | Out-String | Invoke-Expression
+```
+
+Nushell: save the `extern` definitions once, then load them from `config.nu`:
+
+```nu
+mrq completions nushell | save -f ($nu.default-config-dir | path join completions/mrq.nu)
+# then in config.nu:
+use ($nu.default-config-dir | path join completions/mrq.nu) *
+```
+
+[Carapace](https://carapace.sh): save the spec into carapace's specs directory, `${XDG_CONFIG_HOME:-~/.config}/carapace/specs/` (on macOS without `XDG_CONFIG_HOME`, `~/Library/Application Support/carapace/specs/`). With carapace set up as your shell's external completer this one file covers nushell, fish, zsh, bash, elvish and the rest.
+
+```sh
+mkdir -p ~/.config/carapace/specs && mrq completions carapace > ~/.config/carapace/specs/mrq.yaml
+```
+
 ## Input
 
 Every command that reads Markdown accepts any mix of:

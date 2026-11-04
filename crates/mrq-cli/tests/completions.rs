@@ -269,3 +269,34 @@ fn carapace_spec_completes_values() {
     let out = carapace_complete(dir.path(), &["render", "--out", ""]);
     assert_eq!(out, ["a.md", "b.markdown", "c.txt", "docs/"]);
 }
+
+/// The README's "Shell completions" section shows `mrq completions <shell>` for every
+/// shell, and only for shells `mrq completions` accepts.
+#[test]
+fn readme_completion_snippets_cover_every_shell() {
+    use clap::ValueEnum;
+    use std::collections::BTreeSet;
+    let readme = include_str!("../../../README.md");
+    let start = readme
+        .find("\n## Shell completions\n")
+        .expect("README has a `## Shell completions` section");
+    let section = &readme[start + 1..];
+    let section = &section[..section[1..].find("\n## ").map_or(section.len(), |i| i + 1)];
+    // `mrq completions <shell>` in prose is a placeholder, not a shell.
+    let shown: BTreeSet<String> = section
+        .split("mrq completions ")
+        .skip(1)
+        .map(|rest| {
+            rest.split(|c: char| !c.is_ascii_alphanumeric())
+                .next()
+                .unwrap()
+        })
+        .filter(|shell| !shell.is_empty())
+        .map(str::to_owned)
+        .collect();
+    let known: BTreeSet<String> = mrq_cli::cli::CompletionShell::value_variants()
+        .iter()
+        .map(|s| s.to_possible_value().unwrap().get_name().to_owned())
+        .collect();
+    assert_eq!(shown, known, "README section:\n{section}");
+}

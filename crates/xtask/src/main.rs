@@ -5,6 +5,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
+mod completions;
 mod lint_parity;
 mod man;
 
@@ -21,6 +22,12 @@ enum Task {
     Man {
         /// Output directory.
         #[arg(long, value_name = "DIR", default_value = "target/man")]
+        out: PathBuf,
+    },
+    /// Generate completion scripts for every shell `mrq completions` supports.
+    Completions {
+        /// Output directory.
+        #[arg(long, value_name = "DIR", default_value = "target/completions")]
         out: PathBuf,
     },
     /// Record markdownlint-cli2's findings and fixes on the lint fixtures, then run the
@@ -53,6 +60,18 @@ fn main() -> ExitCode {
             }
             Err(err) => {
                 eprintln!("xtask man: {}: {err}", out.display());
+                ExitCode::FAILURE
+            }
+        },
+        Task::Completions { out } => match completions::generate(&out) {
+            Ok(files) => {
+                for file in files {
+                    println!("{}", file.display());
+                }
+                ExitCode::SUCCESS
+            }
+            Err(err) => {
+                eprintln!("xtask completions: {}: {err}", out.display());
                 ExitCode::FAILURE
             }
         },

@@ -58,6 +58,10 @@ schema:
 man out="target/man":
     cargo xtask man --out {{out}}
 
+# Generate completion scripts for all seven shells into `out` (default target/completions): mrq.bash, _mrq (zsh), mrq.fish, mrq.elv, _mrq.ps1, mrq.nu, mrq.yaml (carapace).
+completions out="target/completions":
+    cargo xtask completions --out {{out}}
+
 # Record markdownlint-cli2's findings on the lint fixtures, then compare mrq with them; needs Node.js (npx) and network.
 lint-parity *args:
     cargo xtask lint-parity {{args}}
