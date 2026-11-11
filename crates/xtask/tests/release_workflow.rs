@@ -266,6 +266,38 @@ fn archives_are_named_by_tag_and_target_with_a_checksum() {
 }
 
 #[test]
+fn release_binaries_enable_every_optional_feature() {
+    let manifest = std::fs::read_to_string(repo_root().join("crates/mrq-cli/Cargo.toml")).unwrap();
+    let doc: toml_edit::DocumentMut = manifest.parse().unwrap();
+    let features = doc["features"].as_table().expect("[features]");
+    let default: BTreeSet<&str> = features["default"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    let optional: BTreeSet<&str> = features
+        .iter()
+        .map(|(k, _)| k)
+        .filter(|k| *k != "default" && !default.contains(k))
+        .collect();
+    assert!(!optional.is_empty());
+
+    let wf = workflow();
+    let (_, job) = build_job(&wf);
+    let enabled: BTreeSet<&str> = upload_step(job)
+        .input("features")
+        .expect("upload step sets `features`")
+        .split(',')
+        .map(str::trim)
+        .collect();
+    assert_eq!(
+        enabled, optional,
+        "release builds default + every optional feature"
+    );
+}
+
+#[test]
 fn archives_include_docs_licences_man_pages_and_completions() {
     let wf = workflow();
     let (_, job) = build_job(&wf);

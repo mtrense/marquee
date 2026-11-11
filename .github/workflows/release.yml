@@ -101,6 +101,8 @@ jobs:
           archive: mrq-$tag-$target
           checksum: sha256
           locked: true
+          # Default features plus every optional one, so release binaries are complete.
+          features: pdf,mermaid
           include: README.md,LICENSE-MIT,LICENSE-APACHE,target/man,target/completions
           token: ${{ secrets.GITHUB_TOKEN }}
 

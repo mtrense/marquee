@@ -19,6 +19,7 @@ tempfile.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde-saphyr.workspace = true
+toml_edit.workspace = true
 
 [lints]
 workspace = true
