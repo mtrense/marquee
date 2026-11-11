@@ -1,7 +1,8 @@
 name: Release
 
 # Pushing a `v*` tag builds `mrq` for every release target and attaches the archives to a
-# GitHub release. Tags with a `-` (e.g. v0.1.0-rc.1) become prereleases.
+# GitHub release. Tags with a `-` (e.g. v0.1.0-rc.1) become prereleases. Stable tags also
+# open a pull request with the updated formula on the mtrense/homebrew-tap repository.
 # Structure is checked offline by crates/xtask/tests/release_workflow.rs.
 
 on:
@@ -102,3 +103,96 @@ jobs:
           locked: true
           include: README.md,LICENSE-MIT,LICENSE-APACHE,target/man,target/completions
           token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Whether HOMEBREW_TAP_TOKEN is set. `secrets` can't be used in a job-level `if:`, so
+  # the tap job gates on this output. Prereleases skip it, and with it the tap job.
+  check-secret:
+    name: Check HOMEBREW_TAP_TOKEN
+    if: ${{ !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      has_token: ${{ steps.probe.outputs.has_token }}
+    steps:
+      - name: Probe secret presence
+        id: probe
+        shell: bash
+        env:
+          TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -n "${TOKEN:-}" ]; then
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::HOMEBREW_TAP_TOKEN is not set; skipping the Homebrew tap PR"
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Stable tags only: open (or update) a PR on mtrense/homebrew-tap with Formula/mrq.rb for
+  # this release. Nothing is committed to the tap directly. Needs the four macOS/Linux
+  # archives; the experimental Windows build can't block it (`continue-on-error`).
+  tap-update:
+    name: Homebrew tap PR
+    needs: [build, check-secret]
+    if: ${{ !contains(github.ref_name, '-') && needs.check-secret.outputs.has_token == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # upload-rust-binary-action writes `<sha256>  mrq-$tag-$target.tar.gz` to
+      # mrq-$tag-$target.sha256 (named after the archive stem).
+      - name: Fetch checksums
+        id: checksums
+        shell: bash
+        run: |
+          base="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}"
+          for target in aarch64-apple-darwin x86_64-apple-darwin aarch64-unknown-linux-musl x86_64-unknown-linux-musl; do
+            file="mrq-${GITHUB_REF_NAME}-${target}.sha256"
+            sha="$(curl -fsSL --retry 3 "${base}/${file}" | awk 'NR == 1 { print $1 }')" || sha=""
+            if ! [[ "${sha}" =~ ^[0-9a-f]{64}$ ]]; then
+              echo "::error::empty, missing or malformed checksum in ${file}: '${sha}'"
+              exit 1
+            fi
+            echo "sha_${target//-/_}=${sha}" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Check out homebrew-tap
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mtrense/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Check out marquee (for the render script)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: marquee
+          persist-credentials: false
+
+      - name: Render Formula/mrq.rb
+        id: render
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+          SHA_AARCH64_APPLE_DARWIN: ${{ steps.checksums.outputs.sha_aarch64_apple_darwin }}
+          SHA_X86_64_APPLE_DARWIN: ${{ steps.checksums.outputs.sha_x86_64_apple_darwin }}
+          SHA_AARCH64_UNKNOWN_LINUX_MUSL: ${{ steps.checksums.outputs.sha_aarch64_unknown_linux_musl }}
+          SHA_X86_64_UNKNOWN_LINUX_MUSL: ${{ steps.checksums.outputs.sha_x86_64_unknown_linux_musl }}
+          OUTPUT_PATH: homebrew-tap/Formula/mrq.rb
+        run: python3 -I marquee/.github/scripts/render_formula.py
+
+      - name: Open or update the tap PR
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
+        with:
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+          add-paths: Formula/mrq.rb
+          branch: update-formula-${{ github.ref_name }}
+          commit-message: "mrq ${{ github.ref_name }}"
+          title: "mrq ${{ github.ref_name }}"
+          body: |
+            Automated formula update from the marquee release workflow.
+
+            Release: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+
+            Merging makes `brew install mtrense/tap/mrq` install this version.
+          delete-branch: false

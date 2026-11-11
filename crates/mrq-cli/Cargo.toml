@@ -1,12 +1,13 @@
 [package]
 name = "mrq-cli"
-description = "mrq: a Swiss-army knife for Markdown"
+description = "Markdown toolkit for the terminal: lint, format, query, transform and render"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
+homepage.workspace = true
 
 [lib]
 path = "src/lib.rs"
