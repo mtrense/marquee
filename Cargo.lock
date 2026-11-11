@@ -3186,7 +3186,7 @@ dependencies = [
 
 [[package]]
 name = "mrq-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -3209,7 +3209,7 @@ dependencies = [
 
 [[package]]
 name = "mrq-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "comrak",
  "entities",
@@ -3254,7 +3254,7 @@ dependencies = [
 
 [[package]]
 name = "mrq-lsp"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "mrq-core",
  "serde",
@@ -3267,7 +3267,7 @@ dependencies = [
 
 [[package]]
 name = "mrq-render"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "insta",
  "jsonschema",
@@ -3300,7 +3300,7 @@ dependencies = [
 
 [[package]]
 name = "mrq-tui"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "image",
  "insta",
@@ -7221,7 +7221,7 @@ checksum = "9440ea3e5aeabb0ac63af70daf835274065238cdd0cec83418f417eae38bacee"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "clap_mangen",
