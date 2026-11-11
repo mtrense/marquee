@@ -28,7 +28,7 @@ mrq show docs/                          # browse in the TUI
 
 ```sh
 # Homebrew (macOS and Linux)
-brew install mtrense/tap/mrq
+brew install mtrense/tap/marquee
 
 # From source (the crate is called mrq-cli; the binary is mrq)
 cargo install --git https://github.com/mtrense/marquee mrq-cli --locked

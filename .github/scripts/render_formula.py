@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the mrq Homebrew formula (Formula/mrq.rb) for a stable release.
+"""Render the marquee Homebrew formula (Formula/marquee.rb, installs `mrq`) for a stable release.
 
 Used by the `tap-update` job of .github/workflows/release.yml. Inputs come from the
 environment:
@@ -9,7 +9,7 @@ environment:
   SHA_X86_64_APPLE_DARWIN              sha256 of mrq-$TAG-x86_64-apple-darwin.tar.gz
   SHA_AARCH64_UNKNOWN_LINUX_MUSL       sha256 of mrq-$TAG-aarch64-unknown-linux-musl.tar.gz
   SHA_X86_64_UNKNOWN_LINUX_MUSL        sha256 of mrq-$TAG-x86_64-unknown-linux-musl.tar.gz
-  OUTPUT_PATH                          where to write (default: Formula/mrq.rb)
+  OUTPUT_PATH                          where to write (default: Formula/marquee.rb)
   MANIFEST_PATH                        mrq-cli Cargo.toml (default: crates/mrq-cli/Cargo.toml
                                        relative to this repository)
 
@@ -122,7 +122,7 @@ def render(tag, checksums, meta):
 
     return (
         "# Rendered by the marquee release workflow (.github/scripts/render_formula.py).\n"
-        "class Mrq < Formula\n"
+        "class Marquee < Formula\n"
         f"  desc {ruby_string(meta['description'])}\n"
         f"  homepage {ruby_string(meta['homepage'])}\n"
         f"  version {ruby_string(version)}\n"
@@ -152,7 +152,7 @@ def main(env):
     except (RenderError, OSError, tomllib.TOMLDecodeError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
-    output = pathlib.Path(env.get("OUTPUT_PATH") or "Formula/mrq.rb")
+    output = pathlib.Path(env.get("OUTPUT_PATH") or "Formula/marquee.rb")
     try:
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(formula, encoding="utf-8")

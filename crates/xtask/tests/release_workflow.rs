@@ -768,9 +768,9 @@ fn render_step_writes_the_formula_into_the_tap_checkout() {
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");
-    let formula = std::fs::read_to_string(dir.path().join("homebrew-tap/Formula/mrq.rb"))
-        .expect("Formula/mrq.rb written");
-    assert!(formula.contains("class Mrq < Formula"), "{formula}");
+    let formula = std::fs::read_to_string(dir.path().join("homebrew-tap/Formula/marquee.rb"))
+        .expect("Formula/marquee.rb written");
+    assert!(formula.contains("class Marquee < Formula"), "{formula}");
     for t in &targets {
         assert!(
             formula.contains(&format!("/{tag}/mrq-{tag}-{t}.tar.gz\"")),
@@ -799,7 +799,7 @@ fn tap_pull_request_is_opened_on_a_per_tag_branch() {
         pr.input("branch"),
         Some("update-formula-${{ github.ref_name }}")
     );
-    assert_eq!(pr.input("add-paths"), Some("Formula/mrq.rb"));
+    assert_eq!(pr.input("add-paths"), Some("Formula/marquee.rb"));
     // The PR comes last, after the formula is rendered.
     let render = tap
         .steps

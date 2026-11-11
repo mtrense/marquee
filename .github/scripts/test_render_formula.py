@@ -35,7 +35,7 @@ def sha(i):
 
 
 def good_env(tmp):
-    env = {"TAG": "v1.2.3", "OUTPUT_PATH": str(pathlib.Path(tmp) / "Formula" / "mrq.rb")}
+    env = {"TAG": "v1.2.3", "OUTPUT_PATH": str(pathlib.Path(tmp) / "Formula" / "marquee.rb")}
     for i, target in enumerate(TARGETS):
         env[rf.checksum_var(target)] = sha(i + 1)
     return env
@@ -92,7 +92,7 @@ class RenderTest(unittest.TestCase):
 
     def test_header(self):
         f = self.formula
-        self.assertIn("class Mrq < Formula\n", f)
+        self.assertIn("class Marquee < Formula\n", f)
         self.assertIn(f'  desc "{self.meta["description"]}"\n', f)
         self.assertIn('  homepage "https://github.com/mtrense/marquee"\n', f)
         self.assertIn('  version "1.2.3"\n', f)
@@ -140,7 +140,7 @@ class RenderTest(unittest.TestCase):
     @unittest.skipUnless(shutil.which("ruby"), "ruby not installed")
     def test_formula_is_valid_ruby(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = pathlib.Path(tmp) / "mrq.rb"
+            path = pathlib.Path(tmp) / "marquee.rb"
             path.write_text(self.formula)
             result = subprocess.run(["ruby", "-c", str(path)], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -155,7 +155,7 @@ class MainTest(unittest.TestCase):
             env = good_env(tmp)
             self.assertEqual(self.run_main(env), 0)
             text = pathlib.Path(env["OUTPUT_PATH"]).read_text()
-        self.assertIn("class Mrq < Formula", text)
+        self.assertIn("class Marquee < Formula", text)
         self.assertIn('version "1.2.3"', text)
 
     def test_refuses_blank_checksums(self):

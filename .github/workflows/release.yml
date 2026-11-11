@@ -127,7 +127,7 @@ jobs:
             echo "has_token=false" >> "$GITHUB_OUTPUT"
           fi
 
-  # Stable tags only: open (or update) a PR on mtrense/homebrew-tap with Formula/mrq.rb for
+  # Stable tags only: open (or update) a PR on mtrense/homebrew-tap with Formula/marquee.rb for
   # this release. Nothing is committed to the tap directly. Needs the four macOS/Linux
   # archives; the experimental Windows build can't block it (`continue-on-error`).
   tap-update:
@@ -168,7 +168,7 @@ jobs:
           path: marquee
           persist-credentials: false
 
-      - name: Render Formula/mrq.rb
+      - name: Render Formula/marquee.rb
         id: render
         shell: bash
         env:
@@ -177,7 +177,7 @@ jobs:
           SHA_X86_64_APPLE_DARWIN: ${{ steps.checksums.outputs.sha_x86_64_apple_darwin }}
           SHA_AARCH64_UNKNOWN_LINUX_MUSL: ${{ steps.checksums.outputs.sha_aarch64_unknown_linux_musl }}
           SHA_X86_64_UNKNOWN_LINUX_MUSL: ${{ steps.checksums.outputs.sha_x86_64_unknown_linux_musl }}
-          OUTPUT_PATH: homebrew-tap/Formula/mrq.rb
+          OUTPUT_PATH: homebrew-tap/Formula/marquee.rb
         run: python3 -I marquee/.github/scripts/render_formula.py
 
       - name: Open or update the tap PR
@@ -185,7 +185,7 @@ jobs:
         with:
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           path: homebrew-tap
-          add-paths: Formula/mrq.rb
+          add-paths: Formula/marquee.rb
           branch: update-formula-${{ github.ref_name }}
           commit-message: "mrq ${{ github.ref_name }}"
           title: "mrq ${{ github.ref_name }}"
@@ -194,5 +194,5 @@ jobs:
 
             Release: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
 
-            Merging makes `brew install mtrense/tap/mrq` install this version.
+            Merging makes `brew install mtrense/tap/marquee` install this version.
           delete-branch: false
