@@ -123,8 +123,12 @@ impl<'p, 'a> Inlines<'p, 'a> {
 
     /// Raw HTML or a comment, kept on the line of what comes before: at the start of a
     /// line it could start an HTML block. Where it does start a line (as it did in the
-    /// source), it is never escaped.
+    /// source), it is never escaped; where it could start an HTML block there (so the
+    /// source indented it by four columns or more), it is indented by four columns.
     fn raw(&mut self, html: &str) {
+        if self.out.ends_with('\n') && starts_html_block(html) {
+            self.out.push_str("    ");
+        }
         let start = self.out.len();
         self.out.push_str(html);
         if let Some(flow) = &mut self.flow {

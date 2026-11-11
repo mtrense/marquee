@@ -994,6 +994,14 @@ fn printer_edge_cases_keep_their_html() {
             "- [r]: /x \"T\"\n\n  | h |\n  |---|\n  | |\n- b\n",
             "- [r]: /x \"T\"\n\n  | h   |\n  | --- |\n  |     |\n- b\n",
         ),
+        // Raw HTML that starts a continuation line indented by four columns, where it
+        // cannot start an HTML block: at the paragraph's indent it would.
+        ("a\n    </div>\n", "a\n    </div>\n"),
+        ("a\\\n     <!-- c -->\n", "a\\\n    <!-- c -->\n"),
+        (
+            "- [ ] - - <div>\n      *html*\n      </div>\n\n      a\n",
+            "- [ ] \\- - <div>\n  *html*\n      </div>\n\n  ```\n  a\n  ```\n",
+        ),
     ] {
         let once = fmt(src);
         assert_eq!(once, expected, "{src:?}");
@@ -1100,6 +1108,19 @@ fn wrapped_lines_never_start_a_block() {
         "x\n\\-\nx\n\\+\nx\n\\*\nx\n\\#\nx\n\\>\nx\n1\\.\nx\n2\\)\nx\n\\===\nx\n\\---\nx\n_\n_\n_\nx <div>\nx\n\\~\\~\\~\nx\n"
     );
     assert_eq!(wrapped("aaaaa _ _ _\n", Wrap::Width, 5), "aaaaa\n\\_ _ _\n");
+    // Raw HTML after a hard break is indented by four columns, where it cannot start an
+    // HTML block (as in the source).
+    for (wrap, expected) in [
+        (Wrap::Never, "a\\\n    </div> b\n"),
+        (Wrap::Width, "a\\\n    </div>\nb\n"),
+        (Wrap::Sentence, "a\\\n    </div> b\n"),
+    ] {
+        assert_eq!(
+            wrapped("a\\\n    </div> b\n", wrap, 1),
+            expected,
+            "{wrap:?}"
+        );
+    }
     // A table delimiter row and an HTML block start from plain text, a definition.
     let config = FmtConfig {
         wrap: Wrap::Width,
