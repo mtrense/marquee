@@ -7226,6 +7226,9 @@ dependencies = [
  "clap",
  "clap_mangen",
  "mrq-cli",
+ "serde",
+ "serde-saphyr",
+ "serde_json",
  "tempfile",
 ]
 

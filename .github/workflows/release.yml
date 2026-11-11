@@ -1,0 +1,104 @@
+name: Release
+
+# Pushing a `v*` tag builds `mrq` for every release target and attaches the archives to a
+# GitHub release. Tags with a `-` (e.g. v0.1.0-rc.1) become prereleases.
+# Structure is checked offline by crates/xtask/tests/release_workflow.rs.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # The tag must be `v` + the workspace version in Cargo.toml.
+  check-version:
+    name: Check tag vs Cargo.toml version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify versions match
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="$(awk '/^\[workspace\.package\]/ { in_pkg = 1; next } /^\[/ { in_pkg = 0 } in_pkg && /^version *=/ { gsub(/^version *= *"|".*$/, ""); print; exit }' Cargo.toml)"
+          echo "Tag:   ${tag}"
+          echo "Cargo: v${version}"
+          if [ -z "${version}" ]; then
+            echo "::error::no version in [workspace.package] of Cargo.toml"
+            exit 1
+          fi
+          if [ "${tag}" != "v${version}" ]; then
+            echo "::error::tag '${tag}' does not match Cargo.toml version 'v${version}'"
+            exit 1
+          fi
+
+  # Create the release once, before the build matrix fans out, so parallel uploads
+  # never race to create it. A tag with a pre-release part becomes a prerelease.
+  create-release:
+    name: Create GitHub release
+    needs: check-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: taiki-e/create-gh-release-action@045e5c0ed9c50cc1f96de7e891a09ad3daea245f # v1.12.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Archives mrq-$tag-$target(.tar.gz|.zip) plus mrq-$tag-$target.sha256 per target.
+  # Windows is experimental: its failure never fails the release.
+  build:
+    name: Build (${{ matrix.target }})
+    needs: [check-version, create-release]
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental || false }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            experimental: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Toolchain from rust-toolchain.toml, as in ci.yml.
+      - name: Install Rust toolchain
+        shell: bash
+        run: rustup toolchain install
+      - uses: taiki-e/install-action@86f7a0ffb25f40114606501a311ebcfaf882ea32 # v2.88.0
+        with:
+          tool: just
+      # Built for the host; the output is the same for every target.
+      - name: Generate man pages and shell completions
+        shell: bash
+        run: |
+          just man
+          just completions
+      - uses: taiki-e/upload-rust-binary-action@f0d45ae91ee7b8ee928de7a9d04d893a08bcbec6 # v1.30.2
+        with:
+          bin: mrq
+          target: ${{ matrix.target }}
+          archive: mrq-$tag-$target
+          checksum: sha256
+          locked: true
+          include: README.md,LICENSE-MIT,LICENSE-APACHE,target/man,target/completions
+          token: ${{ secrets.GITHUB_TOKEN }}
