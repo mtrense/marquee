@@ -69,6 +69,7 @@ struct Job {
     condition: Option<String>,
     needs: Option<OneOrMany>,
     permissions: Option<BTreeMap<String, String>>,
+    #[cfg_attr(not(unix), allow(dead_code))]
     outputs: Option<BTreeMap<String, String>>,
     #[serde(rename = "runs-on")]
     runs_on: String,
@@ -97,6 +98,7 @@ struct Step {
     uses: Option<String>,
     run: Option<String>,
     shell: Option<String>,
+    #[cfg_attr(not(unix), allow(dead_code))]
     env: Option<BTreeMap<String, String>>,
     with: Option<BTreeMap<String, Scalar>>,
 }
@@ -445,6 +447,7 @@ const TAP_TOKEN: &str = "${{ secrets.HOMEBREW_TAP_TOKEN }}";
 const STABLE_ONLY: &str = "!contains(github.ref_name, '-')";
 
 /// Targets the release must not fail on: every matrix entry that isn't experimental.
+#[cfg(unix)]
 fn required_targets(wf: &Workflow) -> BTreeSet<String> {
     let (_, job) = build_job(wf);
     job.strategy
@@ -458,6 +461,7 @@ fn required_targets(wf: &Workflow) -> BTreeSet<String> {
         .collect()
 }
 
+#[cfg(unix)]
 fn step_by_id<'a>(job: &'a Job, id: &str) -> &'a Step {
     job.steps
         .iter()
@@ -466,6 +470,7 @@ fn step_by_id<'a>(job: &'a Job, id: &str) -> &'a Step {
 }
 
 /// Parses `key=value` lines written to `$GITHUB_OUTPUT`.
+#[cfg(unix)]
 fn read_outputs(path: &Path) -> BTreeMap<String, String> {
     std::fs::read_to_string(path)
         .unwrap_or_default()
@@ -550,7 +555,7 @@ fn token_probe_reports_whether_the_secret_is_set() {
         if let Some(v) = value {
             cmd.env(var, v);
         }
-        let status = cmd.status().unwrap();
+        let status = cmd.output().unwrap().status;
         assert!(status.success());
         assert_eq!(
             read_outputs(&out).get("has_token").map(String::as_str),
@@ -606,8 +611,9 @@ fn fetch_checksums(
             assert_eq!(v, "${{ github.ref_name }}", "unexpected env {k}");
             (k, tag)
         }))
-        .status()
-        .unwrap();
+        .output()
+        .unwrap()
+        .status;
     let urls = std::fs::read_to_string(&log)
         .unwrap_or_default()
         .lines()
