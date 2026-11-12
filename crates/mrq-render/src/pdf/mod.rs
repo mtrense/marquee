@@ -15,9 +15,10 @@
 //! # Offline and reproducible
 //!
 //! Typst sees only the generated source, the files it names (mounted under `/assets/`),
-//! the `overrides.pdf` template's directory (under `/template/`) and the fonts bundled
-//! with Typst ([`bundled_font_families`]: Libertinus Serif, New Computer Modern, New
-//! Computer Modern Math and `DejaVu Sans Mono`), which are embedded (subset) in every PDF.
+//! the `overrides.pdf` template's directory (under `/template/`) and the bundled fonts
+//! ([`bundled_font_families`]: Typst's Libertinus Serif, New Computer Modern, New
+//! Computer Modern Math and `DejaVu Sans Mono`, plus Noto Color Emoji, which Typst's
+//! fallback picks for emoji), which are embedded (subset) in every PDF.
 //! System fonts are not used, and `@preview` packages cannot be imported, so a render
 //! never needs the network and gives the same bytes on every machine. The PDF has no
 //! creation date; `datetime.today()` is [`PdfOptions::today`].

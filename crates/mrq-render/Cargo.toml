@@ -25,7 +25,7 @@ png = ["dep:resvg"]
 kroki = ["dep:reqwest", "dep:rustls", "dep:tokio"]
 # The PDF backend (`PdfRenderer`): the mrq AST as Typst markup, compiled in-process by
 # Typst with its bundled fonts (Libertinus Serif, New Computer Modern, DejaVu Sans Mono)
-# embedded in the binary. Off by default, it is heavy.
+# and Noto Color Emoji (assets/fonts, SIL OFL 1.1) embedded in the binary. Off by default, it is heavy.
 pdf = ["dep:typst", "dep:typst-layout", "dep:typst-pdf", "dep:typst-assets"]
 
 [dependencies]

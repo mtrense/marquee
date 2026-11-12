@@ -184,6 +184,17 @@ fn the_paper_fonts_are_bundled() {
         );
     }
     assert!(families.iter().any(|f| f == "New Computer Modern Math"));
+    assert!(families.iter().any(|f| f == "Noto Color Emoji"));
+}
+
+#[test]
+fn emoji_fall_back_to_the_bundled_emoji_font() {
+    let doc = Document::parse("- 🛠  Add CI.\n- ✅ Done, `🚀 code`.\n");
+    let output = renderer(&paper()).render_with_diagnostics(&doc).unwrap();
+    assert!(output.diagnostics.is_empty(), "{:?}", output.diagnostics);
+    assert_valid_pdf(&output.pdf);
+    let pdf = String::from_utf8_lossy(&output.pdf);
+    assert!(pdf.contains("NotoColorEmoji"), "no emoji font in the PDF");
 }
 
 #[test]

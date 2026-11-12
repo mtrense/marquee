@@ -19,11 +19,16 @@ pub(super) const MAIN: &str = "/main.typ";
 /// The virtual directory the template's directory is mounted at.
 pub(super) const TEMPLATE_DIR: &str = "/template";
 
-/// The fonts bundled with Typst (`typst-assets`), parsed once.
+/// Noto Color Emoji (`COLRv1`, vector), the emoji fallback: none of Typst's fonts has
+/// emoji glyphs. SIL OFL 1.1, see `assets/fonts/OFL.txt`.
+static EMOJI_FONT: &[u8] = include_bytes!("../../assets/fonts/Noto-COLRv1.ttf");
+
+/// The fonts bundled with Typst (`typst-assets`) and the emoji font, parsed once.
 fn bundled_fonts() -> &'static [Font] {
     static FONTS: OnceLock<Vec<Font>> = OnceLock::new();
     FONTS.get_or_init(|| {
         typst_assets::fonts()
+            .chain(std::iter::once(EMOJI_FONT))
             .flat_map(|data| Font::iter(Bytes::new(data)))
             .collect()
     })
