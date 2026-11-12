@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/*"]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 rust-version = "1.99"
 license = "MIT OR Apache-2.0"
@@ -12,11 +12,11 @@ repository = "https://github.com/mtrense/marquee"
 homepage = "https://github.com/mtrense/marquee"
 
 [workspace.dependencies]
-mrq-core = { path = "crates/mrq-core", version = "0.2.0" }
-mrq-render = { path = "crates/mrq-render", version = "0.2.0" }
-mrq-tui = { path = "crates/mrq-tui", version = "0.2.0" }
-mrq-lsp = { path = "crates/mrq-lsp", version = "0.2.0" }
-mrq-cli = { path = "crates/mrq-cli", version = "0.2.0" }
+mrq-core = { path = "crates/mrq-core", version = "0.2.1" }
+mrq-render = { path = "crates/mrq-render", version = "0.2.1" }
+mrq-tui = { path = "crates/mrq-tui", version = "0.2.1" }
+mrq-lsp = { path = "crates/mrq-lsp", version = "0.2.1" }
+mrq-cli = { path = "crates/mrq-cli", version = "0.2.1" }
 clap = { version = "4.6.7", features = ["derive"] }
 clap_complete = "4.6.11"
 clap_complete_nushell = "4.6.2"

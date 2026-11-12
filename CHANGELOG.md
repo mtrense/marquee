@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-11-12
+
+### Fixed
+
+- Emoji in PDF output now render correctly instead of as missing-glyph boxes, by bundling the Noto Color Emoji font (SIL OFL 1.1) as a fallback font.
+
 ## [0.2.0] - 2026-11-11
 
 ### Added
