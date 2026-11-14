@@ -81,6 +81,7 @@ module completions {
     --width: string           # Terminal width for `-o ansi` [default: the terminal's, then $COLUMNS, then 80]
     --out: path               # Write to this file instead of stdout
     --out-dir: directory      # Write one file per input into this directory, named after the input (`guide.md` → `guide.html`)
+    --open                    # Open the result in the default app; without --out or --out-dir, it is written to a temporary file named after the input(s)
     --config: path            # Use this config file instead of discovering `.mrq.yaml`
     --flavor: string@"nu-complete mrq render flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
     --color: string@"nu-complete mrq render color" # When to use colors

@@ -1015,7 +1015,7 @@ _mrq() {
             return 0
             ;;
         mrq__subcmd__render)
-            opts="-o -s -q -v -h --output --style --fragment --width --out --out-dir --config --flavor --color --format --quiet --verbose --help"
+            opts="-o -s -q -v -h --output --style --fragment --width --out --out-dir --open --config --flavor --color --format --quiet --verbose --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

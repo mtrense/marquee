@@ -106,6 +106,7 @@ ndjson\t'One JSON object per line'
 sarif\t'SARIF 2.1.0'
 github\t'GitHub Actions workflow annotations'"
 complete -c mrq -n "__fish_mrq_using_subcommand render" -l fragment -d 'HTML body only, without the `<html>` wrapper and the stylesheet'
+complete -c mrq -n "__fish_mrq_using_subcommand render" -l open -d 'Open the result in the default app; without --out or --out-dir, it is written to a temporary file named after the input(s)'
 complete -c mrq -n "__fish_mrq_using_subcommand render" -s q -l quiet -d 'Print less output; repeat for even less'
 complete -c mrq -n "__fish_mrq_using_subcommand render" -s v -l verbose -d 'Print more output; repeat for even more'
 complete -c mrq -n "__fish_mrq_using_subcommand render" -s h -l help -d 'Print help (see more with \'--help\')'

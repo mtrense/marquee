@@ -375,3 +375,166 @@ fn nothing_is_written_when_an_input_fails() {
     assert_eq!(out.status.code(), Some(2));
     assert!(!Path::new(&mrq.path("all.html")).exists());
 }
+
+// --- --open ------------------------------------------------------------------------------
+
+/// `mrq render --open …` with `$MRQ_OPENER` a script logging the files it is given and
+/// `$TMPDIR` an empty directory: the output and the opened files.
+#[cfg(unix)]
+struct Opened {
+    out: Output,
+    files: Vec<PathBuf>,
+    tmp: tempfile::TempDir,
+}
+
+#[cfg(unix)]
+fn open(mrq: &Mrq, opener: Option<&str>, args: &[&str]) -> Opened {
+    use std::os::unix::fs::PermissionsExt;
+    let tmp = tempfile::tempdir().unwrap();
+    let bin = tempfile::tempdir().unwrap();
+    let log = bin.path().join("opened.log");
+    let script = bin.path().join("opener");
+    fs::write(
+        &script,
+        "#!/bin/sh\nprintf '%s\\n' \"$@\" >> \"$MRQ_TEST_LOG\"\n",
+    )
+    .unwrap();
+    fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+    let out = mrq
+        .command(&[&["--open"], args].concat())
+        .env("TMPDIR", tmp.path())
+        .env("MRQ_TEST_LOG", &log)
+        .env("MRQ_OPENER", opener.unwrap_or(script.to_str().unwrap()))
+        .output()
+        .unwrap();
+    let files = fs::read_to_string(&log)
+        .unwrap_or_default()
+        .lines()
+        .map(PathBuf::from)
+        .collect();
+    Opened { out, files, tmp }
+}
+
+#[cfg(unix)]
+fn file_name(path: &Path) -> String {
+    path.file_name().unwrap().to_string_lossy().into_owned()
+}
+
+#[cfg(unix)]
+#[test]
+fn open_renders_to_a_temp_file_named_after_the_input() {
+    let mrq = Mrq::new();
+    let opened = open(&mrq, None, &["guide.md"]);
+    assert_eq!(opened.out.status.code(), Some(0), "{:?}", opened.out);
+    assert_eq!(opened.out.stdout, b"");
+    let [file] = opened.files.as_slice() else {
+        panic!("one file opened: {:?}", opened.files);
+    };
+    assert_eq!(
+        file.parent().map(Path::to_path_buf),
+        Some(opened.tmp.path().canonicalize().unwrap())
+    );
+    let name = file_name(file);
+    assert!(
+        name.starts_with("guide-") && file.extension().is_some_and(|ext| ext == "html"),
+        "{name}"
+    );
+    let page = fs::read_to_string(file).unwrap();
+    assert!(page.contains("<title>Guide</title>"));
+    // Links are rebased from the temp directory back to the input's.
+    let other = mrq.path("other.md");
+    let rebased = page
+        .split("href=\"")
+        .skip(1)
+        .filter_map(|rest| rest.split('"').next())
+        .find(|href| href.ends_with("other.md#setup"))
+        .expect("the link to other.md");
+    assert_ne!(rebased, "other.md#setup");
+    let target = file.with_file_name(rebased.trim_end_matches("#setup"));
+    assert_eq!(
+        target.canonicalize().unwrap(),
+        other.canonicalize().unwrap()
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn open_keeps_the_input_name_as_the_title_fallback() {
+    let mrq = Mrq::new();
+    fs::write(mrq.path("plain.md"), "Just text.\n").unwrap();
+    let opened = open(&mrq, None, &["plain.md"]);
+    let page = fs::read_to_string(&opened.files[0]).unwrap();
+    assert!(page.contains("<title>plain</title>"), "{page}");
+}
+
+#[cfg(unix)]
+#[test]
+fn open_names_the_temp_file_after_all_inputs_and_the_format() {
+    let mrq = Mrq::new();
+    let opened = open(&mrq, None, &["-o", "md", "guide.md", "other.md"]);
+    assert_eq!(opened.out.status.code(), Some(0), "{:?}", opened.out);
+    let name = file_name(&opened.files[0]);
+    assert!(
+        name.starts_with("guide+other-")
+            && opened.files[0].extension().is_some_and(|ext| ext == "md"),
+        "{name}"
+    );
+    let opened = open(&mrq, None, &["-o", "json", "guide.md"]);
+    let json = fs::read_to_string(&opened.files[0]).unwrap();
+    assert_eq!(
+        json,
+        mrq.render(&["-o", "json", "guide.md"]),
+        "one AST, not a list"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn open_opens_out_and_out_dir_files_in_place() {
+    let mrq = Mrq::new();
+    let opened = open(&mrq, None, &["--out", "guide.html", "guide.md"]);
+    assert_eq!(opened.out.status.code(), Some(0), "{:?}", opened.out);
+    assert_eq!(opened.files, [PathBuf::from("guide.html")]);
+    assert_eq!(
+        fs::read_to_string(mrq.path("guide.html")).unwrap(),
+        mrq.render(&["guide.md"])
+    );
+    assert_eq!(fs::read_dir(opened.tmp.path()).unwrap().count(), 0);
+
+    let opened = open(&mrq, None, &["--out-dir", "site", "guide.md", "other.md"]);
+    assert_eq!(
+        opened.files,
+        [
+            PathBuf::from("site/guide.html"),
+            PathBuf::from("site/other.html")
+        ]
+    );
+    assert_eq!(fs::read_dir(opened.tmp.path()).unwrap().count(), 0);
+}
+
+#[cfg(unix)]
+#[test]
+fn open_failures_exit_2() {
+    let mrq = Mrq::new();
+    let opened = open(&mrq, Some("false"), &["guide.md"]);
+    assert_eq!(opened.out.status.code(), Some(2));
+    assert!(
+        stderr(&opened.out).contains("cannot open"),
+        "{}",
+        stderr(&opened.out)
+    );
+    assert_eq!(
+        fs::read_dir(opened.tmp.path()).unwrap().count(),
+        1,
+        "the rendered file is kept"
+    );
+
+    let opened = open(&mrq, None, &["missing.md"]);
+    assert_eq!(opened.out.status.code(), Some(2));
+    assert_eq!(opened.files, Vec::<PathBuf>::new());
+    assert_eq!(
+        fs::read_dir(opened.tmp.path()).unwrap().count(),
+        0,
+        "the empty temp file is removed"
+    );
+}

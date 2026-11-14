@@ -51,6 +51,9 @@ commands:
   description: Render files or stdin to HTML, ANSI, PDF, Markdown, JSON or man
   flags:
     --fragment: HTML body only, without the `<html>` wrapper and the stylesheet
+    --open: >-
+      Open the result in the default app; without --out or --out-dir, it is written
+      to a temporary file named after the input(s)
     --out-dir=: >-
       Write one file per input into this directory, named after the input (`guide.md`
       → `guide.html`)

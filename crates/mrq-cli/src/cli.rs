@@ -242,7 +242,9 @@ pub enum RenderFormat {
     flavor then comes from frontmatter `mrq.flavor`, then the config, then gfm.\n\n\
     Several inputs are concatenated into one document, as `mrq merge --no-wrap` would \
     (`-o json`: a list of {file, ast} objects), unless --out-dir is given. A PDF is never \
-    written to a terminal."
+    written to a terminal.\n\n\
+    --open uses `open` (macOS), `start` (Windows) or `xdg-open`, unless $MRQ_OPENER names \
+    another command (split at whitespace; the file is appended)."
 )]
 pub struct RenderArgs {
     /// Output format.
@@ -265,6 +267,10 @@ pub struct RenderArgs {
     /// (`guide.md` → `guide.html`).
     #[arg(long, value_name = "DIR", value_hint = ValueHint::DirPath)]
     pub out_dir: Option<PathBuf>,
+    /// Open the result in the default app; without --out or --out-dir, it is written to
+    /// a temporary file named after the input(s).
+    #[arg(long)]
+    pub open: bool,
     #[command(flatten)]
     pub inputs: Inputs,
 }
