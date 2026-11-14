@@ -55,6 +55,9 @@ pub fn command(args: &RenderArgs, global: &GlobalArgs) -> ExitCode {
 /// `--out-dir`, the output is a new file in the temp directory named after the inputs,
 /// with its links rebased to work from there (also for a single input).
 ///
+/// Each file written is reported on stderr as `INPUT -> OUTPUT`, one line per input that
+/// went into it, unless `--quiet`; nothing is reported for stdout.
+///
 /// Warnings (diagrams shown as code, fonts, …) go to stderr in the `--format` and never
 /// change the exit code. The exit code is 2, and nothing is written, if an input cannot be
 /// read, the theme cannot be loaded, a PDF does not compile, `-o pdf` was left out of the
@@ -156,7 +159,7 @@ fn render_to(
     };
 
     let mut written_files = Vec::new();
-    for (path, bytes) in outputs {
+    for (index, (path, bytes)) in outputs.into_iter().enumerate() {
         let path = path.or_else(|| out.map(Path::to_path_buf));
         let written = match &path {
             Some(path) => write_file(path, &bytes),
@@ -166,6 +169,17 @@ fn render_to(
             let name = path.map_or_else(|| "<stdout>".to_owned(), |p| p.slashed());
             report(&format!("{name}: {err}"));
             return usage();
+        }
+        if let Some(path) = &path
+            && global.quiet == 0
+        {
+            // With `--out-dir`, output `index` is input `index`'s; else all go to one.
+            let sources = if args.out_dir.is_some() {
+                &inputs[index..=index]
+            } else {
+                inputs
+            };
+            announce(sources, path);
         }
         written_files.extend(path);
     }
@@ -178,6 +192,17 @@ fn render_to(
         }
     }
     ExitCode::SUCCESS
+}
+
+/// Writes `INPUT -> OUTPUT` to stderr for each of `inputs` written to `path`.
+fn announce(inputs: &[Input], path: &Path) {
+    let mut stderr = io::stderr().lock();
+    for input in inputs {
+        let name = input
+            .path()
+            .map_or_else(|| "<stdin>".to_owned(), Slashed::slashed);
+        let _ = writeln!(stderr, "{name} -> {}", path.slashed());
+    }
 }
 
 /// A new empty file in the temp directory for `--open`, named after the inputs

@@ -263,7 +263,7 @@ fn several_inputs_as_json_are_a_list_of_files() {
 #[test]
 fn out_dir_writes_one_file_per_input() {
     let mrq = Mrq::new();
-    let out = mrq.render(&[
+    let out = mrq.output(&[
         "-o",
         "html",
         "--out-dir",
@@ -271,16 +271,21 @@ fn out_dir_writes_one_file_per_input() {
         "guide.md",
         "other.md",
     ]);
-    assert_eq!(out, "");
+    assert_eq!(out.status.code(), Some(0), "{out:?}");
+    assert_eq!(out.stdout, b"");
+    assert_eq!(
+        stderr(&out),
+        "guide.md -> site/html/guide.html\nother.md -> site/html/other.html\n"
+    );
     let guide = fs::read_to_string(mrq.path("site/html/guide.html")).unwrap();
     assert_eq!(guide, mrq.render(&["guide.md"]));
     assert!(mrq.path("site/html/other.html").is_file());
-    mrq.render(&["-o", "man", "--out-dir", "man", "tool.1.md"]);
+    mrq.render(&["-q", "-o", "man", "--out-dir", "man", "tool.1.md"]);
     assert!(
         mrq.path("man/tool.1").is_file(),
         "the man extension is the section's"
     );
-    mrq.render(&["-o", "md", "--out-dir", "md", "note.md"]);
+    mrq.render(&["-q", "-o", "md", "--out-dir", "md", "note.md"]);
     assert!(mrq.path("md/note.md").is_file());
 }
 
@@ -298,11 +303,19 @@ fn out_dir_refuses_inputs_with_the_same_name() {
 #[test]
 fn out_writes_a_file() {
     let mrq = Mrq::new();
-    let out = mrq.render(&["-o", "md", "--out", "build/all.md", "guide.md", "other.md"]);
-    assert_eq!(out, "");
+    let out = mrq.output(&["-o", "md", "--out", "build/all.md", "guide.md", "other.md"]);
+    assert_eq!(out.status.code(), Some(0), "{out:?}");
+    assert_eq!(out.stdout, b"");
+    assert_eq!(
+        stderr(&out),
+        "guide.md -> build/all.md\nother.md -> build/all.md\n",
+        "one line per input"
+    );
     let written = fs::read_to_string(mrq.path("build/all.md")).unwrap();
     // Links are relative to the output file.
     assert!(written.contains("](../tool.1.md)"), "{written}");
+    // `--quiet` leaves them out.
+    mrq.render(&["-q", "-o", "md", "--out", "build/one.md", "guide.md"]);
 }
 
 #[test]
@@ -315,9 +328,17 @@ fn stdin_is_read_with_a_dash() {
         .unwrap();
     assert_eq!(out.status.code(), Some(0), "{out:?}");
     assert_eq!(
-        String::from_utf8(out.stdout).unwrap(),
+        String::from_utf8_lossy(&out.stdout),
         "<h1 id=\"hi\">Hi</h1>\n"
     );
+    assert_eq!(stderr(&out), "", "nothing reported for stdout");
+    let out = mrq
+        .command(&["--out", "hi.html", "-"])
+        .write_stdin("# Hi\n")
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(0), "{out:?}");
+    assert_eq!(stderr(&out), "<stdin> -> hi.html\n");
 }
 
 // --- Diagnostics and errors -------------------------------------------------------------
@@ -430,6 +451,10 @@ fn open_renders_to_a_temp_file_named_after_the_input() {
     let [file] = opened.files.as_slice() else {
         panic!("one file opened: {:?}", opened.files);
     };
+    assert_eq!(
+        stderr(&opened.out),
+        format!("guide.md -> {}\n", file.display())
+    );
     assert_eq!(
         file.parent().map(Path::to_path_buf),
         Some(opened.tmp.path().canonicalize().unwrap())
