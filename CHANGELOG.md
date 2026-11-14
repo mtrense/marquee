@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-11-14
+
+### Added
+
+- `--open` flag for `render` opens the result in the default app. Without `--out` or `--out-dir`, it renders to a temp file named after the inputs, with links rebased to work from there. `$MRQ_OPENER` overrides the platform opener (open, start, xdg-open).
+- `render` now reports `INPUT -> OUTPUT` on stderr for each file written, including `--out`, `--out-dir` and the `--open` temp file. Stdin shows as `<stdin>`. Nothing is printed when rendering to stdout or with `--quiet`.
+
 ## [0.2.1] - 2026-11-12
 
 ### Fixed
