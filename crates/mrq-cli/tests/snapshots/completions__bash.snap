@@ -71,6 +71,9 @@ _mrq() {
             mrq__subcmd__config,help)
                 cmd="mrq__subcmd__config__subcmd__help"
                 ;;
+            mrq__subcmd__config,init)
+                cmd="mrq__subcmd__config__subcmd__init"
+                ;;
             mrq__subcmd__config,schema)
                 cmd="mrq__subcmd__config__subcmd__schema"
                 ;;
@@ -79,6 +82,9 @@ _mrq() {
                 ;;
             mrq__subcmd__config__subcmd__help,help)
                 cmd="mrq__subcmd__config__subcmd__help__subcmd__help"
+                ;;
+            mrq__subcmd__config__subcmd__help,init)
+                cmd="mrq__subcmd__config__subcmd__help__subcmd__init"
                 ;;
             mrq__subcmd__config__subcmd__help,schema)
                 cmd="mrq__subcmd__config__subcmd__help__subcmd__schema"
@@ -133,6 +139,9 @@ _mrq() {
                 ;;
             mrq__subcmd__help,validate)
                 cmd="mrq__subcmd__help__subcmd__validate"
+                ;;
+            mrq__subcmd__help__subcmd__config,init)
+                cmd="mrq__subcmd__help__subcmd__config__subcmd__init"
                 ;;
             mrq__subcmd__help__subcmd__config,schema)
                 cmd="mrq__subcmd__help__subcmd__config__subcmd__schema"
@@ -229,7 +238,7 @@ _mrq() {
             return 0
             ;;
         mrq__subcmd__config)
-            opts="-q -v -h --config --flavor --color --format --quiet --verbose --help show schema help"
+            opts="-q -v -h --config --flavor --color --format --quiet --verbose --help show schema init help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -270,7 +279,7 @@ _mrq() {
             return 0
             ;;
         mrq__subcmd__config__subcmd__help)
-            opts="show schema help"
+            opts="show schema init help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -284,6 +293,20 @@ _mrq() {
             return 0
             ;;
         mrq__subcmd__config__subcmd__help__subcmd__help)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        mrq__subcmd__config__subcmd__help__subcmd__init)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -318,6 +341,47 @@ _mrq() {
                 return 0
             fi
             case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        mrq__subcmd__config__subcmd__init)
+            opts="-q -v -h --user --project --force --config --flavor --color --format --quiet --verbose --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --config)
+                    local oldifs
+                    if [ -n "${IFS+x}" ]; then
+                        oldifs="$IFS"
+                    fi
+                    IFS=$'\n'
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    if [ -n "${oldifs+x}" ]; then
+                        IFS="$oldifs"
+                    fi
+                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+                        compopt -o filenames
+                    fi
+                    return 0
+                    ;;
+                --flavor)
+                    COMPREPLY=($(compgen -W "commonmark gfm obsidian mkdocs" -- "${cur}"))
+                    return 0
+                    ;;
+                --color)
+                    COMPREPLY=($(compgen -W "auto always never" -- "${cur}"))
+                    return 0
+                    ;;
+                --format)
+                    COMPREPLY=($(compgen -W "human json ndjson sarif github" -- "${cur}"))
+                    return 0
+                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -518,8 +582,22 @@ _mrq() {
             return 0
             ;;
         mrq__subcmd__help__subcmd__config)
-            opts="show schema"
+            opts="show schema init"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        mrq__subcmd__help__subcmd__config__subcmd__init)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi

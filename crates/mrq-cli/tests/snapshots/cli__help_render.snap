@@ -39,6 +39,9 @@ Options:
       --out-dir <DIR>
           Write one file per input into this directory, named after the input (`guide.md` → `guide.html`)
 
+      --open
+          Open the result in the default app; without --out or --out-dir, it is written to a temporary file named after the input(s)
+
   -h, --help
           Print help (see a summary with '-h')
 
@@ -84,3 +87,5 @@ Global options:
 With `-o md`, `--flavor` is the flavor to convert to; the input flavor then comes from frontmatter `mrq.flavor`, then the config, then gfm.
 
 Several inputs are concatenated into one document, as `mrq merge --no-wrap` would (`-o json`: a list of {file, ast} objects), unless --out-dir is given. A PDF is never written to a terminal.
+
+--open uses `open` (macOS), `start` (Windows) or `xdg-open`, unless $MRQ_OPENER names another command (split at whitespace; the file is appended).

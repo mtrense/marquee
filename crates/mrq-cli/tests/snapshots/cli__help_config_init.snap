@@ -1,0 +1,61 @@
+---
+source: crates/mrq-cli/tests/cli.rs
+expression: "stdout_of(&[\"config\", name, \"--help\"])"
+---
+Write a reference config listing every setting at its default, commented out.
+
+The file goes to the global `--config` path if given, else to the user config with `--user`, else to `.mrq.yaml` in the current directory.
+
+Usage: mrq config init [OPTIONS]
+
+Options:
+      --user
+          Write the user config (`~/.config/mrq/config.yaml`; see `MRQ_CONFIG_HOME` and `XDG_CONFIG_HOME`)
+
+      --project
+          Write `.mrq.yaml` in the current directory (the default)
+
+      --force
+          Overwrite an existing config file
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --config <PATH>
+          Use this config file instead of discovering `.mrq.yaml`
+
+      --flavor <FLAVOR>
+          Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+
+          Possible values:
+          - commonmark: Strict CommonMark
+          - gfm:        GitHub Flavored Markdown
+          - obsidian:   Obsidian: gfm + wikilinks, embeds, callouts, tags, math, comments
+          - mkdocs:     MkDocs: gfm + admonitions, heading attributes, definition lists, math
+
+      --color <WHEN>
+          When to use colors
+
+          Possible values:
+          - auto:   Colors when writing to a terminal and NO_COLOR is unset
+          - always: Always emit colors
+          - never:  Never emit colors
+          
+          [default: auto]
+
+      --format <FORMAT>
+          Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+
+          Possible values:
+          - human:  Human-readable, with source snippets
+          - json:   A single JSON array
+          - ndjson: One JSON object per line
+          - sarif:  SARIF 2.1.0
+          - github: GitHub Actions workflow annotations
+
+  -q, --quiet...
+          Print less output; repeat for even less
+
+  -v, --verbose...
+          Print more output; repeat for even more

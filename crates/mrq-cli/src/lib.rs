@@ -20,6 +20,7 @@ use mrq_core::source::{SourceFile, write_atomic};
 
 mod carapace;
 pub mod cli;
+mod config_init;
 mod diff;
 mod fmt;
 mod interpolate;
@@ -51,6 +52,7 @@ pub fn run(cli: Cli) -> ExitCode {
             print(&mrq_core::config::schema_json());
             ExitCode::SUCCESS
         }
+        Command::Config(ConfigCommand::Init(args)) => config_init::command(&args, &cli.global),
         Command::Config(ConfigCommand::Show { origin }) => match load_config(&cli.global) {
             Ok(loaded) => {
                 print(&loaded.to_yaml(origin));

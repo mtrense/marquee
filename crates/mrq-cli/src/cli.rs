@@ -120,7 +120,7 @@ pub enum Command {
     Show(ShowArgs),
     /// Run the language server on stdio.
     Lsp(LspArgs),
-    /// Inspect the configuration.
+    /// Inspect the configuration or create a config file.
     #[command(subcommand)]
     Config(ConfigCommand),
     /// Print a shell completion script to stdout.
@@ -184,6 +184,7 @@ impl Command {
             Self::Lsp(_) => "lsp",
             Self::Config(ConfigCommand::Show { .. }) => "config show",
             Self::Config(ConfigCommand::Schema) => "config schema",
+            Self::Config(ConfigCommand::Init(_)) => "config init",
             Self::Completions { .. } => "completions",
         }
     }
@@ -466,6 +467,26 @@ pub enum ConfigCommand {
     },
     /// Print the JSON Schema of `.mrq.yaml`.
     Schema,
+    /// Write a reference config listing every setting at its default, commented out.
+    ///
+    /// The file goes to the global `--config` path if given, else to the user config
+    /// with `--user`, else to `.mrq.yaml` in the current directory.
+    Init(ConfigInitArgs),
+}
+
+#[derive(Debug, Args)]
+#[command(group = clap::ArgGroup::new("target").args(["user", "project"]))]
+pub struct ConfigInitArgs {
+    /// Write the user config (`~/.config/mrq/config.yaml`; see `MRQ_CONFIG_HOME` and
+    /// `XDG_CONFIG_HOME`).
+    #[arg(long)]
+    pub user: bool,
+    /// Write `.mrq.yaml` in the current directory (the default).
+    #[arg(long)]
+    pub project: bool,
+    /// Overwrite an existing config file.
+    #[arg(long)]
+    pub force: bool,
 }
 
 /// The clap `Command` for `mrq`, e.g. for man pages and completions.

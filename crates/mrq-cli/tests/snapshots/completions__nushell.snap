@@ -405,7 +405,7 @@ module completions {
     [ "human" "json" "ndjson" "sarif" "github" ]
   }
 
-  # Inspect the configuration
+  # Inspect the configuration or create a config file
   export extern "mrq config" [
     --config: path            # Use this config file instead of discovering `.mrq.yaml`
     --flavor: string@"nu-complete mrq config flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
@@ -463,6 +463,32 @@ module completions {
     --help(-h)                # Print help (see more with '--help')
   ]
 
+  def "nu-complete mrq config init flavor" [] {
+    [ "commonmark" "gfm" "obsidian" "mkdocs" ]
+  }
+
+  def "nu-complete mrq config init color" [] {
+    [ "auto" "always" "never" ]
+  }
+
+  def "nu-complete mrq config init format" [] {
+    [ "human" "json" "ndjson" "sarif" "github" ]
+  }
+
+  # Write a reference config listing every setting at its default, commented out
+  export extern "mrq config init" [
+    --user                    # Write the user config (`~/.config/mrq/config.yaml`; see `MRQ_CONFIG_HOME` and `XDG_CONFIG_HOME`)
+    --project                 # Write `.mrq.yaml` in the current directory (the default)
+    --force                   # Overwrite an existing config file
+    --config: path            # Use this config file instead of discovering `.mrq.yaml`
+    --flavor: string@"nu-complete mrq config init flavor" # Markdown flavor [default: frontmatter `mrq.flavor`, then config, then gfm]
+    --color: string@"nu-complete mrq config init color" # When to use colors
+    --format: string@"nu-complete mrq config init format" # Diagnostics output format [default: human, or github when GITHUB_ACTIONS=true]
+    --quiet(-q)               # Print less output; repeat for even less
+    --verbose(-v)             # Print more output; repeat for even more
+    --help(-h)                # Print help (see more with '--help')
+  ]
+
   # Print this message or the help of the given subcommand(s)
   export extern "mrq config help" [
   ]
@@ -473,6 +499,10 @@ module completions {
 
   # Print the JSON Schema of `.mrq.yaml`
   export extern "mrq config help schema" [
+  ]
+
+  # Write a reference config listing every setting at its default, commented out
+  export extern "mrq config help init" [
   ]
 
   # Print this message or the help of the given subcommand(s)
@@ -563,7 +593,7 @@ module completions {
   export extern "mrq help lsp" [
   ]
 
-  # Inspect the configuration
+  # Inspect the configuration or create a config file
   export extern "mrq help config" [
   ]
 
@@ -573,6 +603,10 @@ module completions {
 
   # Print the JSON Schema of `.mrq.yaml`
   export extern "mrq help config schema" [
+  ]
+
+  # Write a reference config listing every setting at its default, commented out
+  export extern "mrq help config init" [
   ]
 
   # Print a shell completion script to stdout

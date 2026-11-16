@@ -1,0 +1,91 @@
+## mrq reference configuration
+##
+## Every setting is listed with its built-in default, commented out. Uncomment a
+## setting (remove the leading "# ") to change it; leave the rest commented so they
+## keep following the layers below (user config < .mrq.yaml files, closest wins <
+## command-line flags). Lines starting with "##" are explanations.
+##
+## `mrq config show --origin` prints the effective configuration and where each value
+## comes from; `mrq config schema` prints the JSON Schema for editor completion.
+
+## Markdown flavor when neither --flavor nor frontmatter `mrq.flavor` picks one:
+## commonmark | gfm | obsidian | mkdocs
+# flavor: gfm
+
+## Globs of files and directories to skip when walking directories,
+## e.g. ["vendor/**", "CHANGELOG.md"].
+# ignore: []
+
+## `mrq lint`
+# lint:
+##   Base rule set: default (every rule that is on by default) | none (only `rules`).
+#   extends: default
+##   Per-rule settings keyed by rule id (MD013, MRQ001, ...), markdownlint alias
+##   (line-length) or tag (whitespace): an options object, off/false to disable, or
+##   on/true to enable with defaults. For example:
+##     rules:
+##       MD013: { line_length: 120, code_blocks: false }
+##       MD033: { allowed_elements: [details, summary, kbd] }
+##       MD041: off
+#   rules: {}
+
+## `mrq fmt`
+# fmt:
+##   Prose wrapping: preserve | never (one line per paragraph) | width | sentence
+#   wrap: preserve
+##   Line width for `wrap: width`.
+#   width: 80
+##   Emphasis marker: "*" | "_"
+#   emphasis: "*"
+##   Strong emphasis marker: "**" | "__"
+#   strong: "**"
+##   Bullet list marker: "-" | "*" | "+"
+#   list_marker: "-"
+##   Ordered list numbering: one (repeat the start number) | ordered | preserve
+#   ordered_list: ordered
+##   Code fence: "```" | "~~~"
+#   code_fence: "```"
+##   Frontmatter: preserve (verbatim) | normalize (re-serialize canonically)
+#   frontmatter: preserve
+##   External formatters for fenced code, keyed by language: a command and its
+##   arguments, reading the code on stdin and writing the result to stdout (the code is
+##   kept as is if the command fails). For example:
+##     code_formatters:
+##       rust: ["rustfmt", "--emit=stdout"]
+#   code_formatters: {}
+
+## `mrq validate`
+# validate:
+##   Check external http(s) links (also enabled by --external).
+#   external: false
+##   Regular expressions of external URLs never to check, e.g. ["^https://localhost"].
+#   external_exclude: []
+##   JSON Schemas for frontmatter, per glob; both paths are relative to this file.
+##   For example:
+##     frontmatter:
+##       - files: "blog/**/*.md"
+##         schema: ./schemas/post.schema.json
+#   frontmatter: []
+
+## `mrq:include` directives
+# include:
+##   Allow includes from http(s) URLs (needs the remote-include feature).
+#   allow_remote: false
+
+## `mrq render`
+# render:
+##   Built-in theme (light | dark | github | paper) or a theme file path; empty means
+##   light.
+#   style:
+##   Diagram rendering.
+#   diagrams:
+##     The Kroki diagram service, tried after built-in renderers and commands. It is
+##     never contacted unless enabled.
+#     kroki:
+#       enabled: false
+#       url: https://kroki.io
+##     Custom renderers keyed by fence language: a command and its arguments, reading
+##     the diagram source on stdin and writing SVG to stdout. For example:
+##       commands:
+##         bob: ["svgbob"]
+#     commands: {}

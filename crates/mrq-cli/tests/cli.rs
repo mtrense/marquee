@@ -57,7 +57,7 @@ fn subcommand_help_snapshots() {
     for name in SUBCOMMANDS {
         insta::assert_snapshot!(format!("help_{name}"), stdout_of(&[name, "--help"]));
     }
-    for name in ["show", "schema"] {
+    for name in ["show", "schema", "init"] {
         insta::assert_snapshot!(
             format!("help_config_{name}"),
             stdout_of(&["config", name, "--help"])

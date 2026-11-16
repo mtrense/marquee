@@ -42,6 +42,7 @@ mod load;
 mod locate;
 mod markdownlint;
 mod model;
+mod reference;
 mod rules;
 mod show;
 
@@ -55,6 +56,7 @@ pub use model::{
     FrontmatterSchema, IncludeConfig, KrokiConfig, LintConfig, LintExtends, ListMarker,
     OrderedList, RenderConfig, Strong, ValidateConfig, Wrap,
 };
+pub use reference::REFERENCE_CONFIG;
 pub use rules::{RuleSetting, RuleSettingError, RuleSettings};
 
 /// The JSON Schema of `.mrq.yaml`.

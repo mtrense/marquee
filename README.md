@@ -518,6 +518,8 @@ The flavor comes from `--flavor`, then a frontmatter `mrq.flavor` key, then the 
 
 mrq reads `.mrq.yaml` from the current directory and its ancestors (the closest one wins, key by key), then the user config at `~/.config/mrq/config.yaml`. Command-line flags override everything. `mrq config show` prints the effective configuration and where each value came from. A JSON Schema for the config file is published for editor completion.
 
+`mrq config init` writes a reference `.mrq.yaml` to the current directory (`--user` writes the user config, located through `MRQ_CONFIG_HOME`, `XDG_CONFIG_HOME` or `HOME`, and the global `--config PATH` writes to `PATH`) that lists every setting at its default, commented out, with a short explanation. It refuses to overwrite an existing file unless `--force`.
+
 ```yaml
 # .mrq.yaml
 flavor: gfm

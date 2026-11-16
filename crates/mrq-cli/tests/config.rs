@@ -1,4 +1,4 @@
-//! `mrq config show [--origin]` and `mrq config schema`.
+//! `mrq config show [--origin]`, `mrq config schema` and `mrq config init`.
 //!
 //! Every test runs `mrq` inside a temp tree with `MRQ_CONFIG_HOME` pointing at
 //! `<tmp>/user`, so the real user config never leaks in. Temp paths are redacted to
@@ -200,4 +200,181 @@ fn schema_prints_the_json_schema() {
     assert_eq!(out, mrq_core::config::schema_json());
     let schema: serde_json::Value = serde_json::from_str(&out).unwrap();
     assert_eq!(schema["title"], "mrq configuration (.mrq.yaml)");
+}
+
+#[test]
+fn init_writes_the_reference_to_the_project_by_default() {
+    let tree = Tree::new();
+    let defaults = tree.stdout(&["config", "show"]);
+    tree.mrq()
+        .args(["config", "init"])
+        .assert()
+        .success()
+        .stdout("")
+        .stderr("wrote .mrq.yaml\n");
+    let written = fs::read_to_string(tree.root.join("proj/docs/.mrq.yaml")).unwrap();
+    assert_eq!(written, mrq_core::config::REFERENCE_CONFIG);
+    // Everything is commented out: the effective config does not change.
+    assert_eq!(tree.stdout(&["config", "show"]), defaults);
+    assert!(!tree.root.join("user/config.yaml").exists());
+}
+
+#[test]
+fn init_project_writes_mrq_yaml_in_the_current_directory() {
+    let tree = Tree::new();
+    tree.mrq()
+        .args(["config", "init", "--project", "-q"])
+        .assert()
+        .success()
+        .stderr("");
+    assert!(tree.root.join("proj/docs/.mrq.yaml").is_file());
+    assert!(!tree.root.join("proj/.mrq.yaml").exists());
+}
+
+#[test]
+fn init_user_writes_the_user_config_creating_directories() {
+    let tree = Tree::new();
+    let home = tree.root.join("user/nested/mrq");
+    let out = tree
+        .mrq()
+        .env("MRQ_CONFIG_HOME", &home)
+        .args(["config", "init", "--user"])
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(
+        tree.redact(&out.stderr),
+        "wrote [TMP]/user/nested/mrq/config.yaml\n"
+    );
+    let written = fs::read_to_string(home.join("config.yaml")).unwrap();
+    assert_eq!(written, mrq_core::config::REFERENCE_CONFIG);
+    assert!(!tree.root.join("proj/docs/.mrq.yaml").exists());
+}
+
+#[test]
+fn init_refuses_to_overwrite_without_force() {
+    let tree = Tree::new();
+    let path = tree.write("proj/docs/.mrq.yaml", "flavor: mkdocs\n");
+    tree.mrq()
+        .args(["config", "init"])
+        .assert()
+        .code(2)
+        .stderr("mrq: .mrq.yaml already exists (use --force to overwrite)\n");
+    assert_eq!(fs::read_to_string(&path).unwrap(), "flavor: mkdocs\n");
+
+    tree.mrq()
+        .args(["config", "init", "--force"])
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(&path).unwrap(),
+        mrq_core::config::REFERENCE_CONFIG
+    );
+}
+
+#[test]
+fn init_user_refuses_to_overwrite_without_force() {
+    let tree = Tree::new();
+    let path = tree.write("user/config.yaml", "flavor: mkdocs\n");
+    tree.mrq()
+        .args(["config", "init", "--user"])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("already exists"));
+    assert_eq!(fs::read_to_string(&path).unwrap(), "flavor: mkdocs\n");
+    tree.mrq()
+        .args(["config", "init", "--user", "--force"])
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(&path).unwrap(),
+        mrq_core::config::REFERENCE_CONFIG
+    );
+}
+
+#[test]
+fn init_project_does_not_shadow_an_existing_mrq_yml() {
+    let tree = Tree::new();
+    tree.write("proj/docs/.mrq.yml", "flavor: mkdocs\n");
+    tree.mrq()
+        .args(["config", "init"])
+        .assert()
+        .code(2)
+        .stderr("mrq: .mrq.yml already exists (use --force to overwrite)\n");
+    assert!(!tree.root.join("proj/docs/.mrq.yaml").exists());
+}
+
+#[test]
+fn init_user_and_project_conflict() {
+    let tree = Tree::new();
+    tree.mrq()
+        .args(["config", "init", "--user", "--project"])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("cannot be used with"));
+}
+
+#[test]
+fn init_writes_to_the_global_config_path() {
+    let tree = Tree::new();
+    let target = tree.root.join("proj/conf/mrq.yaml");
+    let out = tree
+        .mrq()
+        .arg("--config")
+        .arg(&target)
+        .args(["config", "init"])
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "{out:?}");
+    assert_eq!(tree.redact(&out.stderr), "wrote [TMP]/proj/conf/mrq.yaml\n");
+    assert_eq!(
+        fs::read_to_string(&target).unwrap(),
+        mrq_core::config::REFERENCE_CONFIG
+    );
+    assert!(!tree.root.join("proj/docs/.mrq.yaml").exists());
+    assert!(!tree.root.join("user/config.yaml").exists());
+    // The written file is a valid `--config` file.
+    tree.mrq()
+        .arg("--config")
+        .arg(&target)
+        .args(["config", "show"])
+        .assert()
+        .success();
+}
+
+#[test]
+fn init_with_global_config_refuses_to_overwrite_without_force() {
+    let tree = Tree::new();
+    let target = tree.write("proj/custom.yaml", "flavor: mkdocs\n");
+    tree.mrq()
+        .arg("--config")
+        .arg(&target)
+        .args(["config", "init"])
+        .assert()
+        .code(2)
+        .stderr(predicate::str::contains("already exists"));
+    assert_eq!(fs::read_to_string(&target).unwrap(), "flavor: mkdocs\n");
+    tree.mrq()
+        .arg("--config")
+        .arg(&target)
+        .args(["config", "init", "--force"])
+        .assert()
+        .success();
+    assert_eq!(
+        fs::read_to_string(&target).unwrap(),
+        mrq_core::config::REFERENCE_CONFIG
+    );
+}
+
+#[test]
+fn init_with_global_config_conflicts_with_user_and_project() {
+    let tree = Tree::new();
+    for flag in ["--user", "--project"] {
+        tree.mrq()
+            .args(["--config", "x.yaml", "config", "init", flag])
+            .assert()
+            .code(2)
+            .stderr("mrq: --config cannot be used with --user or --project\n");
+    }
+    assert!(!tree.root.join("proj/docs/x.yaml").exists());
 }
