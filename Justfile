@@ -108,7 +108,7 @@ build-native-macos-aarch64: (_native "aarch64-apple-darwin")
 
 # Every release target the current OS can build; one call per CI runner.
 build-release-targets:
-    @just {{ if os() == "windows" { "build-native-windows-x86_64" } else if os() == "macos" { "build-native-macos-x86_64 build-native-macos-aarch64" } else { "build-native-linux-x86_64 build-cross-linux-aarch64 build-cross-linux-x86_64-musl build-cross-linux-aarch64-musl build-cross-windows-x86_64" } }}
+    @just {{ if os() == "windows" { "build-native-windows-x86_64" } else if os() == "macos" { "build-native-macos-x86_64 build-native-macos-aarch64" } else { "build-native-linux-x86_64 build-cross-linux-aarch64 build-cross-linux-x86_64-musl build-cross-linux-aarch64-musl" } }}
 
 # Every target buildable from a Mac (all but Windows MSVC): cross for Linux/Windows, native for macOS.
 build-cross-all: build-cross-linux-x86_64 build-cross-linux-aarch64 build-cross-linux-x86_64-musl build-cross-linux-aarch64-musl build-cross-windows-x86_64 build-native-macos-x86_64 build-native-macos-aarch64

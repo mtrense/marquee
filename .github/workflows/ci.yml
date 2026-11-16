@@ -102,7 +102,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # x86_64 gnu natively; aarch64 gnu, both musl and Windows MinGW via cross + Docker.
+          # x86_64 gnu natively; aarch64 gnu and both musl via cross + Docker. Windows MinGW (cross
+          # 0.2.5 image) dies silently on ubuntu-26.04 and is not released, so it is left out.
           - os: ubuntu-latest
             targets: x86_64-unknown-linux-gnu
             tools: just,cross
